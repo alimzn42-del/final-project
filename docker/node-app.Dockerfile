@@ -18,11 +18,14 @@ RUN corepack enable
 WORKDIR /repo
 
 # Manifests first, so dependency layers are cached until a package.json changes.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc .pnpmfile.cjs ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/backend/package.json apps/backend/
 COPY apps/frontend/package.json apps/frontend/
 COPY apps/simulator/package.json apps/simulator/
+# The backend generates its Prisma client during install, so it needs its schema first.
+COPY apps/backend/prisma apps/backend/prisma
+COPY apps/backend/prisma.config.ts apps/backend/
 RUN pnpm install --frozen-lockfile --filter mixline --filter "@mixline/${APP}..."
 
 COPY tsconfig.base.json ./
@@ -30,8 +33,9 @@ COPY packages/shared packages/shared
 COPY apps/${APP} apps/${APP}
 RUN pnpm --filter "@mixline/${APP}..." build
 # A self-contained folder: the app's dist/ plus production dependencies only
-# (shared included as a normal package with its dist/).
-RUN pnpm --filter "@mixline/${APP}" deploy --prod --legacy /out
+# (shared included as a normal package with its dist/). No install scripts here:
+# everything was generated and compiled above.
+RUN pnpm --filter "@mixline/${APP}" deploy --prod --legacy --ignore-scripts /out
 
 # ---- migrate (backend only): applies the database migrations, then exits ----
 # Built with `target: migrate` by docker-compose.yml. It reuses the build stage,
