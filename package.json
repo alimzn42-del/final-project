@@ -17,9 +17,12 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "infra:up": "docker compose up -d --wait",
+    "infra:up": "docker compose up -d --wait db mqtt",
     "infra:down": "docker compose down",
-    "infra:check": "node scripts/check-infra.mjs"
+    "infra:check": "node scripts/check-infra.mjs",
+    "sim:check": "pnpm --filter @mixline/simulator check",
+    "stack:up": "docker compose up -d --build --wait",
+    "stack:down": "docker compose down"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -28,6 +31,7 @@
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.13.0",
     "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1",
     "vitest": "^5.0.5"

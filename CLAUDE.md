@@ -107,12 +107,14 @@ Run from the repo root:
 | `pnpm test:watch` | Re-run tests on change |
 | `pnpm typecheck` | TypeScript check of every package, tests included |
 | `pnpm build` | Build every package to its `dist/` |
-| `pnpm infra:up` | Start db + mqtt in Docker and wait until healthy (needs `.env`) |
+| `pnpm infra:up` | Start only db + mqtt in Docker and wait until healthy (needs `.env`) |
+| `pnpm stack:up` | Build the app images and start every service (db, mqtt, simulator) |
 | `pnpm infra:check` | Verify the Docker stack (health, TimescaleDB, broker auth) |
-| `pnpm infra:down` | Stop the Docker stack; data volumes are kept |
-| `pnpm dev` | Runs each package's `dev` script; none exist yet |
+| `pnpm sim:check` | Listen 12 s and verify a running simulator (topics, payloads, intervals) |
+| `pnpm stack:down` / `pnpm infra:down` | Stop the Docker stack; data volumes are kept |
+| `pnpm dev` | Runs each package's `dev` script (now: the simulator, with live reload, using `.env`) |
 
-Still to come in phase 1: app containers in `docker compose up --build` (from step 5 on).
+`pnpm dev` and `pnpm sim:check` run on the laptop and need `pnpm infra:up` first.
 
 Shell note: this laptop's fnm hook switches Node on `cd` into a folder with `.nvmrc`; in a
 non-interactive shell use `builtin cd` if that hook errors.
