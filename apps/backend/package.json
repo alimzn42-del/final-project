@@ -4,9 +4,14 @@
   "private": true,
   "description": "NestJS API: auth, machine config, MQTT ingest, telemetry storage, WebSocket push",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch --conditions=source --env-file-if-exists=../../.env src/main.ts",
+    "start": "node dist/main.js"
   },
   "dependencies": {
     "@mixline/shared": "workspace:*",

@@ -1,7 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    // NestJS uses classic TypeScript decorators. No emitDecoratorMetadata:
+    // every injected dependency is named with @Inject(...), so tsx and Vitest
+    // (which cannot emit that metadata) behave exactly like the build.
+    "experimentalDecorators": true
   },
   "include": ["src"]
 }
