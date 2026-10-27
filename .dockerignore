@@ -2,6 +2,8 @@
 **/node_modules
 **/dist
 **/coverage
+# Regenerated inside the image by the build.
+apps/backend/src/generated
 **/*.tsbuildinfo
 .git
 .env

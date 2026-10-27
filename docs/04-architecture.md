@@ -89,7 +89,28 @@ Modules:
 - `auth`: own auth (no third-party providers). Login, JWT, roles `manager` / `worker` / `customer`,
   guards. Seed one manager user from env. `POST /api/auth/signup` always creates a `customer`.
   Managers create `manager` and `worker` accounts through a protected endpoint.
-  Rate-limit login and signup.
+  Rate-limit login and signup. Built in step 8:
+  - **Default deny:** a global guard requires a login on every route unless it is marked
+    `@Public()` (health, locales, login, sign-up, logout); `@Roles(...)` narrows further.
+  - Endpoints: `POST /api/auth/signup` (always `customer`, logs in), `POST /api/auth/login`,
+    `POST /api/auth/logout`, `GET /api/auth/me`, `PATCH /api/auth/me` (language),
+    `POST /api/users` (managers create `manager` or `worker`).
+  - Passwords: **argon2id** (`@node-rs/argon2`, OWASP settings: 19 MiB, 2 passes, 1 lane;
+    prebuilt for Windows and Alpine x64/arm64, no install script). An unknown email still costs
+    one password check, and wrong email and wrong password give the same answer.
+  - Session: HS256 JWT (`jose`) holding only the user id, in an **httpOnly, SameSite=Strict
+    cookie** `mixline_session` on `/api`; lifetime `SESSION_HOURS` (default 8). The user is
+    re-read on every request, so a deleted user or a changed role counts at once.
+    `COOKIE_SECURE=true` only when served over HTTPS. `JWT_SECRET`: 32+ characters, required.
+  - Rate limits per client address: login 10 per minute, sign-up 20 per hour (a kiosk is one
+    address for many customers). Step 11 (nginx in front) must make Express trust the proxy, or
+    every request would share nginx's address.
+  - First manager: `MANAGER_EMAIL` / `MANAGER_PASSWORD`, created at startup only if no manager
+    exists; never changed afterwards.
+  - Validation with the shared zod rules (`packages/shared/src/auth.ts`); a 400 answer lists
+    every invalid field. Users are stored through a `UserStore` interface: Prisma 7 client in
+    the app, in memory in the HTTP tests (`pnpm test` needs no Docker); `pnpm test:db` runs the
+    database tests on a temporary real database.
 - Keep customer-facing endpoints (later: orders) in their own module, separate from telemetry and
   control, so the ordering part can be exposed to the internet later without exposing the line.
 - `machine`: loads and validates `config/machine.json` with the shared zod schema; serves it at
@@ -99,7 +120,9 @@ Modules:
   - `GET /api/locales/:lang` serves `en` or `ar` (404 otherwise): the frontend loads its labels
     from the backend, so a new machine needs only new config files.
   - `GET /api/health` for Docker and monitoring.
-  - These routes are public until auth (step 8) decides which roles may call them.
+  - Access (step 8): `/api/machine` is **manager and worker only** (customers never reach line
+    data, doc 03); `/api/locales/*` and `/api/health` are public (the login and sign-up pages
+    need the labels).
   - Settings: `PORT` (default 3000), `MACHINE_CONFIG`, `LOCALES_DIR` (defaults: the repo's `config/`).
 - NestJS 12 (ES modules). Dependencies are injected with explicit `@Inject(...)` tokens, not with
   emitted type metadata (`emitDecoratorMetadata` is off): tsx and Vitest cannot emit that metadata,
@@ -202,6 +225,10 @@ Database:
 - `@mixline/shared` exports a `source` condition: in development, TypeScript (`customConditions`),
   Vitest and tsx (`--conditions=source`) read its `.ts` files directly, so no build is needed
   between edits. Production builds (`tsconfig.build.json`) and images use its `dist/`.
+- `.pnpmfile.cjs` removes two *optional* peer links from `@prisma/client` (the Prisma CLI and
+  TypeScript). pnpm linked them because both are installed as dev tools, and `pnpm deploy --prod`
+  then put them, with Prisma Studio and an embedded Postgres, into the backend image (481 MB ->
+  266 MB without them). The runtime client needs neither.
 - App images: one multi-stage `docker/node-app.Dockerfile` for every Node app (build argument
   `APP`: `backend`, `simulator`), build context = repo root, base image pinned
   (`node:24.22.0-alpine3.24`, multi-arch). The runtime stage holds only the app's `dist/` and
