@@ -109,8 +109,11 @@ Run from the repo root:
 | `pnpm typecheck` | TypeScript check of every package, tests included |
 | `pnpm build` | Build every package to its `dist/` |
 | `pnpm infra:up` | Start only db + mqtt in Docker and wait until healthy (needs `.env`) |
-| `pnpm stack:up` | Build the app images and start every service (db, mqtt, backend, simulator) |
+| `pnpm stack:up` | Build the app images and start every service (db, mqtt, migrate, backend, simulator) |
 | `pnpm infra:check` | Verify the Docker stack (health, TimescaleDB, broker auth) |
+| `pnpm db:migrate` | Apply database migrations to the database in `.env` (Prisma) |
+| `pnpm db:check` | Run every migration on a temporary empty database and check the result |
+| `pnpm --filter @mixline/backend db:migrate:dev` | After changing `schema.prisma`: create a new migration |
 | `pnpm sim:check` | Listen 12 s and verify a running simulator (topics, payloads, intervals) |
 | `pnpm stack:down` / `pnpm infra:down` | Stop the Docker stack; data volumes are kept |
 | `pnpm dev` | Runs each app's `dev` script with live reload, using `.env` (backend on :3000, simulator) |

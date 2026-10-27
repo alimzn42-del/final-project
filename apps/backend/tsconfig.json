@@ -7,5 +7,6 @@
     // (which cannot emit that metadata) behave exactly like the build.
     "experimentalDecorators": true
   },
-  "include": ["src"]
+  // prisma.config.ts is type-checked and linted, but not part of the build.
+  "include": ["src", "prisma.config.ts"]
 }
