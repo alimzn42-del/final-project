@@ -4,15 +4,25 @@
 
 | Service | Image / app | Role |
 |---|---|---|
-| `db` | `timescale/timescaledb` (PostgreSQL 16) | users, config, telemetry hypertable |
-| `mqtt` | `eclipse-mosquitto` | message broker |
+| `db` | `timescale/timescaledb:2.30.2-pg16` (PostgreSQL 16) | users, config, telemetry hypertable |
+| `mqtt` | `eclipse-mosquitto:2.0.22` | message broker |
 | `backend` | `apps/backend` (NestJS) | REST, auth, MQTT ingest, WebSocket push |
 | `frontend` | `apps/frontend` (Vite build served by nginx) | the web app |
 | `simulator` | `apps/simulator` (Node) | publishes fake telemetry |
 
 - All images must have arm64 builds (Raspberry Pi 5 later). Runs on a laptop for now.
+  Third-party images are pinned to exact versions (both above are multi-arch, arm64 included).
 - Config through env vars; commit `.env.example` only.
 - Named volumes for db and broker data.
+- Host ports are bound to `127.0.0.1` only (local tools); services reach each other by service
+  name on the Compose network.
+- Mosquitto: anonymous clients are refused. The account comes from `MQTT_USERNAME` /
+  `MQTT_PASSWORD` in `.env`; `docker/mosquitto/entrypoint.sh` writes the password file at
+  container start, so no password is stored in the repo or the image.
+- TimescaleDB's anonymous usage telemetry is switched off (`timescaledb.telemetry_level=off`):
+  the line runs offline and sends no data out.
+- Commands: `pnpm infra:up` (start and wait until healthy), `pnpm infra:check` (verify),
+  `pnpm infra:down` (stop; data volumes are kept).
 
 ```
  ESP32 / Pi (later)  ─┐

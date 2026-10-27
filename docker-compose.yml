@@ -1,0 +1,59 @@
+# Local MixLine stack. Copy .env.example to .env first.
+# Step 2 runs the infrastructure only (database + broker); each app is added
+# here in the plan step that builds it.
+name: mixline
+
+services:
+  db:
+    # PostgreSQL 16 with the TimescaleDB extension (multi-arch: amd64 + arm64).
+    image: timescale/timescaledb:2.30.2-pg16
+    restart: unless-stopped
+    # TimescaleDB reports anonymous usage data to Timescale by default; the line
+    # runs offline and sends nothing out, so it is switched off.
+    command: ['postgres', '-c', 'timescaledb.telemetry_level=off']
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+    ports:
+      # Bound to this machine only, for local tools; other services use the
+      # internal network name "db".
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+
+  mqtt:
+    # Eclipse Mosquitto MQTT broker (multi-arch: amd64 + arm64).
+    image: eclipse-mosquitto:2.0.22
+    restart: unless-stopped
+    # Our script writes the password file from .env, then hands over to the
+    # image's own entrypoint.
+    entrypoint: ['sh', '/etc/mixline/entrypoint.sh']
+    environment:
+      MQTT_USERNAME: ${MQTT_USERNAME:?set MQTT_USERNAME in .env}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?set MQTT_PASSWORD in .env}
+    ports:
+      - '127.0.0.1:${MQTT_PORT:-1883}:1883'
+    volumes:
+      - ./docker/mosquitto/mosquitto.conf:/etc/mixline/mosquitto.conf:ro
+      - ./docker/mosquitto/entrypoint.sh:/etc/mixline/entrypoint.sh:ro
+      - mqtt-data:/mosquitto/data
+    healthcheck:
+      # Healthy = an authenticated client can read the broker's own status topic.
+      test:
+        - CMD-SHELL
+        - mosquitto_sub -h localhost -u "$$MQTT_USERNAME" -P "$$MQTT_PASSWORD" -t '$$SYS/broker/uptime' -C 1 -W 3 > /dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  db-data:
+  mqtt-data:
