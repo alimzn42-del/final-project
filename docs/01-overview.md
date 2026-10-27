@@ -44,13 +44,18 @@ must leave room for them (see `docs/03-ui-spec.md`).
 ## Controllers (physical side, for context)
 
 - An industrial PLC will run sequencing and safety (model not chosen yet; supervisor is sourcing it).
+- **Design decision: the PLC owns all limits, alarms, interlocks and safety decisions.** The web
+  app only reads and displays what the PLC reports; it never decides that a value is a warning or
+  a fault on its own. Alarms per component are defined later, when the PLC program is designed
+  (open item in `docs/05-roadmap.md`).
 - ESP32 handles load cells (HX711) and fast loops; values go to the PLC over comms.
 - Raspberry Pi 5 handles the camera and is the data gateway.
 - The web app receives data via MQTT from the Pi / ESP32. Until hardware exists, the simulator
   publishes the same messages.
 - Time: the ESP32 has no battery-backed clock and the lab has no internet, so device timestamps
-  can be wrong. Later, the Raspberry Pi will serve time to the ESP32 over NTP on the lab network.
-  Until then the backend also records when it received each reading (`docs/04-architecture.md`).
+  can be wrong. Plan: a battery is added to the Raspberry Pi 5's built-in real-time clock, so the
+  Pi keeps correct time without internet, and the Pi serves time to the ESP32 over NTP on the lab
+  network. The backend also records when it received each reading (`docs/04-architecture.md`).
 
 ## Team context
 

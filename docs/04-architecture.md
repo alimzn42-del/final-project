@@ -99,15 +99,17 @@ Modules:
   - **Device clocks are unreliable** (owner, built in steps 7 and 9): the ESP32 has no battery
     clock and the lab is offline. Every reading stores both the device `ts` and the backend's
     `received_at`. Charts use the device `ts`, except when it differs from `received_at` by more
-    than a configurable tolerance (`CLOCK_TOLERANCE_MS`); then they use `received_at`, and the
-    event is logged. Offline detection always uses `received_at` (see `state.ts`).
-  - **Rejected readings never disappear silently** (owner, step 9): every reading that fails
-    `parseTopic` / `decodeReading` (unknown topic, bad JSON, wrong unit, unknown code...) is logged
-    with its topic and reason, and counted per sensor (per topic when no sensor matches). The
-    counts are exposed to managers at `GET /api/telemetry/rejections`, so a hardware bug is
-    visible. Counts are kept in memory and start from zero when the backend restarts.
-- `state`: computes ok / warning / fault / offline per component from limits in `machine.json`
-  and from data age (offline if no data for N seconds); rolls up to sub-section, section, line.
+    than a tolerance; then they use `received_at`, and the event is logged. Offline detection
+    always uses `received_at` (see `state.ts`).
+  - `CLOCK_TOLERANCE_MS` = **2000** (owner), configurable in `.env`.
+  - **Robustness:** the backend never crashes on a malformed message (unknown topic, bad JSON,
+    wrong unit, unknown code...): it drops the message and continues. This is robustness, not a
+    line rule. There is no rejection log, no per-sensor rejection count and no rejections endpoint
+    (removed by the owner in step 6); how faults and alarms reach the web app is an open item.
+- `state`: computes ok / warning / fault / offline per component and rolls up to sub-section,
+  section, line (generic logic in `shared/state.ts`). The PLC owns all limits and alarms (design
+  decision, `docs/01-overview.md`); until PLC alarms are defined, `machine.json` has no limits, so
+  a sensor is only `ok` or `offline` (no message received for more than 10 s).
 
 Database:
 - `users` (one table for all roles):
@@ -130,7 +132,8 @@ Database:
   the backend) is the hypertable's time column, so partitioning and retention never depend on a
   device clock. Raw data kept **7 days** (retention
   policy). A 1-minute continuous aggregate (min, max, avg) kept **1 year**. Compression after 1 day.
-- `alarms` (id, component_id, level, message, raised_at, acked_at) — table now, UI later
+- `alarms` (id, component_id, level, message, raised_at, acked_at) — table now, UI later. Its shape
+  may change with the open item on PLC alarms (`docs/05-roadmap.md`).
 - Migrations in code (Prisma or TypeORM; Timescale hypertable created in a raw SQL migration).
 
 ## Simulator
@@ -186,7 +189,8 @@ Database:
   - `batchId` in `state` may be `null` only while no batch runs (not `running` or `paused`).
   - `decodeReading()` rejects a reading whose unit differs from `machine.json`, a digital value
     other than 0/1, or an enum code without a value word.
-- `state.ts`: state from limits and roll-up (doc 03 ranking).
+- `state.ts`: state from limits and roll-up (doc 03 ranking). Generic: the real `machine.json` has
+  no limits for now (the PLC owns them), so its tests use made-up test limits from the fixtures.
   - Limits are strict: a value exactly at a limit is OK (`warnBelow: 150` warns at 149.9).
   - Offline = no message received for more than 10 s, measured from when the backend
     **received** the message, not from its `ts` (device clocks in an offline lab can be wrong).
@@ -246,7 +250,7 @@ section ever disagree, the file wins; update this section.
       "valueLabels": { "0": "i18n key", "1": "i18n key" },   // digital and enum only
       "measures": "netLiquid",                              // mass sensors only
       "sim": { "min", "max", "nominal" },                 // optional
-      "limits": {                                         // optional, any subset
+      "limits": {                     // optional, any subset; unused for now (PLC owns limits)
         "warnBelow", "faultBelow", "warnAbove", "faultAbove",   // analog
         "warnWhen", "faultWhen"                                 // digital / enum value
       }
@@ -255,7 +259,8 @@ section ever disagree, the file wins; update this section.
 }
 ```
 
-State from limits: `fault*` beats `warn*`. No message received for more than 10 s = `offline`.
+State from limits (when limits exist): `fault*` beats `warn*`. No message received for more than
+10 s = `offline`. For now `machine.json` has no limits, so a sensor is only `ok` or `offline`.
 `(station, variable)` pairs are unique across the file, so every topic maps to one sensor.
 On any one page, the translated name (`labelKey` + `labelParams`) of every component is unique.
 Add a test in `packages/shared` that checks both rules and that every `labelKey` exists in both locale files.
