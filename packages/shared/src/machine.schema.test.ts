@@ -136,10 +136,10 @@ describe('machine.json schema', () => {
     );
   });
 
-  it('rejects a fault limit that is milder than its warning limit', () => {
+  it('rejects a fault limit that is milder than its warning limit (optional field, test values)', () => {
     expectIssue(
       (m) => {
-        (sensor(m, 'dyeC.mass').limits as Record<string, number>).faultBelow = 200;
+        sensor(m, 'dyeC.mass').limits = { warnBelow: 150, faultBelow: 200 };
       },
       'components[dyeCTank].sensors[dyeC.mass].limits',
       /faultBelow must be below warnBelow/,

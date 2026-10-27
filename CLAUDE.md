@@ -37,7 +37,8 @@ packages/shared    types, zod schemas, MQTT topic helpers, machine.json schema
 config/machine.json  single source of truth for the line
 config/locales/     en.json and ar.json for every label key
 docs/              specs (docs/brand/ holds the logo files)
-docker/            container config (docker/mosquitto/: broker config and entrypoint)
+docker/            container config: node-app.Dockerfile (image for every Node app, build arg APP),
+                   mosquitto/ (broker config and entrypoint)
 scripts/           repo scripts (check-infra.mjs)
 reference/         earlier planning files, kept unchanged, not used by the code
 docker-compose.yml
@@ -108,11 +109,11 @@ Run from the repo root:
 | `pnpm typecheck` | TypeScript check of every package, tests included |
 | `pnpm build` | Build every package to its `dist/` |
 | `pnpm infra:up` | Start only db + mqtt in Docker and wait until healthy (needs `.env`) |
-| `pnpm stack:up` | Build the app images and start every service (db, mqtt, simulator) |
+| `pnpm stack:up` | Build the app images and start every service (db, mqtt, backend, simulator) |
 | `pnpm infra:check` | Verify the Docker stack (health, TimescaleDB, broker auth) |
 | `pnpm sim:check` | Listen 12 s and verify a running simulator (topics, payloads, intervals) |
 | `pnpm stack:down` / `pnpm infra:down` | Stop the Docker stack; data volumes are kept |
-| `pnpm dev` | Runs each package's `dev` script (now: the simulator, with live reload, using `.env`) |
+| `pnpm dev` | Runs each app's `dev` script with live reload, using `.env` (backend on :3000, simulator) |
 
 `pnpm dev` and `pnpm sim:check` run on the laptop and need `pnpm infra:up` first.
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { rawMachine } from './__fixtures__/config.js';
+import { rawMachine, rawMachineWithTestLimits } from './__fixtures__/config.js';
 import { machineSchema, type Sensor } from './machine.schema.js';
 import {
   type LatestValue,
@@ -12,7 +12,12 @@ import {
   worstState,
 } from './state.js';
 
-const machine = machineSchema.parse(rawMachine());
+/**
+ * The limit logic is generic. The real machine.json has no limits (the PLC
+ * owns them), so limit tests run on a copy with made-up TEST_LIMITS.
+ */
+const machine = machineSchema.parse(rawMachineWithTestLimits());
+const realMachine = machineSchema.parse(rawMachine());
 const allSensors = machine.components.flatMap((c) => c.sensors);
 function sensor(id: string): Sensor {
   const s = allSensors.find((x) => x.id === id);
@@ -32,7 +37,7 @@ function readings(overrides: Record<string, number> = {}, receivedAt = NOW) {
   return map;
 }
 
-describe('valueState: limits from machine.json', () => {
+describe('valueState: generic limit logic (test limits)', () => {
   it('treats "below" as strictly below: the limit value itself is OK', () => {
     const dye = sensor('dyeC.mass'); // warnBelow 150, faultBelow 60
     expect(valueState(dye, 150)).toBe('ok');
@@ -103,7 +108,7 @@ describe('worstState: doc 03 ranking', () => {
   });
 });
 
-describe('machineStates on the real machine.json', () => {
+describe('machineStates roll-up (real machine.json + test limits)', () => {
   it('is all OK when every sensor is at its nominal value', () => {
     const st = machineStates(machine, readings(), NOW);
     expect(st.line).toBe('ok');
@@ -161,5 +166,26 @@ describe('machineStates on the real machine.json', () => {
     expect(st.sections.get('mixingColor')).toBe('offline');
     expect(st.sections.get('cabinet')).toBe('fault');
     expect(st.line).toBe('fault');
+  });
+});
+
+describe('the real machine.json: no limits yet, the PLC owns them', () => {
+  it('has no limits on any sensor', () => {
+    const withLimits = realMachine.components.flatMap((c) => c.sensors).filter((s) => s.limits);
+    expect(withLimits.map((s) => s.id)).toEqual([]);
+  });
+
+  it('is only ok or offline, whatever the values', () => {
+    const extremes = new Map<string, LatestValue>();
+    for (const s of realMachine.components.flatMap((c) => c.sensors)) {
+      extremes.set(s.id, { value: (s.sim?.max ?? 0) * 10 + 1, receivedAt: NOW });
+    }
+    const live = machineStates(realMachine, extremes, NOW);
+    expect(new Set(live.sensors.values())).toEqual(new Set(['ok']));
+    expect(live.line).toBe('ok');
+
+    const silent = machineStates(realMachine, new Map(), NOW);
+    expect(new Set(silent.sensors.values())).toEqual(new Set(['offline']));
+    expect(silent.line).toBe('offline');
   });
 });
