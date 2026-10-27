@@ -21,8 +21,9 @@
   container start, so no password is stored in the repo or the image.
 - TimescaleDB's anonymous usage telemetry is switched off (`timescaledb.telemetry_level=off`):
   the line runs offline and sends no data out.
-- Commands: `pnpm infra:up` (start and wait until healthy), `pnpm infra:check` (verify),
-  `pnpm infra:down` (stop; data volumes are kept).
+- Commands: `pnpm infra:up` (db + mqtt only, wait until healthy), `pnpm stack:up` (every service,
+  images rebuilt), `pnpm infra:check` (verify), `pnpm stack:down` / `pnpm infra:down` (stop; data
+  volumes are kept).
 
 ```
  ESP32 / Pi (later)  ─┐
@@ -143,6 +144,25 @@ Database:
 - Rates: about 1 Hz idle, up to 5 Hz during dosing / filling.
 - Uses each sensor's `sim` block (`min`, `max`, `nominal`) from `machine.json`.
 - Has a hook to inject faults later (worn pump, weak dye, scale drift). Not needed in phase 1.
+- v1 (step 5): every sensor at its `sim.nominal`; analog values get small noise (0.5% of the sim
+  range) but never cross a limit, so the line shows ok. Units `count` and `steps` stay whole
+  numbers. The batch above is v2 (step 15).
+- MQTT: client id `mixline-simulator`, QoS 0 for readings (only the latest value matters; a lost
+  reading is replaced a second later), automatic reconnect every 2 s, and every sensor is sent
+  again right after a (re)connect. Every message passes `decodeReading()` before it is sent.
+- Settings: `MQTT_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD`, `MACHINE_CONFIG` (default: the repo's
+  `config/machine.json`; in Docker `/config/machine.json`, mounted read-only from `./config`).
+- `pnpm sim:check` listens 12 s and verifies all topics, payloads, source `sim` and intervals.
+
+## Workspace packages and images
+
+- `@mixline/shared` exports a `source` condition: in development, TypeScript (`customConditions`),
+  Vitest and tsx (`--conditions=source`) read its `.ts` files directly, so no build is needed
+  between edits. Production builds (`tsconfig.build.json`) and images use its `dist/`.
+- App images: multi-stage Dockerfile per app, build context = repo root, base image pinned
+  (`node:24.22.0-alpine3.24`, multi-arch). The runtime stage holds only the app's `dist/` and
+  production dependencies (`pnpm deploy`), runs as the unprivileged `node` user, and gets
+  `config/` mounted read-only. `.dockerignore` keeps `.env`, `node_modules` and docs out.
 
 ## Shared package
 

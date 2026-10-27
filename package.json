@@ -17,10 +17,12 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "infra:up": "docker compose up -d --wait",
+    "infra:up": "docker compose up -d --wait db mqtt",
     "infra:down": "docker compose down",
     "infra:check": "node scripts/check-infra.mjs",
-    "sim:check": "pnpm --filter @mixline/simulator check"
+    "sim:check": "pnpm --filter @mixline/simulator check",
+    "stack:up": "docker compose up -d --build --wait",
+    "stack:down": "docker compose down"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
