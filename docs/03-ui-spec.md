@@ -14,8 +14,13 @@
 | `customer` | orders a color and quantity | **self-registration** (public sign-up page creates `customer` only) | placeholder page |
 
 - Customer sign-up fields:
-  - Required: full name, email, mobile number, password, date of birth, location (city / area).
+  - Required: full name, email, mobile number, password, date of birth, location.
   - Optional: occupation, and what they need the paint for (free text).
+  - Mobile: international E.164 format, with a country picker that defaults to Syria (+963).
+    Stored as E.164.
+  - Location: a required dropdown of the 14 Syrian governorates plus "Outside Syria", and a
+    required free-text city / area field. "Outside Syria" adds a required free-text country field.
+  - Storage: see `users` in `docs/04-architecture.md`.
 - Self-registration can never create `manager` or `worker`. Enforce in the backend, not only the UI.
 - Customers order from two places (later phase):
   1. A kiosk screen next to the line (local network).
