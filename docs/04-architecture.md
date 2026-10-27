@@ -134,7 +134,19 @@ Database:
 
 ## Shared package
 
-- `machine.schema.ts`: zod schema for `machine.json` + inferred types.
+- `machine.schema.ts`: zod 4 schema for `machine.json` + inferred types. Every object is strict
+  (unknown keys are errors). Also checks one-item rules: digital = unit `bool`, mass sensors
+  `measures: netLiquid`, every digital/enum code has a value label, fault limits beyond warn limits,
+  rotated parts use `anchor: center`.
+- `machine.rules.ts`: cross-checks between items: unique ids, unique `(station, variable)`,
+  references (section, subsection, parent on the same page, `levelSource`, `liquids.mix.source`).
+  `part` is reserved as a subsection id because component URLs use it (see doc 03 routes).
+- `locales.ts`: locale schema, `translate()` (param key first, then interpolate), and the locale
+  rules: same keys and placeholders in `en`/`ar`, every used key exists, unique names per page.
+- `validate.ts`: `validateMachine(data, locales?)` returns every issue at once;
+  `parseMachineOrThrow()` for app startup. Issue paths use ids, e.g.
+  `components[checkPlatform].sensors[check.decision].valueLabels`.
+- The shared code never reads files, so the browser can use it too; apps load the files.
 - `topics.ts`: build and parse topic strings.
 - `telemetry.ts`: payload schema.
 - `state.ts`: state enum and roll-up logic (tested).
