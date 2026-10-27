@@ -2,10 +2,10 @@
  * Simulator entry point: publishes fake telemetry for every sensor in
  * machine.json on the real MQTT topics, exactly as the hardware will.
  */
+import { loadMachineFile } from '@mixline/shared/node';
 import { connect } from 'mqtt';
 
 import { loadConfig } from './config.js';
-import { loadMachine } from './machine.js';
 import { Schedule, TICK_MS } from './schedule.js';
 
 const SUMMARY_EVERY_MS = 60_000;
@@ -16,7 +16,7 @@ function log(message: string): void {
 
 function main(): void {
   const config = loadConfig();
-  const machine = loadMachine(config.machineConfigPath);
+  const machine = loadMachineFile(config.machineConfigPath);
   const schedule = new Schedule(machine);
   const sensorCount = machine.components.reduce((n, c) => n + c.sensors.length, 0);
   log(`loaded ${config.machineConfigPath}: ${String(sensorCount)} sensors`);

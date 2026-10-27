@@ -100,6 +100,10 @@ Suggested routes:
 | ok | normal colors | 4 |
 | none | normal colors, no badge (part has no sensors) | not counted |
 
+- **Who decides warning and fault: the PLC** (design decision, `docs/01-overview.md`). The web app
+  only displays what the PLC reports. Until the PLC alarm list and how alarms reach the web app are
+  defined (open item in `docs/05-roadmap.md`), `machine.json` has no limits, so a sensor is only
+  `ok` or `offline`. The warning and fault looks below stay in the design for when alarms arrive.
 - A component's state is the worst state of its sensors.
 - A parent (sub-section, section, line) shows the worst state of its children, ignoring `none`.
 - `pending` is not a state, it is a look: a pending part is translucent with a "pending" tag. If a

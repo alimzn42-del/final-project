@@ -92,22 +92,34 @@ Modules:
 - Keep customer-facing endpoints (later: orders) in their own module, separate from telemetry and
   control, so the ordering part can be exposed to the internet later without exposing the line.
 - `machine`: loads and validates `config/machine.json` with the shared zod schema; serves it at
-  `GET /api/machine`.
+  `GET /api/machine`. Built in step 6:
+  - `machine.json` and both locale files are validated together at startup
+    (`loadConfigFiles`); any problem stops the backend listing every issue.
+  - `GET /api/locales/:lang` serves `en` or `ar` (404 otherwise): the frontend loads its labels
+    from the backend, so a new machine needs only new config files.
+  - `GET /api/health` for Docker and monitoring.
+  - These routes are public until auth (step 8) decides which roles may call them.
+  - Settings: `PORT` (default 3000), `MACHINE_CONFIG`, `LOCALES_DIR` (defaults: the repo's `config/`).
+- NestJS 12 (ES modules). Dependencies are injected with explicit `@Inject(...)` tokens, not with
+  emitted type metadata (`emitDecoratorMetadata` is off): tsx and Vitest cannot emit that metadata,
+  so explicit tokens make `pnpm dev`, the tests and the build behave the same.
 - `telemetry`: subscribes to `lab/mixline/+/sensors/+`, writes to the hypertable, keeps the latest
   value per sensor in memory, pushes updates to the frontend over WebSocket.
   `GET /api/telemetry/:sensorId?from&to` for trend charts.
   - **Device clocks are unreliable** (owner, built in steps 7 and 9): the ESP32 has no battery
     clock and the lab is offline. Every reading stores both the device `ts` and the backend's
     `received_at`. Charts use the device `ts`, except when it differs from `received_at` by more
-    than a configurable tolerance (`CLOCK_TOLERANCE_MS`); then they use `received_at`, and the
-    event is logged. Offline detection always uses `received_at` (see `state.ts`).
-  - **Rejected readings never disappear silently** (owner, step 9): every reading that fails
-    `parseTopic` / `decodeReading` (unknown topic, bad JSON, wrong unit, unknown code...) is logged
-    with its topic and reason, and counted per sensor (per topic when no sensor matches). The
-    counts are exposed to managers at `GET /api/telemetry/rejections`, so a hardware bug is
-    visible. Counts are kept in memory and start from zero when the backend restarts.
-- `state`: computes ok / warning / fault / offline per component from limits in `machine.json`
-  and from data age (offline if no data for N seconds); rolls up to sub-section, section, line.
+    than a tolerance; then they use `received_at`, and the event is logged. Offline detection
+    always uses `received_at` (see `state.ts`).
+  - `CLOCK_TOLERANCE_MS` = **2000** (owner), configurable in `.env`.
+  - **Robustness:** the backend never crashes on a malformed message (unknown topic, bad JSON,
+    wrong unit, unknown code...): it drops the message and continues. This is robustness, not a
+    line rule. There is no rejection log, no per-sensor rejection count and no rejections endpoint
+    (removed by the owner in step 6); how faults and alarms reach the web app is an open item.
+- `state`: computes ok / warning / fault / offline per component and rolls up to sub-section,
+  section, line (generic logic in `shared/state.ts`). The PLC owns all limits and alarms (design
+  decision, `docs/01-overview.md`); until PLC alarms are defined, `machine.json` has no limits, so
+  a sensor is only `ok` or `offline` (no message received for more than 10 s).
 
 Database:
 - `users` (one table for all roles):
@@ -130,7 +142,8 @@ Database:
   the backend) is the hypertable's time column, so partitioning and retention never depend on a
   device clock. Raw data kept **7 days** (retention
   policy). A 1-minute continuous aggregate (min, max, avg) kept **1 year**. Compression after 1 day.
-- `alarms` (id, component_id, level, message, raised_at, acked_at) — table now, UI later
+- `alarms` (id, component_id, level, message, raised_at, acked_at) — table now, UI later. Its shape
+  may change with the open item on PLC alarms (`docs/05-roadmap.md`).
 - Migrations in code (Prisma or TypeORM; Timescale hypertable created in a raw SQL migration).
 
 ## Simulator
@@ -156,10 +169,13 @@ Database:
 
 ## Workspace packages and images
 
+- `@mixline/shared/node` (Node only): `loadMachineFile`, `loadConfigFiles` read and validate the
+  config files; the main `@mixline/shared` entry has no file-system code, for the browser.
 - `@mixline/shared` exports a `source` condition: in development, TypeScript (`customConditions`),
   Vitest and tsx (`--conditions=source`) read its `.ts` files directly, so no build is needed
   between edits. Production builds (`tsconfig.build.json`) and images use its `dist/`.
-- App images: multi-stage Dockerfile per app, build context = repo root, base image pinned
+- App images: one multi-stage `docker/node-app.Dockerfile` for every Node app (build argument
+  `APP`: `backend`, `simulator`), build context = repo root, base image pinned
   (`node:24.22.0-alpine3.24`, multi-arch). The runtime stage holds only the app's `dist/` and
   production dependencies (`pnpm deploy`), runs as the unprivileged `node` user, and gets
   `config/` mounted read-only. `.dockerignore` keeps `.env`, `node_modules` and docs out.
@@ -186,7 +202,8 @@ Database:
   - `batchId` in `state` may be `null` only while no batch runs (not `running` or `paused`).
   - `decodeReading()` rejects a reading whose unit differs from `machine.json`, a digital value
     other than 0/1, or an enum code without a value word.
-- `state.ts`: state from limits and roll-up (doc 03 ranking).
+- `state.ts`: state from limits and roll-up (doc 03 ranking). Generic: the real `machine.json` has
+  no limits for now (the PLC owns them), so its tests use made-up test limits from the fixtures.
   - Limits are strict: a value exactly at a limit is OK (`warnBelow: 150` warns at 149.9).
   - Offline = no message received for more than 10 s, measured from when the backend
     **received** the message, not from its `ts` (device clocks in an offline lab can be wrong).
@@ -246,7 +263,7 @@ section ever disagree, the file wins; update this section.
       "valueLabels": { "0": "i18n key", "1": "i18n key" },   // digital and enum only
       "measures": "netLiquid",                              // mass sensors only
       "sim": { "min", "max", "nominal" },                 // optional
-      "limits": {                                         // optional, any subset
+      "limits": {                     // optional, any subset; unused for now (PLC owns limits)
         "warnBelow", "faultBelow", "warnAbove", "faultAbove",   // analog
         "warnWhen", "faultWhen"                                 // digital / enum value
       }
@@ -255,7 +272,8 @@ section ever disagree, the file wins; update this section.
 }
 ```
 
-State from limits: `fault*` beats `warn*`. No message received for more than 10 s = `offline`.
+State from limits (when limits exist): `fault*` beats `warn*`. No message received for more than
+10 s = `offline`. For now `machine.json` has no limits, so a sensor is only `ok` or `offline`.
 `(station, variable)` pairs are unique across the file, so every topic maps to one sensor.
 On any one page, the translated name (`labelKey` + `labelParams`) of every component is unique.
 Add a test in `packages/shared` that checks both rules and that every `labelKey` exists in both locale files.

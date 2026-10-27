@@ -26,6 +26,11 @@ export default defineConfig(
     },
   },
 
+  // NestJS modules are classes whose meaning lives in their @Module decorator.
+  {
+    rules: { '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }] },
+  },
+
   // Plain JS files (config, scripts/) have no types to check.
   { files: ['**/*.{js,mjs,cjs}'], extends: [tseslint.configs.disableTypeChecked] },
 

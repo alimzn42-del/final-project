@@ -15,6 +15,14 @@
 Done when: `docker compose up --build` starts everything, a manager can log in, browse every level,
 and see values moving.
 
+## Design decisions that shape phase 1
+
+- **The PLC owns all limits, alarms, interlocks and safety decisions** (owner, step 6). The web app
+  only reads and displays what the PLC reports. Phase 1 therefore has no limits in `machine.json`:
+  a sensor is only `ok` or `offline`. No rejection log or rejection counts are built; the backend
+  simply drops malformed messages without crashing. Alarms per component are defined later with
+  the PLC program (open item below).
+
 ## Repository
 
 Local on the owner's laptop, pushed to GitHub: https://github.com/alimzn42-del/final-project (account `alimzn42-del`;
@@ -43,6 +51,7 @@ repo already created). Commit and push after every finished task; see the git wo
 | Batch tray mechanism (6-slot linear tray does not fit the table) | tray geometry and sensors |
 | Vessel anti-rotation | small parts under the vessel |
 | PLC model (supervisor) | cabinet interior |
+| PLC alarm list, message-format rules, and how alarms reach the web app | warning / fault states, alarm display, the `alarms` table, limits in `machine.json` |
 | How customers reach the app from the internet (hosting, tunnel, or cloud server for ordering only) | customer ordering from phones |
 | Password reset and email verification (need an email provider) | customer self-signup hardening |
 
