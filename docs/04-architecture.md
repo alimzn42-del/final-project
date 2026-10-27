@@ -74,7 +74,7 @@ Machine-wide messages (published from simulator v2, step 15):
 
 `lab/mixline/batch/<event>`, event one of `started | step | finished | aborted`:
 ```json
-{ "ts": "...", "batchId": "B-0012", "step": "dosing", "recipe": { "targetLab": [55, 10, -20] },
+{ "ts": "...", "batchId": "B-0012", "step": "dyeDose", "recipe": { "targetLab": [55, 10, -20] },
   "containersDone": 3, "source": "sim" }
 ```
 - `step` one of: `baseFill, dyeDose, mix, sample, correct, complete, finalCheck, filling, rinse`.
@@ -147,9 +147,19 @@ Database:
   `parseMachineOrThrow()` for app startup. Issue paths use ids, e.g.
   `components[checkPlatform].sensors[check.decision].valueLabels`.
 - The shared code never reads files, so the browser can use it too; apps load the files.
-- `topics.ts`: build and parse topic strings.
-- `telemetry.ts`: payload schema.
-- `state.ts`: state enum and roll-up logic (tested).
+- `topics.ts`: builders for the five topic forms, subscription patterns, `parseTopic()` (rejects
+  anything else), `sensorsByTopic()` (topic -> sensor, for ingest).
+- `telemetry.ts`: payload schemas for readings, `state` and `batch/<event>`, all strict.
+  - Timestamps are UTC ISO 8601 with `Z` (no local offsets).
+  - `batchId` in `state` may be `null` only while no batch runs (not `running` or `paused`).
+  - `decodeReading()` rejects a reading whose unit differs from `machine.json`, a digital value
+    other than 0/1, or an enum code without a value word.
+- `state.ts`: state from limits and roll-up (doc 03 ranking).
+  - Limits are strict: a value exactly at a limit is OK (`warnBelow: 150` warns at 149.9).
+  - Offline = no message received for more than 10 s, measured from when the backend
+    **received** the message, not from its `ts` (device clocks in an offline lab can be wrong).
+  - Parts without sensors are `none`. Parents do not take their children's state (grouping only);
+    sub-section, section and line roll up along the page tree.
 
 ## machine.json shape
 
@@ -213,7 +223,7 @@ section ever disagree, the file wins; update this section.
 }
 ```
 
-State from limits: `fault*` beats `warn*`. No data for N seconds = `offline`.
+State from limits: `fault*` beats `warn*`. No message received for more than 10 s = `offline`.
 `(station, variable)` pairs are unique across the file, so every topic maps to one sensor.
 On any one page, the translated name (`labelKey` + `labelParams`) of every component is unique.
 Add a test in `packages/shared` that checks both rules and that every `labelKey` exists in both locale files.
