@@ -1,0 +1,4277 @@
+{
+  "schemaVersion": 1,
+  "liquids": {
+    "base": {
+      "hex": "#CFE8F5",
+      "opacity": 0.35,
+      "notes": "Clear water base"
+    },
+    "mix": {
+      "hex": "#7F77DD",
+      "opacity": 0.8,
+      "source": [
+        "color.L",
+        "color.a",
+        "color.b"
+      ],
+      "notes": "Live color: convert the camera L*a*b* reading to RGB. Use hex as fallback."
+    }
+  },
+  "site": "lab",
+  "machine": "mixline",
+  "units": {
+    "length": "mm",
+    "mass": "g"
+  },
+  "frame": {
+    "origin": "front-left corner of table top",
+    "x": "right, along the conveyor",
+    "y": "up",
+    "z": "toward the back (wall)",
+    "position": "depends on component anchor: 'bottom' = center of footprint at the bottom face, 'center' = geometric center. Rotation (deg, X then Y then Z) is applied about the anchor.",
+    "cylinderAxis": "y unless rotated"
+  },
+  "table": {
+    "width": 1800,
+    "depth": 800,
+    "heightToFloor": 750,
+    "status": "estimated"
+  },
+  "container": {
+    "status": "pending",
+    "shape": "taperedCup",
+    "topDiameter": 90,
+    "baseDiameter": 65,
+    "height": 60,
+    "lid": "pressOn",
+    "fillTargetG": 300,
+    "perBatch": 6,
+    "material": "clearPlastic",
+    "tareG": 12,
+    "notes": "Placeholder until the market search. Everything container-dependent reads from here."
+  },
+  "conveyor": {
+    "centerlineZ": 250,
+    "surfaceY": 100,
+    "startX": 100,
+    "endX": 1350,
+    "beltWidth": 25,
+    "beltGap": 40,
+    "status": "estimated",
+    "stations": [
+      {
+        "id": "feeder",
+        "x": 250
+      },
+      {
+        "id": "filling",
+        "x": 550
+      },
+      {
+        "id": "checkCap",
+        "x": 850
+      },
+      {
+        "id": "tray",
+        "x": 1430
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "supply",
+      "labelKey": "section.supply",
+      "subsections": [
+        {
+          "id": "bigTank",
+          "labelKey": "part.bigTank"
+        },
+        {
+          "id": "containerMagazine",
+          "labelKey": "part.containerMagazine"
+        }
+      ]
+    },
+    {
+      "id": "mixingColor",
+      "labelKey": "section.mixingColor",
+      "subsections": [
+        {
+          "id": "mixing",
+          "labelKey": "section.mixing"
+        },
+        {
+          "id": "color",
+          "labelKey": "section.color"
+        }
+      ]
+    },
+    {
+      "id": "conveyor",
+      "labelKey": "section.conveyor",
+      "subsections": [
+        {
+          "id": "feeder",
+          "labelKey": "station.feeder"
+        },
+        {
+          "id": "filling",
+          "labelKey": "station.filling"
+        },
+        {
+          "id": "checkCap",
+          "labelKey": "station.checkCap"
+        },
+        {
+          "id": "tray",
+          "labelKey": "station.tray"
+        }
+      ]
+    },
+    {
+      "id": "cabinet",
+      "labelKey": "section.cabinet",
+      "subsections": []
+    }
+  ],
+  "components": [
+    {
+      "id": "table",
+      "type": "table",
+      "labelKey": "part.table",
+      "section": null,
+      "subsection": null,
+      "status": "estimated",
+      "position": [
+        900,
+        -30,
+        400
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          1800,
+          30,
+          800
+        ]
+      },
+      "material": "wood",
+      "sensors": [],
+      "notes": "Top surface at y=0. Height to floor 750.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "bigTankBase",
+      "type": "base",
+      "labelKey": "part.bigTankBase",
+      "section": "supply",
+      "subsection": "bigTank",
+      "status": "estimated",
+      "position": [
+        180,
+        0,
+        620
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          260,
+          18,
+          260
+        ]
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "bigTank",
+      "type": "tank",
+      "labelKey": "part.bigTank",
+      "section": "supply",
+      "subsection": "bigTank",
+      "status": "estimated",
+      "position": [
+        180,
+        18,
+        620
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 250,
+        "height": 310,
+        "liquid": {
+          "colorRef": "base",
+          "level": 0.7,
+          "levelSource": {
+            "sensor": "bigTank.level",
+            "min": 0,
+            "max": 310
+          }
+        }
+      },
+      "material": "clearPlastic",
+      "sensors": [
+        {
+          "id": "bigTank.level",
+          "station": "supply",
+          "variable": "level_mm",
+          "unit": "mm",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 310,
+            "nominal": 220
+          },
+          "limits": {
+            "warnBelow": 60,
+            "faultBelow": 30
+          },
+          "labelKey": "sensor.level_mm"
+        },
+        {
+          "id": "bigTank.volume",
+          "station": "supply",
+          "variable": "volume_l",
+          "unit": "L",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 15,
+            "nominal": 10.5
+          },
+          "labelKey": "sensor.volume_l"
+        }
+      ],
+      "notes": "Clear cylinder with screw lid. Fallback size D220 x H270. Outlet on side wall near bottom, facing the mixing vessel.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "bigTankLevelSensor",
+      "type": "ultrasonic",
+      "labelKey": "part.levelSensor",
+      "section": "supply",
+      "subsection": "bigTank",
+      "status": "confirmed",
+      "position": [
+        180,
+        343,
+        620
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          45,
+          20,
+          20
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "HC-SR04 in a printed holder on the lid, looking down.",
+      "parent": "bigTank",
+      "anchor": "bottom"
+    },
+    {
+      "id": "bigTankLowFloat",
+      "type": "floatSwitch",
+      "labelKey": "part.lowFloat",
+      "section": "supply",
+      "subsection": "bigTank",
+      "status": "confirmed",
+      "position": [
+        260,
+        40,
+        620
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 20,
+        "height": 30
+      },
+      "material": "printed",
+      "sensors": [
+        {
+          "id": "bigTank.lowFloat",
+          "station": "supply",
+          "variable": "low_float",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "limits": {
+            "faultWhen": 1
+          },
+          "labelKey": "sensor.low_float",
+          "valueLabels": {
+            "0": "value.normal",
+            "1": "value.triggered"
+          }
+        }
+      ],
+      "parent": "bigTank",
+      "anchor": "bottom"
+    },
+    {
+      "id": "containerMagazine",
+      "type": "magazine",
+      "labelKey": "part.containerMagazine",
+      "section": "supply",
+      "subsection": "containerMagazine",
+      "status": "pending",
+      "position": [
+        250,
+        180,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 100,
+        "height": 300
+      },
+      "material": "clearPlastic",
+      "sensors": [
+        {
+          "id": "magazine.count",
+          "station": "supply",
+          "variable": "magazine_count",
+          "unit": "count",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 30,
+            "nominal": 20
+          },
+          "limits": {
+            "warnBelow": 6,
+            "faultBelow": 1
+          },
+          "labelKey": "sensor.magazine_count"
+        }
+      ],
+      "notes": "Vertical tube of nested empty containers above the feeder station. Size depends on container.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "pedestal",
+      "type": "pedestal",
+      "labelKey": "part.pedestal",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "estimated",
+      "position": [
+        550,
+        0,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          300,
+          151.3,
+          300
+        ]
+      },
+      "material": "wood",
+      "sensors": [],
+      "notes": "Raises the vessel so its bottom is 50 mm above the container top. Height derived: 210 - 58.7.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "vesselScaleBottomPlate",
+      "type": "scalePlate",
+      "labelKey": "part.scaleBottomPlate",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        550,
+        151.3,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 240,
+        "height": 18
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "vesselScaleSpacer1",
+      "type": "spacer",
+      "labelKey": "part.spacerLower",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        520,
+        169.3,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          5,
+          12.7
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "vesselScaleLoadCell",
+      "type": "loadCell",
+      "labelKey": "part.loadCell",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        550,
+        174.3,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          80,
+          12.7,
+          12.7
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "notes": "Bar load cell 5 kg, M4 holes.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "vesselScaleSpacer2",
+      "type": "spacer",
+      "labelKey": "part.spacerUpper",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        580,
+        187.0,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          5,
+          12.7
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "vesselScaleTopPlate",
+      "type": "scalePlate",
+      "labelKey": "part.scaleTopPlate",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        550,
+        192.0,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 200,
+        "height": 18
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "vesselHx711",
+      "type": "hx711Box",
+      "labelKey": "part.hx711Box",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        680,
+        151.3,
+        470
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          30,
+          25
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "vessel",
+      "type": "vessel",
+      "labelKey": "part.vessel",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        550,
+        210.0,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 160,
+        "height": 230,
+        "liquid": {
+          "colorRef": "mix",
+          "level": 0.45,
+          "levelSource": {
+            "sensor": "vessel.mass",
+            "min": 0,
+            "max": 4620
+          }
+        }
+      },
+      "material": "clearPlastic",
+      "sensors": [
+        {
+          "id": "vessel.mass",
+          "station": "mixer",
+          "variable": "mass",
+          "unit": "g",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 2500,
+            "nominal": 1800
+          },
+          "limits": {
+            "faultAbove": 3500
+          },
+          "labelKey": "sensor.mass",
+          "measures": "netLiquid"
+        }
+      ],
+      "notes": "Placed on the scale, not fixed. Screw lid used as manifold for tubes and mixer.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "vesselLid",
+      "type": "lid",
+      "labelKey": "part.vesselLid",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        550,
+        440.0,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 170,
+        "height": 15
+      },
+      "material": "clearPlastic",
+      "sensors": [],
+      "parent": "vessel",
+      "anchor": "bottom"
+    },
+    {
+      "id": "mixerMotor",
+      "type": "mixer",
+      "labelKey": "part.mixer",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "pending",
+      "position": [
+        550,
+        455.0,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          80,
+          40
+        ]
+      },
+      "material": "metal",
+      "sensors": [
+        {
+          "id": "mixer.rpm",
+          "station": "mixer",
+          "variable": "mixer_rpm",
+          "unit": "rpm",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 300,
+            "nominal": 180
+          },
+          "labelKey": "sensor.mixer_rpm"
+        }
+      ],
+      "notes": "Motor on the vessel lid, long shaft with blades. Teammate is designing it.",
+      "parent": "vessel",
+      "anchor": "bottom"
+    },
+    {
+      "id": "mixerShaft",
+      "type": "shaft",
+      "labelKey": "part.mixerShaft",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "pending",
+      "position": [
+        550,
+        230.0,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 6,
+        "height": 225.0
+      },
+      "material": "metal",
+      "sensors": [],
+      "parent": "vessel",
+      "anchor": "bottom"
+    },
+    {
+      "id": "vesselOverflowFloat",
+      "type": "floatSwitch",
+      "labelKey": "part.overflowFloat",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        590,
+        390.0,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 20,
+        "height": 30
+      },
+      "material": "printed",
+      "sensors": [
+        {
+          "id": "vessel.overflow",
+          "station": "mixer",
+          "variable": "overflow_float",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "limits": {
+            "faultWhen": 1
+          },
+          "labelKey": "sensor.overflow_float",
+          "valueLabels": {
+            "0": "value.normal",
+            "1": "value.triggered"
+          }
+        }
+      ],
+      "notes": "Hangs from the lid.",
+      "parent": "vessel",
+      "anchor": "bottom"
+    },
+    {
+      "id": "basePump",
+      "type": "diaphragmPump",
+      "labelKey": "part.basePump",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        355,
+        0,
+        480
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          90,
+          40,
+          40
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "basePump.on",
+          "station": "mixer",
+          "variable": "base_pump_on",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.base_pump_on",
+          "valueLabels": {
+            "0": "value.off",
+            "1": "value.on"
+          }
+        },
+        {
+          "id": "basePump.current",
+          "station": "mixer",
+          "variable": "base_pump_current",
+          "unit": "A",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 1.2,
+            "nominal": 0.6
+          },
+          "limits": {
+            "warnAbove": 1.0
+          },
+          "labelKey": "sensor.base_pump_current"
+        }
+      ],
+      "notes": "R385 12 V diaphragm, big tank to vessel.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "drainPump",
+      "type": "diaphragmPump",
+      "labelKey": "part.drainPump",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        760,
+        0,
+        440
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          90,
+          40,
+          40
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "drainPump.on",
+          "station": "mixer",
+          "variable": "drain_pump_on",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.drain_pump_on",
+          "valueLabels": {
+            "0": "value.off",
+            "1": "value.on"
+          }
+        },
+        {
+          "id": "drainPump.current",
+          "station": "mixer",
+          "variable": "drain_pump_current",
+          "unit": "A",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 1.2,
+            "nominal": 0.6
+          },
+          "limits": {
+            "warnAbove": 1.0
+          },
+          "labelKey": "sensor.drain_pump_current"
+        }
+      ],
+      "notes": "R385 12 V diaphragm, vessel to drain bucket.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "drainBucket",
+      "type": "bucket",
+      "labelKey": "part.drainBucket",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        1500,
+        -750,
+        700
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 280,
+        "height": 300
+      },
+      "material": "plastic",
+      "sensors": [
+        {
+          "id": "drainBucket.full",
+          "station": "mixer",
+          "variable": "drain_full_float",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "limits": {
+            "faultWhen": 1
+          },
+          "labelKey": "sensor.drain_full_float",
+          "valueLabels": {
+            "0": "value.normal",
+            "1": "value.triggered"
+          }
+        }
+      ],
+      "notes": "On the floor under the table, back-right.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "fillingPump",
+      "type": "pump",
+      "labelKey": "part.fillingPump",
+      "section": "conveyor",
+      "subsection": "filling",
+      "status": "pending",
+      "position": [
+        480,
+        0,
+        380
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          90,
+          50,
+          40
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "fillingPump.on",
+          "station": "filling",
+          "variable": "fill_pump_on",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.fill_pump_on",
+          "valueLabels": {
+            "0": "value.off",
+            "1": "value.on"
+          }
+        }
+      ],
+      "notes": "Peristaltic preferred. Draws from the vessel, feeds the filling nozzle.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "dyeShelfPostL",
+      "type": "post",
+      "labelKey": "part.shelfPostLeft",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "estimated",
+      "position": [
+        330,
+        0,
+        700
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          635.0,
+          40
+        ]
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "dyeShelfPostR",
+      "type": "post",
+      "labelKey": "part.shelfPostRight",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "estimated",
+      "position": [
+        770,
+        0,
+        700
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          635.0,
+          40
+        ]
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "dyeShelf",
+      "type": "shelf",
+      "labelKey": "part.dyeShelf",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "estimated",
+      "position": [
+        550,
+        635.0,
+        620
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          480,
+          18,
+          200
+        ]
+      },
+      "material": "wood",
+      "sensors": [],
+      "notes": "Shelf bottom must clear the mixer motor on the vessel lid. Confirm with mixer design.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "dyeCScaleBottomPlate",
+      "type": "scalePlate",
+      "labelKey": "part.dyeScaleBottomPlate",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        377.5,
+        653.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 100,
+        "height": 18
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.cyan"
+      }
+    },
+    {
+      "id": "dyeCScaleSpacer1",
+      "type": "spacer",
+      "labelKey": "part.dyeSpacerLower",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        347.5,
+        671.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          5,
+          12.7
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.cyan"
+      }
+    },
+    {
+      "id": "dyeCScaleLoadCell",
+      "type": "loadCell",
+      "labelKey": "part.dyeLoadCell",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        377.5,
+        676.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          80,
+          12.7,
+          12.7
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "notes": "Bar load cell 1 kg, M4 holes.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.cyan"
+      }
+    },
+    {
+      "id": "dyeCScaleSpacer2",
+      "type": "spacer",
+      "labelKey": "part.dyeSpacerUpper",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        407.5,
+        688.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          5,
+          12.7
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.cyan"
+      }
+    },
+    {
+      "id": "dyeCScaleTopPlate",
+      "type": "scalePlate",
+      "labelKey": "part.dyeScaleTopPlate",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        377.5,
+        693.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 100,
+        "height": 18
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.cyan"
+      }
+    },
+    {
+      "id": "dyeCTank",
+      "type": "dyeTank",
+      "labelKey": "part.dyeTank",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "pending",
+      "position": [
+        377.5,
+        711.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 90,
+        "height": 110,
+        "liquid": {
+          "colorHex": "#00B7EB",
+          "level": 0.75,
+          "levelSource": {
+            "sensor": "dyeC.mass",
+            "min": 0,
+            "max": 700
+          }
+        }
+      },
+      "material": "clearPlastic",
+      "sensors": [
+        {
+          "id": "dyeC.mass",
+          "station": "dye_c",
+          "variable": "mass",
+          "unit": "g",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 800,
+            "nominal": 600
+          },
+          "limits": {
+            "warnBelow": 150,
+            "faultBelow": 60
+          },
+          "labelKey": "sensor.mass",
+          "measures": "netLiquid"
+        }
+      ],
+      "color": "#00B7EB",
+      "notes": "cyan dye diluted 1:9. Size D90 x H110 (700 ml) or D100 x H130 (1 L) pending. Outlet on side wall near bottom, facing front.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.cyan"
+      }
+    },
+    {
+      "id": "dyeCHx711",
+      "type": "hx711Box",
+      "labelKey": "part.dyeHx711Box",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        377.5,
+        653.0,
+        550
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          30,
+          25
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.cyan"
+      }
+    },
+    {
+      "id": "dyeCPump",
+      "type": "peristalticPump",
+      "labelKey": "part.dyePump",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        377.5,
+        575.0,
+        545
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          42,
+          60,
+          42
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "dyeCPump.on",
+          "station": "dye_c",
+          "variable": "pump_on",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.pump_on",
+          "valueLabels": {
+            "0": "value.off",
+            "1": "value.on"
+          }
+        },
+        {
+          "id": "dyeCPump.steps",
+          "station": "dye_c",
+          "variable": "pump_steps",
+          "unit": "steps",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 200000,
+            "nominal": 0
+          },
+          "labelKey": "sensor.pump_steps"
+        },
+        {
+          "id": "dyeCPump.speed",
+          "station": "dye_c",
+          "variable": "pump_speed",
+          "unit": "steps/s",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 2000,
+            "nominal": 800
+          },
+          "labelKey": "sensor.pump_speed"
+        },
+        {
+          "id": "dyeCPump.load",
+          "station": "dye_c",
+          "variable": "driver_load",
+          "unit": "raw",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 510,
+            "nominal": 200
+          },
+          "limits": {
+            "warnAbove": 400
+          },
+          "labelKey": "sensor.driver_load"
+        }
+      ],
+      "notes": "NEMA17 + printed peristaltic head (695ZZ bearings) + TMC2209. Hangs under the shelf front edge.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.cyan"
+      }
+    },
+    {
+      "id": "dyeMScaleBottomPlate",
+      "type": "scalePlate",
+      "labelKey": "part.dyeScaleBottomPlate",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        492.5,
+        653.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 100,
+        "height": 18
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.magenta"
+      }
+    },
+    {
+      "id": "dyeMScaleSpacer1",
+      "type": "spacer",
+      "labelKey": "part.dyeSpacerLower",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        462.5,
+        671.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          5,
+          12.7
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.magenta"
+      }
+    },
+    {
+      "id": "dyeMScaleLoadCell",
+      "type": "loadCell",
+      "labelKey": "part.dyeLoadCell",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        492.5,
+        676.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          80,
+          12.7,
+          12.7
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "notes": "Bar load cell 1 kg, M4 holes.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.magenta"
+      }
+    },
+    {
+      "id": "dyeMScaleSpacer2",
+      "type": "spacer",
+      "labelKey": "part.dyeSpacerUpper",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        522.5,
+        688.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          5,
+          12.7
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.magenta"
+      }
+    },
+    {
+      "id": "dyeMScaleTopPlate",
+      "type": "scalePlate",
+      "labelKey": "part.dyeScaleTopPlate",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        492.5,
+        693.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 100,
+        "height": 18
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.magenta"
+      }
+    },
+    {
+      "id": "dyeMTank",
+      "type": "dyeTank",
+      "labelKey": "part.dyeTank",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "pending",
+      "position": [
+        492.5,
+        711.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 90,
+        "height": 110,
+        "liquid": {
+          "colorHex": "#E5007E",
+          "level": 0.75,
+          "levelSource": {
+            "sensor": "dyeM.mass",
+            "min": 0,
+            "max": 700
+          }
+        }
+      },
+      "material": "clearPlastic",
+      "sensors": [
+        {
+          "id": "dyeM.mass",
+          "station": "dye_m",
+          "variable": "mass",
+          "unit": "g",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 800,
+            "nominal": 600
+          },
+          "limits": {
+            "warnBelow": 150,
+            "faultBelow": 60
+          },
+          "labelKey": "sensor.mass",
+          "measures": "netLiquid"
+        }
+      ],
+      "color": "#E5007E",
+      "notes": "magenta dye diluted 1:9. Size D90 x H110 (700 ml) or D100 x H130 (1 L) pending. Outlet on side wall near bottom, facing front.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.magenta"
+      }
+    },
+    {
+      "id": "dyeMHx711",
+      "type": "hx711Box",
+      "labelKey": "part.dyeHx711Box",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        492.5,
+        653.0,
+        550
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          30,
+          25
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.magenta"
+      }
+    },
+    {
+      "id": "dyeMPump",
+      "type": "peristalticPump",
+      "labelKey": "part.dyePump",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        492.5,
+        575.0,
+        545
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          42,
+          60,
+          42
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "dyeMPump.on",
+          "station": "dye_m",
+          "variable": "pump_on",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.pump_on",
+          "valueLabels": {
+            "0": "value.off",
+            "1": "value.on"
+          }
+        },
+        {
+          "id": "dyeMPump.steps",
+          "station": "dye_m",
+          "variable": "pump_steps",
+          "unit": "steps",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 200000,
+            "nominal": 0
+          },
+          "labelKey": "sensor.pump_steps"
+        },
+        {
+          "id": "dyeMPump.speed",
+          "station": "dye_m",
+          "variable": "pump_speed",
+          "unit": "steps/s",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 2000,
+            "nominal": 800
+          },
+          "labelKey": "sensor.pump_speed"
+        },
+        {
+          "id": "dyeMPump.load",
+          "station": "dye_m",
+          "variable": "driver_load",
+          "unit": "raw",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 510,
+            "nominal": 200
+          },
+          "limits": {
+            "warnAbove": 400
+          },
+          "labelKey": "sensor.driver_load"
+        }
+      ],
+      "notes": "NEMA17 + printed peristaltic head (695ZZ bearings) + TMC2209. Hangs under the shelf front edge.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.magenta"
+      }
+    },
+    {
+      "id": "dyeYScaleBottomPlate",
+      "type": "scalePlate",
+      "labelKey": "part.dyeScaleBottomPlate",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        607.5,
+        653.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 100,
+        "height": 18
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.yellow"
+      }
+    },
+    {
+      "id": "dyeYScaleSpacer1",
+      "type": "spacer",
+      "labelKey": "part.dyeSpacerLower",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        577.5,
+        671.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          5,
+          12.7
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.yellow"
+      }
+    },
+    {
+      "id": "dyeYScaleLoadCell",
+      "type": "loadCell",
+      "labelKey": "part.dyeLoadCell",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        607.5,
+        676.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          80,
+          12.7,
+          12.7
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "notes": "Bar load cell 1 kg, M4 holes.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.yellow"
+      }
+    },
+    {
+      "id": "dyeYScaleSpacer2",
+      "type": "spacer",
+      "labelKey": "part.dyeSpacerUpper",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        637.5,
+        688.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          5,
+          12.7
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.yellow"
+      }
+    },
+    {
+      "id": "dyeYScaleTopPlate",
+      "type": "scalePlate",
+      "labelKey": "part.dyeScaleTopPlate",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        607.5,
+        693.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 100,
+        "height": 18
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.yellow"
+      }
+    },
+    {
+      "id": "dyeYTank",
+      "type": "dyeTank",
+      "labelKey": "part.dyeTank",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "pending",
+      "position": [
+        607.5,
+        711.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 90,
+        "height": 110,
+        "liquid": {
+          "colorHex": "#FFE600",
+          "level": 0.75,
+          "levelSource": {
+            "sensor": "dyeY.mass",
+            "min": 0,
+            "max": 700
+          }
+        }
+      },
+      "material": "clearPlastic",
+      "sensors": [
+        {
+          "id": "dyeY.mass",
+          "station": "dye_y",
+          "variable": "mass",
+          "unit": "g",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 800,
+            "nominal": 600
+          },
+          "limits": {
+            "warnBelow": 150,
+            "faultBelow": 60
+          },
+          "labelKey": "sensor.mass",
+          "measures": "netLiquid"
+        }
+      ],
+      "color": "#FFE600",
+      "notes": "yellow dye diluted 1:9. Size D90 x H110 (700 ml) or D100 x H130 (1 L) pending. Outlet on side wall near bottom, facing front.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.yellow"
+      }
+    },
+    {
+      "id": "dyeYHx711",
+      "type": "hx711Box",
+      "labelKey": "part.dyeHx711Box",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        607.5,
+        653.0,
+        550
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          30,
+          25
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.yellow"
+      }
+    },
+    {
+      "id": "dyeYPump",
+      "type": "peristalticPump",
+      "labelKey": "part.dyePump",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        607.5,
+        575.0,
+        545
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          42,
+          60,
+          42
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "dyeYPump.on",
+          "station": "dye_y",
+          "variable": "pump_on",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.pump_on",
+          "valueLabels": {
+            "0": "value.off",
+            "1": "value.on"
+          }
+        },
+        {
+          "id": "dyeYPump.steps",
+          "station": "dye_y",
+          "variable": "pump_steps",
+          "unit": "steps",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 200000,
+            "nominal": 0
+          },
+          "labelKey": "sensor.pump_steps"
+        },
+        {
+          "id": "dyeYPump.speed",
+          "station": "dye_y",
+          "variable": "pump_speed",
+          "unit": "steps/s",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 2000,
+            "nominal": 800
+          },
+          "labelKey": "sensor.pump_speed"
+        },
+        {
+          "id": "dyeYPump.load",
+          "station": "dye_y",
+          "variable": "driver_load",
+          "unit": "raw",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 510,
+            "nominal": 200
+          },
+          "limits": {
+            "warnAbove": 400
+          },
+          "labelKey": "sensor.driver_load"
+        }
+      ],
+      "notes": "NEMA17 + printed peristaltic head (695ZZ bearings) + TMC2209. Hangs under the shelf front edge.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.yellow"
+      }
+    },
+    {
+      "id": "dyeKScaleBottomPlate",
+      "type": "scalePlate",
+      "labelKey": "part.dyeScaleBottomPlate",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        722.5,
+        653.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 100,
+        "height": 18
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.black"
+      }
+    },
+    {
+      "id": "dyeKScaleSpacer1",
+      "type": "spacer",
+      "labelKey": "part.dyeSpacerLower",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        692.5,
+        671.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          5,
+          12.7
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.black"
+      }
+    },
+    {
+      "id": "dyeKScaleLoadCell",
+      "type": "loadCell",
+      "labelKey": "part.dyeLoadCell",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        722.5,
+        676.0,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          80,
+          12.7,
+          12.7
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "notes": "Bar load cell 1 kg, M4 holes.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.black"
+      }
+    },
+    {
+      "id": "dyeKScaleSpacer2",
+      "type": "spacer",
+      "labelKey": "part.dyeSpacerUpper",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        752.5,
+        688.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          5,
+          12.7
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.black"
+      }
+    },
+    {
+      "id": "dyeKScaleTopPlate",
+      "type": "scalePlate",
+      "labelKey": "part.dyeScaleTopPlate",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        722.5,
+        693.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 100,
+        "height": 18
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.black"
+      }
+    },
+    {
+      "id": "dyeKTank",
+      "type": "dyeTank",
+      "labelKey": "part.dyeTank",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "pending",
+      "position": [
+        722.5,
+        711.7,
+        650
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 90,
+        "height": 110,
+        "liquid": {
+          "colorHex": "#1A1A1A",
+          "level": 0.75,
+          "levelSource": {
+            "sensor": "dyeK.mass",
+            "min": 0,
+            "max": 700
+          }
+        }
+      },
+      "material": "clearPlastic",
+      "sensors": [
+        {
+          "id": "dyeK.mass",
+          "station": "dye_k",
+          "variable": "mass",
+          "unit": "g",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 800,
+            "nominal": 600
+          },
+          "limits": {
+            "warnBelow": 150,
+            "faultBelow": 60
+          },
+          "labelKey": "sensor.mass",
+          "measures": "netLiquid"
+        }
+      ],
+      "color": "#1A1A1A",
+      "notes": "black dye diluted 1:9. Size D90 x H110 (700 ml) or D100 x H130 (1 L) pending. Outlet on side wall near bottom, facing front.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.black"
+      }
+    },
+    {
+      "id": "dyeKHx711",
+      "type": "hx711Box",
+      "labelKey": "part.dyeHx711Box",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        722.5,
+        653.0,
+        550
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          30,
+          25
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.black"
+      }
+    },
+    {
+      "id": "dyeKPump",
+      "type": "peristalticPump",
+      "labelKey": "part.dyePump",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "confirmed",
+      "position": [
+        722.5,
+        575.0,
+        545
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          42,
+          60,
+          42
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "dyeKPump.on",
+          "station": "dye_k",
+          "variable": "pump_on",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.pump_on",
+          "valueLabels": {
+            "0": "value.off",
+            "1": "value.on"
+          }
+        },
+        {
+          "id": "dyeKPump.steps",
+          "station": "dye_k",
+          "variable": "pump_steps",
+          "unit": "steps",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 200000,
+            "nominal": 0
+          },
+          "labelKey": "sensor.pump_steps"
+        },
+        {
+          "id": "dyeKPump.speed",
+          "station": "dye_k",
+          "variable": "pump_speed",
+          "unit": "steps/s",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 2000,
+            "nominal": 800
+          },
+          "labelKey": "sensor.pump_speed"
+        },
+        {
+          "id": "dyeKPump.load",
+          "station": "dye_k",
+          "variable": "driver_load",
+          "unit": "raw",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 510,
+            "nominal": 200
+          },
+          "limits": {
+            "warnAbove": 400
+          },
+          "labelKey": "sensor.driver_load"
+        }
+      ],
+      "notes": "NEMA17 + printed peristaltic head (695ZZ bearings) + TMC2209. Hangs under the shelf front edge.",
+      "anchor": "bottom",
+      "labelParams": {
+        "color": "color.black"
+      }
+    },
+    {
+      "id": "colorBox",
+      "type": "lightBox",
+      "labelKey": "part.colorBox",
+      "section": "mixingColor",
+      "subsection": "color",
+      "status": "estimated",
+      "position": [
+        935,
+        0,
+        625
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          250,
+          150,
+          140
+        ],
+        "wallThickness": 6,
+        "hollow": true
+      },
+      "material": "wood",
+      "sensors": [],
+      "color": "#1E1E1E",
+      "notes": "Closed, matte black inside. Touches the control cabinet's left wall. Inside 215 x 100 x ~110.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "camera",
+      "type": "camera",
+      "labelKey": "part.camera",
+      "section": "mixingColor",
+      "subsection": "color",
+      "status": "confirmed",
+      "position": [
+        835,
+        40,
+        625
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          25,
+          24,
+          12
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "color.L",
+          "station": "color",
+          "variable": "L",
+          "unit": "",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 100,
+            "nominal": 55
+          },
+          "labelKey": "sensor.L"
+        },
+        {
+          "id": "color.a",
+          "station": "color",
+          "variable": "a",
+          "unit": "",
+          "kind": "analog",
+          "sim": {
+            "min": -60,
+            "max": 60,
+            "nominal": 10
+          },
+          "labelKey": "sensor.a"
+        },
+        {
+          "id": "color.b",
+          "station": "color",
+          "variable": "b",
+          "unit": "",
+          "kind": "analog",
+          "sim": {
+            "min": -60,
+            "max": 60,
+            "nominal": -20
+          },
+          "labelKey": "sensor.b"
+        },
+        {
+          "id": "color.deltaE",
+          "station": "color",
+          "variable": "delta_e",
+          "unit": "",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 20,
+            "nominal": 1.5
+          },
+          "limits": {
+            "warnAbove": 3,
+            "faultAbove": 6
+          },
+          "labelKey": "sensor.delta_e"
+        },
+        {
+          "id": "color.whiteRef",
+          "station": "color",
+          "variable": "white_ref",
+          "unit": "",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 255,
+            "nominal": 235
+          },
+          "limits": {
+            "warnBelow": 200
+          },
+          "labelKey": "sensor.white_ref"
+        }
+      ],
+      "notes": "Raspberry Pi Camera Module 3 on a printed mount, lens 120 mm from the sample cell, 200 mm cable.",
+      "parent": "colorBox",
+      "anchor": "bottom"
+    },
+    {
+      "id": "sampleCell",
+      "type": "sampleCell",
+      "labelKey": "part.sampleCell",
+      "section": "mixingColor",
+      "subsection": "color",
+      "status": "estimated",
+      "position": [
+        975,
+        20,
+        625
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          21,
+          66,
+          46
+        ]
+      },
+      "material": "acrylic",
+      "sensors": [],
+      "notes": "Inside 40 W x 60 H x 15 deep, 3 mm walls. One port bottom center, vent at top.",
+      "parent": "colorBox",
+      "anchor": "bottom"
+    },
+    {
+      "id": "sampleCellHolder",
+      "type": "holder",
+      "labelKey": "part.sampleCellHolder",
+      "section": "mixingColor",
+      "subsection": "color",
+      "status": "estimated",
+      "position": [
+        975,
+        6,
+        625
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          14,
+          70
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "parent": "colorBox",
+      "anchor": "bottom"
+    },
+    {
+      "id": "diffuser",
+      "type": "diffuser",
+      "labelKey": "part.diffuser",
+      "section": "mixingColor",
+      "subsection": "color",
+      "status": "estimated",
+      "position": [
+        998,
+        10,
+        625
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          3,
+          80,
+          80
+        ]
+      },
+      "material": "acrylic",
+      "sensors": [],
+      "color": "#F2F2F2",
+      "parent": "colorBox",
+      "anchor": "bottom"
+    },
+    {
+      "id": "ledPanel",
+      "type": "led",
+      "labelKey": "part.ledPanel",
+      "section": "mixingColor",
+      "subsection": "color",
+      "status": "confirmed",
+      "position": [
+        1025,
+        10,
+        625
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          6,
+          80,
+          80
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "color": "#FFF6D5",
+      "parent": "colorBox",
+      "anchor": "bottom"
+    },
+    {
+      "id": "samplePump",
+      "type": "peristalticPump",
+      "labelKey": "part.samplePump",
+      "section": "mixingColor",
+      "subsection": "color",
+      "status": "confirmed",
+      "position": [
+        935,
+        0,
+        500
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          60,
+          50,
+          40
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "samplePump.on",
+          "station": "color",
+          "variable": "sample_pump_on",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.sample_pump_on",
+          "valueLabels": {
+            "0": "value.off",
+            "1": "value.on"
+          }
+        },
+        {
+          "id": "samplePump.dir",
+          "station": "color",
+          "variable": "sample_pump_dir",
+          "unit": "",
+          "kind": "enum",
+          "sim": {
+            "min": -1,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.sample_pump_dir",
+          "valueLabels": {
+            "-1": "value.reverse",
+            "0": "value.stopped",
+            "1": "value.forward"
+          }
+        }
+      ],
+      "notes": "DC peristaltic, reversible. Forward fills the cell, reverse returns the sample to the vessel.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "conveyorFrameFront",
+      "type": "frame",
+      "labelKey": "part.conveyorFrameFront",
+      "section": "conveyor",
+      "subsection": null,
+      "status": "estimated",
+      "position": [
+        725,
+        0,
+        190
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          1250,
+          100,
+          10
+        ]
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "conveyorFrameBack",
+      "type": "frame",
+      "labelKey": "part.conveyorFrameBack",
+      "section": "conveyor",
+      "subsection": null,
+      "status": "estimated",
+      "position": [
+        725,
+        0,
+        310
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          1250,
+          100,
+          10
+        ]
+      },
+      "material": "wood",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "conveyorRail1",
+      "type": "rail",
+      "labelKey": "part.beltRailFront",
+      "section": "conveyor",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        725,
+        83,
+        217.5
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          1250,
+          15,
+          25
+        ]
+      },
+      "material": "wood",
+      "sensors": [],
+      "notes": "Rigid rail under each belt. Takes press force.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "conveyorBelt1",
+      "type": "belt",
+      "labelKey": "part.beltFront",
+      "section": "conveyor",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        725,
+        98,
+        217.5
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          1250,
+          2,
+          25
+        ]
+      },
+      "material": "rubber",
+      "sensors": [],
+      "color": "#2B2B2B",
+      "anchor": "bottom"
+    },
+    {
+      "id": "conveyorRail2",
+      "type": "rail",
+      "labelKey": "part.beltRailBack",
+      "section": "conveyor",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        725,
+        83,
+        282.5
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          1250,
+          15,
+          25
+        ]
+      },
+      "material": "wood",
+      "sensors": [],
+      "notes": "Rigid rail under each belt. Takes press force.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "conveyorBelt2",
+      "type": "belt",
+      "labelKey": "part.beltBack",
+      "section": "conveyor",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        725,
+        98,
+        282.5
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          1250,
+          2,
+          25
+        ]
+      },
+      "material": "rubber",
+      "sensors": [],
+      "color": "#2B2B2B",
+      "anchor": "bottom"
+    },
+    {
+      "id": "rollerDrive",
+      "type": "roller",
+      "labelKey": "part.rollerDrive",
+      "section": "conveyor",
+      "subsection": null,
+      "status": "estimated",
+      "position": [
+        100,
+        85,
+        250
+      ],
+      "rotationDeg": [
+        90,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 30,
+        "height": 130
+      },
+      "material": "metal",
+      "sensors": [],
+      "anchor": "center"
+    },
+    {
+      "id": "rollerIdler",
+      "type": "roller",
+      "labelKey": "part.rollerIdler",
+      "section": "conveyor",
+      "subsection": null,
+      "status": "estimated",
+      "position": [
+        1350,
+        85,
+        250
+      ],
+      "rotationDeg": [
+        90,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 30,
+        "height": 130
+      },
+      "material": "metal",
+      "sensors": [],
+      "anchor": "center"
+    },
+    {
+      "id": "conveyorMotor",
+      "type": "dcMotor",
+      "labelKey": "part.conveyorMotor",
+      "section": "conveyor",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        100,
+        40,
+        340
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          40,
+          70
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "conveyor.on",
+          "station": "conveyor",
+          "variable": "motor_on",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.motor_on",
+          "valueLabels": {
+            "0": "value.off",
+            "1": "value.on"
+          }
+        },
+        {
+          "id": "conveyor.speedCmd",
+          "station": "conveyor",
+          "variable": "speed_cmd",
+          "unit": "mm/s",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 120,
+            "nominal": 60
+          },
+          "labelKey": "sensor.speed_cmd"
+        },
+        {
+          "id": "conveyor.speed",
+          "station": "conveyor",
+          "variable": "speed_meas",
+          "unit": "mm/s",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 120,
+            "nominal": 59
+          },
+          "labelKey": "sensor.speed_meas"
+        },
+        {
+          "id": "conveyor.slip",
+          "station": "conveyor",
+          "variable": "slip",
+          "unit": "%",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 20,
+            "nominal": 1.5
+          },
+          "limits": {
+            "warnAbove": 5,
+            "faultAbove": 10
+          },
+          "labelKey": "sensor.slip"
+        }
+      ],
+      "notes": "One motor drives both belts. PID speed loop on the AS5600 reading.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "conveyorEncoder",
+      "type": "encoder",
+      "labelKey": "part.encoder",
+      "section": "conveyor",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1350,
+        85,
+        325
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          20,
+          10
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "AS5600 on the idler roller.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "feederArrival",
+      "type": "proximitySensor",
+      "labelKey": "part.arrivalSensor",
+      "section": "conveyor",
+      "subsection": "feeder",
+      "status": "confirmed",
+      "position": [
+        320,
+        90,
+        170
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          20,
+          15
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "feederArrival.present",
+          "station": "feeder",
+          "variable": "arrival",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.arrival",
+          "valueLabels": {
+            "0": "value.empty",
+            "1": "value.present"
+          }
+        }
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "id": "feederFingers",
+      "type": "fingerRelease",
+      "labelKey": "part.fingerRelease",
+      "section": "conveyor",
+      "subsection": "feeder",
+      "status": "pending",
+      "position": [
+        250,
+        170,
+        315
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          60,
+          30
+        ]
+      },
+      "material": "printed",
+      "sensors": [
+        {
+          "id": "feeder.fingers",
+          "station": "feeder",
+          "variable": "finger_state",
+          "unit": "",
+          "kind": "enum",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.finger_state",
+          "valueLabels": {
+            "0": "value.holding",
+            "1": "value.releasing"
+          }
+        }
+      ],
+      "notes": "Two fingers on one rocking servo arm grab the rim lip. Never both open.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "fillingArrival",
+      "type": "proximitySensor",
+      "labelKey": "part.arrivalSensor",
+      "section": "conveyor",
+      "subsection": "filling",
+      "status": "confirmed",
+      "position": [
+        550,
+        90,
+        170
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          20,
+          15
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "fillingArrival.present",
+          "station": "filling",
+          "variable": "arrival",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.arrival",
+          "valueLabels": {
+            "0": "value.empty",
+            "1": "value.present"
+          }
+        }
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "id": "fillingPlatform",
+      "type": "weighPlatform",
+      "labelKey": "part.weighPlatform",
+      "section": "conveyor",
+      "subsection": "filling",
+      "status": "pending",
+      "position": [
+        550,
+        80,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          36,
+          15,
+          36
+        ]
+      },
+      "material": "printed",
+      "sensors": [
+        {
+          "id": "filling.platformUp",
+          "station": "filling",
+          "variable": "platform_up",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.platform_up",
+          "valueLabels": {
+            "0": "value.down",
+            "1": "value.up"
+          }
+        },
+        {
+          "id": "filling.mass",
+          "station": "filling",
+          "variable": "mass",
+          "unit": "g",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 400,
+            "nominal": 300
+          },
+          "limits": {
+            "warnBelow": 291,
+            "warnAbove": 309
+          },
+          "labelKey": "sensor.mass",
+          "measures": "netLiquid"
+        }
+      ],
+      "notes": "Lift-and-weigh platform in the gap between belts, on a 1 kg load cell, lifted by a servo.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "fillingLoadCell",
+      "type": "loadCell",
+      "labelKey": "part.loadCell",
+      "section": "conveyor",
+      "subsection": "filling",
+      "status": "estimated",
+      "position": [
+        550,
+        45,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          80,
+          12.7,
+          12.7
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "fillingHx711",
+      "type": "hx711Box",
+      "labelKey": "part.hx711Box",
+      "section": "conveyor",
+      "subsection": "filling",
+      "status": "confirmed",
+      "position": [
+        600,
+        0,
+        370
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          30,
+          25
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "fillingNozzle",
+      "type": "nozzle",
+      "labelKey": "part.fillingNozzle",
+      "section": "conveyor",
+      "subsection": "filling",
+      "status": "pending",
+      "position": [
+        550,
+        175,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 10,
+        "height": 40
+      },
+      "material": "metal",
+      "sensors": [],
+      "notes": "Above the container, never touches it. Height depends on container.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "checkArrival",
+      "type": "proximitySensor",
+      "labelKey": "part.arrivalSensor",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "confirmed",
+      "position": [
+        850,
+        90,
+        170
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          20,
+          15
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "checkArrival.present",
+          "station": "check",
+          "variable": "arrival",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.arrival",
+          "valueLabels": {
+            "0": "value.empty",
+            "1": "value.present"
+          }
+        }
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "id": "checkPlatform",
+      "type": "weighPlatform",
+      "labelKey": "part.weighPlatform",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "pending",
+      "position": [
+        850,
+        80,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          36,
+          15,
+          36
+        ]
+      },
+      "material": "printed",
+      "sensors": [
+        {
+          "id": "check.platformUp",
+          "station": "check",
+          "variable": "platform_up",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.platform_up",
+          "valueLabels": {
+            "0": "value.down",
+            "1": "value.up"
+          }
+        },
+        {
+          "id": "check.mass",
+          "station": "check",
+          "variable": "mass",
+          "unit": "g",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 400,
+            "nominal": 300
+          },
+          "limits": {
+            "warnBelow": 291,
+            "warnAbove": 309
+          },
+          "labelKey": "sensor.mass",
+          "measures": "netLiquid"
+        },
+        {
+          "id": "check.decision",
+          "station": "check",
+          "variable": "decision",
+          "unit": "",
+          "kind": "enum",
+          "sim": {
+            "min": 0,
+            "max": 2,
+            "nominal": 1
+          },
+          "labelKey": "sensor.decision",
+          "valueLabels": {
+            "0": "value.none",
+            "1": "value.pass",
+            "2": "value.reject"
+          }
+        }
+      ],
+      "notes": "decision: 0 none, 1 pass, 2 reject. Press is forbidden while the platform is up.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "checkLoadCell",
+      "type": "loadCell",
+      "labelKey": "part.loadCell",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "estimated",
+      "position": [
+        850,
+        45,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          80,
+          12.7,
+          12.7
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "checkHx711",
+      "type": "hx711Box",
+      "labelKey": "part.hx711Box",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "confirmed",
+      "position": [
+        900,
+        0,
+        370
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          30,
+          25
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "rejectPusher",
+      "type": "pusher",
+      "labelKey": "part.rejectPusher",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "pending",
+      "position": [
+        850,
+        100,
+        325
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          60,
+          40,
+          40
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "notes": "Servo pusher, pushes toward the front.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "lidMagazine",
+      "type": "magazine",
+      "labelKey": "part.lidMagazine",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "pending",
+      "position": [
+        850,
+        200,
+        330
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 80,
+        "height": 220
+      },
+      "material": "clearPlastic",
+      "sensors": [
+        {
+          "id": "check.lidCount",
+          "station": "check",
+          "variable": "lid_count",
+          "unit": "count",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 30,
+            "nominal": 20
+          },
+          "limits": {
+            "warnBelow": 6,
+            "faultBelow": 1
+          },
+          "labelKey": "sensor.lid_count"
+        }
+      ],
+      "notes": "Same two-finger mechanism as the feeder. Lid drops through a guide funnel.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "capPress",
+      "type": "press",
+      "labelKey": "part.capPress",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "pending",
+      "position": [
+        850,
+        230,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          60,
+          40,
+          60
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "notes": "Press plate pushes the lid down.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "rejectBox",
+      "type": "box",
+      "labelKey": "part.rejectBox",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "confirmed",
+      "position": [
+        850,
+        0,
+        90
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          140,
+          100,
+          110
+        ]
+      },
+      "material": "wood",
+      "sensors": [
+        {
+          "id": "reject.count",
+          "station": "check",
+          "variable": "reject_count",
+          "unit": "count",
+          "kind": "analog",
+          "sim": {
+            "min": 0,
+            "max": 10,
+            "nominal": 0
+          },
+          "limits": {
+            "warnAbove": 2
+          },
+          "labelKey": "sensor.reject_count"
+        }
+      ],
+      "notes": "Front side, facing the viewer.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "batchTray",
+      "type": "tray",
+      "labelKey": "part.batchTray",
+      "section": "conveyor",
+      "subsection": "tray",
+      "status": "pending",
+      "position": [
+        1430,
+        0,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          150,
+          60,
+          150
+        ]
+      },
+      "material": "wood",
+      "sensors": [
+        {
+          "id": "tray.arrival",
+          "station": "tray",
+          "variable": "arrival",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.arrival",
+          "valueLabels": {
+            "0": "value.empty",
+            "1": "value.present"
+          }
+        }
+      ],
+      "notes": "PENDING. 6-slot tray with linear travel does not fit the table (needs ~1100 mm along z). Mechanism to be decided with the supervisor. Static placeholder at the belt end.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "cabinet",
+      "type": "cabinet",
+      "labelKey": "part.cabinet",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1210,
+        100,
+        670
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          300,
+          450,
+          220
+        ],
+        "wallThickness": 18,
+        "hollow": true
+      },
+      "material": "wood",
+      "sensors": [
+        {
+          "id": "cabinet.temp",
+          "station": "cabinet",
+          "variable": "ambient_temp",
+          "unit": "C",
+          "kind": "analog",
+          "sim": {
+            "min": 18,
+            "max": 40,
+            "nominal": 26
+          },
+          "limits": {
+            "warnAbove": 35
+          },
+          "labelKey": "sensor.ambient_temp"
+        }
+      ],
+      "color": "#D9D9D6",
+      "notes": "Raised 100 mm on legs. Cables enter from below through glands.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "estop",
+      "type": "button",
+      "labelKey": "part.estop",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1320,
+        470,
+        545
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          40,
+          40,
+          30
+        ]
+      },
+      "material": "plastic",
+      "sensors": [
+        {
+          "id": "cabinet.estop",
+          "station": "cabinet",
+          "variable": "estop",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "limits": {
+            "faultWhen": 1
+          },
+          "labelKey": "sensor.estop",
+          "valueLabels": {
+            "0": "value.released",
+            "1": "value.pressed"
+          }
+        }
+      ],
+      "color": "#D32F2F",
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "startButton",
+      "type": "button",
+      "labelKey": "part.startButton",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1100,
+        380,
+        550
+      ],
+      "rotationDeg": [
+        90,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 22,
+        "height": 20
+      },
+      "material": "plastic",
+      "sensors": [],
+      "color": "#2E7D32",
+      "parent": "cabinet",
+      "anchor": "center"
+    },
+    {
+      "id": "stopButton",
+      "type": "button",
+      "labelKey": "part.stopButton",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1150,
+        380,
+        550
+      ],
+      "rotationDeg": [
+        90,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 22,
+        "height": 20
+      },
+      "material": "plastic",
+      "sensors": [],
+      "color": "#424242",
+      "parent": "cabinet",
+      "anchor": "center"
+    },
+    {
+      "id": "ackButton",
+      "type": "button",
+      "labelKey": "part.ackButton",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1200,
+        380,
+        550
+      ],
+      "rotationDeg": [
+        90,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 22,
+        "height": 20
+      },
+      "material": "plastic",
+      "sensors": [],
+      "color": "#1565C0",
+      "parent": "cabinet",
+      "anchor": "center"
+    },
+    {
+      "id": "modeSelector",
+      "type": "selector",
+      "labelKey": "part.modeSelector",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1250,
+        380,
+        550
+      ],
+      "rotationDeg": [
+        90,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 22,
+        "height": 20
+      },
+      "material": "plastic",
+      "sensors": [
+        {
+          "id": "cabinet.mode",
+          "station": "cabinet",
+          "variable": "mode",
+          "unit": "",
+          "kind": "enum",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 1
+          },
+          "labelKey": "sensor.mode",
+          "valueLabels": {
+            "0": "value.manual",
+            "1": "value.auto"
+          }
+        }
+      ],
+      "notes": "0 manual, 1 auto.",
+      "parent": "cabinet",
+      "anchor": "center"
+    },
+    {
+      "id": "stackLight",
+      "type": "stackLight",
+      "labelKey": "part.stackLight",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1330,
+        550,
+        640
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 40,
+        "height": 150
+      },
+      "material": "plastic",
+      "sensors": [
+        {
+          "id": "cabinet.stackLight",
+          "station": "cabinet",
+          "variable": "stack_light",
+          "unit": "",
+          "kind": "enum",
+          "sim": {
+            "min": 0,
+            "max": 3,
+            "nominal": 1
+          },
+          "labelKey": "sensor.stack_light",
+          "valueLabels": {
+            "0": "value.off",
+            "1": "value.green",
+            "2": "value.yellow",
+            "3": "value.red"
+          }
+        }
+      ],
+      "notes": "0 off, 1 green, 2 yellow, 3 red. Buzzer inside.",
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "screen",
+      "type": "screen",
+      "labelKey": "part.screen",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1150,
+        420,
+        555
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          160,
+          100,
+          10
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "plc",
+      "type": "electronics",
+      "labelKey": "part.plc",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "pending",
+      "position": [
+        1140,
+        400,
+        720
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          120,
+          90,
+          70
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "raspberryPi",
+      "type": "electronics",
+      "labelKey": "part.raspberryPi",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1140,
+        250,
+        725
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          95,
+          30,
+          65
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "esp32",
+      "type": "electronics",
+      "labelKey": "part.esp32",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1220,
+        250,
+        740
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          60,
+          20,
+          40
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "psu12v",
+      "type": "electronics",
+      "labelKey": "part.psu12v",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1280,
+        400,
+        720
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          110,
+          50,
+          80
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "motorDrivers",
+      "type": "electronics",
+      "labelKey": "part.motorDrivers",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "confirmed",
+      "position": [
+        1290,
+        150,
+        720
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          100,
+          20,
+          80
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "parent": "cabinet",
+      "anchor": "bottom"
+    }
+  ]
+}
