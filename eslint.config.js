@@ -6,7 +6,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  { ignores: ['**/dist/', '**/coverage/', 'reference/'] },
+  { ignores: ['**/dist/', '**/coverage/', 'reference/', 'apps/backend/src/generated/'] },
 
   eslint.configs.recommended,
   // Strictest typescript-eslint presets: they use type information to catch
