@@ -95,6 +95,16 @@ Modules:
 - `telemetry`: subscribes to `lab/mixline/+/sensors/+`, writes to the hypertable, keeps the latest
   value per sensor in memory, pushes updates to the frontend over WebSocket.
   `GET /api/telemetry/:sensorId?from&to` for trend charts.
+  - **Device clocks are unreliable** (owner, built in steps 7 and 9): the ESP32 has no battery
+    clock and the lab is offline. Every reading stores both the device `ts` and the backend's
+    `received_at`. Charts use the device `ts`, except when it differs from `received_at` by more
+    than a configurable tolerance (`CLOCK_TOLERANCE_MS`); then they use `received_at`, and the
+    event is logged. Offline detection always uses `received_at` (see `state.ts`).
+  - **Rejected readings never disappear silently** (owner, step 9): every reading that fails
+    `parseTopic` / `decodeReading` (unknown topic, bad JSON, wrong unit, unknown code...) is logged
+    with its topic and reason, and counted per sensor (per topic when no sensor matches). The
+    counts are exposed to managers at `GET /api/telemetry/rejections`, so a hardware bug is
+    visible. Counts are kept in memory and start from zero when the backend restarts.
 - `state`: computes ok / warning / fault / offline per component from limits in `machine.json`
   and from data age (offline if no data for N seconds); rolls up to sub-section, section, line.
 
@@ -115,7 +125,9 @@ Database:
   - Governorate codes (labels in the locale files as `governorate.<code>`): `damascus`,
     `rifDimashq`, `aleppo`, `homs`, `hama`, `latakia`, `tartus`, `idlib`, `daraa`, `asSuwayda`,
     `quneitra`, `deirEzZor`, `raqqa`, `hasakah`, `outside`.
-- `telemetry` hypertable (time, sensor_id, value, source). Raw data kept **7 days** (retention
+- `telemetry` hypertable (received_at, device_ts, sensor_id, value, source). `received_at` (set by
+  the backend) is the hypertable's time column, so partitioning and retention never depend on a
+  device clock. Raw data kept **7 days** (retention
   policy). A 1-minute continuous aggregate (min, max, avg) kept **1 year**. Compression after 1 day.
 - `alarms` (id, component_id, level, message, raised_at, acked_at) — table now, UI later
 - Migrations in code (Prisma or TypeORM; Timescale hypertable created in a raw SQL migration).
