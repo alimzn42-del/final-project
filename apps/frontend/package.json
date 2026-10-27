@@ -1,0 +1,11 @@
+{
+  "name": "@mixline/frontend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "React web app with the live 3D digital twin",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  }
+}

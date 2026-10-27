@@ -1,0 +1,10 @@
+pnpm-lock.yaml
+**/dist/
+**/coverage/
+
+# Owner-authored files are kept exactly as written; Prettier would reflow
+# their tables and the arrays in machine.json.
+CLAUDE.md
+docs/
+config/
+reference/
