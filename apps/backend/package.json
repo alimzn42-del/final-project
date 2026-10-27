@@ -5,7 +5,7 @@
   "description": "NestJS API: auth, machine config, MQTT ingest, telemetry storage, WebSocket push",
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   }
 }
