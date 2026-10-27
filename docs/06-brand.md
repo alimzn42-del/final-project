@@ -8,6 +8,10 @@
 - Logo: `docs/brand/almas-logo.jpg` (640 px raster). A faceted diamond built from blue circuit lines,
   with a robot arm on its left facet and an "AI" chip in the center, above the Arabic and Latin
   wordmarks. Ask the owner for an SVG or high-resolution version before using it large.
+- Second version: `docs/brand/almas-logo-v2.jpg` (589 px raster, sharper, same dark background).
+- Until the owner sends an SVG or a transparent PNG:
+  - Use the JPG logo only on dark backgrounds (its dark background is part of the image).
+  - In the header, leave a clearly marked placeholder where the diamond-only mark will go.
 
 ## Who uses the app
 
