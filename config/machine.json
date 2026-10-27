@@ -238,10 +238,6 @@
             "max": 310,
             "nominal": 220
           },
-          "limits": {
-            "warnBelow": 60,
-            "faultBelow": 30
-          },
           "labelKey": "sensor.level_mm"
         },
         {
@@ -327,9 +323,6 @@
             "max": 1,
             "nominal": 0
           },
-          "limits": {
-            "faultWhen": 1
-          },
           "labelKey": "sensor.low_float",
           "valueLabels": {
             "0": "value.normal",
@@ -374,10 +367,6 @@
             "min": 0,
             "max": 30,
             "nominal": 20
-          },
-          "limits": {
-            "warnBelow": 6,
-            "faultBelow": 1
           },
           "labelKey": "sensor.magazine_count"
         }
@@ -628,9 +617,6 @@
             "max": 2500,
             "nominal": 1800
           },
-          "limits": {
-            "faultAbove": 3500
-          },
           "labelKey": "sensor.mass",
           "measures": "netLiquid"
         }
@@ -772,9 +758,6 @@
             "max": 1,
             "nominal": 0
           },
-          "limits": {
-            "faultWhen": 1
-          },
           "labelKey": "sensor.overflow_float",
           "valueLabels": {
             "0": "value.normal",
@@ -841,9 +824,6 @@
             "max": 1.2,
             "nominal": 0.6
           },
-          "limits": {
-            "warnAbove": 1.0
-          },
           "labelKey": "sensor.base_pump_current"
         }
       ],
@@ -905,9 +885,6 @@
             "max": 1.2,
             "nominal": 0.6
           },
-          "limits": {
-            "warnAbove": 1.0
-          },
           "labelKey": "sensor.drain_pump_current"
         }
       ],
@@ -948,9 +925,6 @@
             "min": 0,
             "max": 1,
             "nominal": 0
-          },
-          "limits": {
-            "faultWhen": 1
           },
           "labelKey": "sensor.drain_full_float",
           "valueLabels": {
@@ -1297,10 +1271,6 @@
             "max": 700,
             "nominal": 550
           },
-          "limits": {
-            "warnBelow": 150,
-            "faultBelow": 60
-          },
           "labelKey": "sensor.mass",
           "measures": "netLiquid"
         }
@@ -1424,9 +1394,6 @@
             "min": 0,
             "max": 510,
             "nominal": 200
-          },
-          "limits": {
-            "warnAbove": 400
           },
           "labelKey": "sensor.driver_load"
         }
@@ -1636,10 +1603,6 @@
             "max": 700,
             "nominal": 550
           },
-          "limits": {
-            "warnBelow": 150,
-            "faultBelow": 60
-          },
           "labelKey": "sensor.mass",
           "measures": "netLiquid"
         }
@@ -1763,9 +1726,6 @@
             "min": 0,
             "max": 510,
             "nominal": 200
-          },
-          "limits": {
-            "warnAbove": 400
           },
           "labelKey": "sensor.driver_load"
         }
@@ -1975,10 +1935,6 @@
             "max": 700,
             "nominal": 550
           },
-          "limits": {
-            "warnBelow": 150,
-            "faultBelow": 60
-          },
           "labelKey": "sensor.mass",
           "measures": "netLiquid"
         }
@@ -2102,9 +2058,6 @@
             "min": 0,
             "max": 510,
             "nominal": 200
-          },
-          "limits": {
-            "warnAbove": 400
           },
           "labelKey": "sensor.driver_load"
         }
@@ -2314,10 +2267,6 @@
             "max": 700,
             "nominal": 550
           },
-          "limits": {
-            "warnBelow": 150,
-            "faultBelow": 60
-          },
           "labelKey": "sensor.mass",
           "measures": "netLiquid"
         }
@@ -2442,9 +2391,6 @@
             "max": 510,
             "nominal": 200
           },
-          "limits": {
-            "warnAbove": 400
-          },
           "labelKey": "sensor.driver_load"
         }
       ],
@@ -2564,10 +2510,6 @@
             "max": 20,
             "nominal": 1.5
           },
-          "limits": {
-            "warnAbove": 3,
-            "faultAbove": 6
-          },
           "labelKey": "sensor.delta_e"
         },
         {
@@ -2580,9 +2522,6 @@
             "min": 0,
             "max": 255,
             "nominal": 235
-          },
-          "limits": {
-            "warnBelow": 200
           },
           "labelKey": "sensor.white_ref"
         }
@@ -3091,10 +3030,6 @@
             "max": 20,
             "nominal": 1.5
           },
-          "limits": {
-            "warnAbove": 5,
-            "faultAbove": 10
-          },
           "labelKey": "sensor.slip"
         }
       ],
@@ -3328,10 +3263,6 @@
             "max": 400,
             "nominal": 300
           },
-          "limits": {
-            "warnBelow": 291,
-            "warnAbove": 309
-          },
           "labelKey": "sensor.mass",
           "measures": "netLiquid"
         }
@@ -3526,10 +3457,6 @@
             "max": 400,
             "nominal": 300
           },
-          "limits": {
-            "warnBelow": 291,
-            "warnAbove": 309
-          },
           "labelKey": "sensor.mass",
           "measures": "netLiquid"
         },
@@ -3678,10 +3605,6 @@
             "max": 30,
             "nominal": 20
           },
-          "limits": {
-            "warnBelow": 6,
-            "faultBelow": 1
-          },
           "labelKey": "sensor.lid_count"
         }
       ],
@@ -3755,9 +3678,6 @@
             "min": 0,
             "max": 10,
             "nominal": 0
-          },
-          "limits": {
-            "warnAbove": 2
           },
           "labelKey": "sensor.reject_count"
         }
@@ -3853,9 +3773,6 @@
             "max": 40,
             "nominal": 26
           },
-          "limits": {
-            "warnAbove": 35
-          },
           "labelKey": "sensor.ambient_temp"
         }
       ],
@@ -3900,9 +3817,6 @@
             "min": 0,
             "max": 1,
             "nominal": 0
-          },
-          "limits": {
-            "faultWhen": 1
           },
           "labelKey": "sensor.estop",
           "valueLabels": {
