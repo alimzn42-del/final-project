@@ -1,1 +1,2 @@
-export const packageName = '@mixline/shared';
+export * from './issues.js';
+export * from './machine.schema.js';
