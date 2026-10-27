@@ -4,15 +4,25 @@
 
 | Service | Image / app | Role |
 |---|---|---|
-| `db` | `timescale/timescaledb` (PostgreSQL 16) | users, config, telemetry hypertable |
-| `mqtt` | `eclipse-mosquitto` | message broker |
+| `db` | `timescale/timescaledb:2.30.2-pg16` (PostgreSQL 16) | users, config, telemetry hypertable |
+| `mqtt` | `eclipse-mosquitto:2.0.22` | message broker |
 | `backend` | `apps/backend` (NestJS) | REST, auth, MQTT ingest, WebSocket push |
 | `frontend` | `apps/frontend` (Vite build served by nginx) | the web app |
 | `simulator` | `apps/simulator` (Node) | publishes fake telemetry |
 
 - All images must have arm64 builds (Raspberry Pi 5 later). Runs on a laptop for now.
+  Third-party images are pinned to exact versions (both above are multi-arch, arm64 included).
 - Config through env vars; commit `.env.example` only.
 - Named volumes for db and broker data.
+- Host ports are bound to `127.0.0.1` only (local tools); services reach each other by service
+  name on the Compose network.
+- Mosquitto: anonymous clients are refused. The account comes from `MQTT_USERNAME` /
+  `MQTT_PASSWORD` in `.env`; `docker/mosquitto/entrypoint.sh` writes the password file at
+  container start, so no password is stored in the repo or the image.
+- TimescaleDB's anonymous usage telemetry is switched off (`timescaledb.telemetry_level=off`):
+  the line runs offline and sends no data out.
+- Commands: `pnpm infra:up` (start and wait until healthy), `pnpm infra:check` (verify),
+  `pnpm infra:down` (stop; data volumes are kept).
 
 ```
  ESP32 / Pi (later)  ─┐
@@ -89,7 +99,22 @@ Modules:
   and from data age (offline if no data for N seconds); rolls up to sub-section, section, line.
 
 Database:
-- `users` (id, email, password_hash, role `manager|worker|customer`, locale, created_by, created_at)
+- `users` (one table for all roles):
+  - Account: id, email (unique, stored lowercase), password_hash, role `manager|worker|customer`,
+    locale `en|ar`, created_by (null for self-signup and the seeded manager), created_at.
+  - Sign-up profile. Required for `customer` (enforced by the signup validation); null for staff
+    accounts unless decided otherwise:
+    - full_name
+    - mobile: E.164 string, for example `+963912345678`. The form has a country picker that
+      defaults to Syria (+963).
+    - date_of_birth (date)
+    - governorate: one of the 14 codes below, or `outside`
+    - country: free text, required only when governorate is `outside`
+    - city_area: free text (city or area)
+    - occupation (optional), paint_purpose (optional, free text)
+  - Governorate codes (labels in the locale files as `governorate.<code>`): `damascus`,
+    `rifDimashq`, `aleppo`, `homs`, `hama`, `latakia`, `tartus`, `idlib`, `daraa`, `asSuwayda`,
+    `quneitra`, `deirEzZor`, `raqqa`, `hasakah`, `outside`.
 - `telemetry` hypertable (time, sensor_id, value, source). Raw data kept **7 days** (retention
   policy). A 1-minute continuous aggregate (min, max, avg) kept **1 year**. Compression after 1 day.
 - `alarms` (id, component_id, level, message, raised_at, acked_at) — table now, UI later
