@@ -89,7 +89,22 @@ Modules:
   and from data age (offline if no data for N seconds); rolls up to sub-section, section, line.
 
 Database:
-- `users` (id, email, password_hash, role `manager|worker|customer`, locale, created_by, created_at)
+- `users` (one table for all roles):
+  - Account: id, email (unique, stored lowercase), password_hash, role `manager|worker|customer`,
+    locale `en|ar`, created_by (null for self-signup and the seeded manager), created_at.
+  - Sign-up profile. Required for `customer` (enforced by the signup validation); null for staff
+    accounts unless decided otherwise:
+    - full_name
+    - mobile: E.164 string, for example `+963912345678`. The form has a country picker that
+      defaults to Syria (+963).
+    - date_of_birth (date)
+    - governorate: one of the 14 codes below, or `outside`
+    - country: free text, required only when governorate is `outside`
+    - city_area: free text (city or area)
+    - occupation (optional), paint_purpose (optional, free text)
+  - Governorate codes (labels in the locale files as `governorate.<code>`): `damascus`,
+    `rifDimashq`, `aleppo`, `homs`, `hama`, `latakia`, `tartus`, `idlib`, `daraa`, `asSuwayda`,
+    `quneitra`, `deirEzZor`, `raqqa`, `hasakah`, `outside`.
 - `telemetry` hypertable (time, sensor_id, value, source). Raw data kept **7 days** (retention
   policy). A 1-minute continuous aggregate (min, max, avg) kept **1 year**. Compression after 1 day.
 - `alarms` (id, component_id, level, message, raised_at, acked_at) — table now, UI later
