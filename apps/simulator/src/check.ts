@@ -4,10 +4,10 @@
  * what actually arrives. Exits with code 1 if any check fails.
  */
 import { decodeReading, parseJson, sensorsByTopic, subscriptions } from '@mixline/shared';
+import { loadMachineFile } from '@mixline/shared/node';
 import { connect } from 'mqtt';
 
 import { loadConfig } from './config.js';
-import { loadMachine } from './machine.js';
 import { HEARTBEAT_MS, TICK_MS } from './schedule.js';
 
 const LISTEN_MS = 12_000;
@@ -15,7 +15,7 @@ const LISTEN_MS = 12_000;
 const SLACK_MS = 1_000;
 
 const config = loadConfig();
-const machine = loadMachine(config.machineConfigPath);
+const machine = loadMachineFile(config.machineConfigPath);
 const byTopic = sensorsByTopic(machine);
 const arrivals = new Map<string, number[]>();
 const rejected: string[] = [];
