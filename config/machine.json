@@ -1294,8 +1294,8 @@
           "kind": "analog",
           "sim": {
             "min": 0,
-            "max": 800,
-            "nominal": 600
+            "max": 700,
+            "nominal": 550
           },
           "limits": {
             "warnBelow": 150,
@@ -1633,8 +1633,8 @@
           "kind": "analog",
           "sim": {
             "min": 0,
-            "max": 800,
-            "nominal": 600
+            "max": 700,
+            "nominal": 550
           },
           "limits": {
             "warnBelow": 150,
@@ -1972,8 +1972,8 @@
           "kind": "analog",
           "sim": {
             "min": 0,
-            "max": 800,
-            "nominal": 600
+            "max": 700,
+            "nominal": 550
           },
           "limits": {
             "warnBelow": 150,
@@ -2311,8 +2311,8 @@
           "kind": "analog",
           "sim": {
             "min": 0,
-            "max": 800,
-            "nominal": 600
+            "max": 700,
+            "nominal": 550
           },
           "limits": {
             "warnBelow": 150,
