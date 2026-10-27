@@ -26,8 +26,8 @@ export default defineConfig(
     },
   },
 
-  // Plain JS config files have no types to check.
-  { files: ['**/*.js'], extends: [tseslint.configs.disableTypeChecked] },
+  // Plain JS files (config, scripts/) have no types to check.
+  { files: ['**/*.{js,mjs,cjs}'], extends: [tseslint.configs.disableTypeChecked] },
 
   // Must stay last: turns off rules that would fight Prettier's formatting.
   prettier,

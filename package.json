@@ -16,7 +16,10 @@
     "lint:fix": "eslint . --fix && prettier --write .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "infra:up": "docker compose up -d --wait",
+    "infra:down": "docker compose down",
+    "infra:check": "node scripts/check-infra.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
