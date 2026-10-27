@@ -74,7 +74,7 @@ Machine-wide messages (published from simulator v2, step 15):
 
 `lab/mixline/batch/<event>`, event one of `started | step | finished | aborted`:
 ```json
-{ "ts": "...", "batchId": "B-0012", "step": "dosing", "recipe": { "targetLab": [55, 10, -20] },
+{ "ts": "...", "batchId": "B-0012", "step": "dyeDose", "recipe": { "targetLab": [55, 10, -20] },
   "containersDone": 3, "source": "sim" }
 ```
 - `step` one of: `baseFill, dyeDose, mix, sample, correct, complete, finalCheck, filling, rinse`.
