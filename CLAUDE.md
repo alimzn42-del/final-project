@@ -36,9 +36,17 @@ apps/simulator     fake telemetry publisher
 packages/shared    types, zod schemas, MQTT topic helpers, machine.json schema
 config/machine.json  single source of truth for the line
 config/locales/     en.json and ar.json for every label key
-docs/              specs
+docs/              specs (docs/brand/ holds the logo files)
+docker/            container config (docker/mosquitto/: broker config and entrypoint)
+scripts/           repo scripts (check-infra.mjs)
+reference/         earlier planning files, kept unchanged, not used by the code
 docker-compose.yml
+.env.example       every setting; copy to .env (git-ignored) and set real passwords
 ```
+
+Tooling: Node 24, pnpm 10, TypeScript 6.0 (7.0 is not yet supported by typescript-eslint),
+ESLint 10 flat config with typescript-eslint strict type-checked rules, Prettier, Vitest 5.
+`docs/`, `config/`, `reference/` and this file are excluded from Prettier so they keep their layout.
 
 ## Hard rules
 
@@ -88,5 +96,23 @@ docker-compose.yml
 
 ## Commands
 
-To be created in phase 1 (see `docs/05-roadmap.md`):
-`pnpm i`, `pnpm dev`, `pnpm build`, `pnpm test`, `pnpm lint`, `docker compose up --build`.
+Run from the repo root:
+
+| Command | What it does |
+|---|---|
+| `pnpm i` | Install all workspace dependencies |
+| `pnpm lint` | ESLint + Prettier check (must pass before every commit) |
+| `pnpm lint:fix` / `pnpm format` | Auto-fix lint issues / reformat code |
+| `pnpm test` | All Vitest tests in every package (must pass before every commit) |
+| `pnpm test:watch` | Re-run tests on change |
+| `pnpm typecheck` | TypeScript check of every package, tests included |
+| `pnpm build` | Build every package to its `dist/` |
+| `pnpm infra:up` | Start db + mqtt in Docker and wait until healthy (needs `.env`) |
+| `pnpm infra:check` | Verify the Docker stack (health, TimescaleDB, broker auth) |
+| `pnpm infra:down` | Stop the Docker stack; data volumes are kept |
+| `pnpm dev` | Runs each package's `dev` script; none exist yet |
+
+Still to come in phase 1: app containers in `docker compose up --build` (from step 5 on).
+
+Shell note: this laptop's fnm hook switches Node on `cd` into a folder with `.nvmrc`; in a
+non-interactive shell use `builtin cd` if that hook errors.
