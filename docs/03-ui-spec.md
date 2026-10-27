@@ -73,6 +73,7 @@ Suggested routes:
 /line/:sectionId
 /line/:sectionId/:subsectionId
 /line/:sectionId/:subsectionId/:componentId
+/line/:sectionId/part/:componentId   (parts with subsection: null; "part" is a reserved id)
 /worker            (placeholder)
 /customer          (placeholder)
 /login
