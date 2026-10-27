@@ -1,0 +1,98 @@
+// MixLine database (docs/04-architecture.md, "Database").
+// Plain tables live here; the TimescaleDB parts (hypertable, compression,
+// retention, 1-minute summary) are raw SQL in prisma/migrations, because
+// Prisma cannot describe them. Connection settings: prisma.config.ts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  manager
+  worker
+  customer
+}
+
+enum Locale {
+  en
+  ar
+}
+
+/// The 14 Syrian governorates, plus "outside" (then `country` is filled in).
+enum Governorate {
+  damascus
+  rifDimashq
+  aleppo
+  homs
+  hama
+  latakia
+  tartus
+  idlib
+  daraa
+  asSuwayda
+  quneitra
+  deirEzZor
+  raqqa
+  hasakah
+  outside
+}
+
+enum Source {
+  sim
+  hw
+}
+
+/// One table for all roles. The sign-up profile is required for customers
+/// (checked by the sign-up validation) and empty for staff accounts.
+/// Emails are stored lowercase (a database check refuses capitals).
+model User {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         Role
+  locale       Locale    @default(en)
+  /// Null for self-signup and for the manager seeded from .env.
+  createdById  String?   @map("created_by") @db.Uuid
+  createdBy    User?     @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  created      User[]    @relation("CreatedBy")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  // Sign-up profile (customers).
+  fullName     String?   @map("full_name")
+  /// E.164, e.g. +963912345678.
+  mobile       String?
+  dateOfBirth  DateTime? @map("date_of_birth") @db.Date
+  governorate  Governorate?
+  /// Only when governorate is "outside".
+  country      String?
+  cityArea     String?   @map("city_area")
+  occupation   String?
+  paintPurpose String?   @map("paint_purpose")
+
+  @@map("users")
+}
+
+/// Sensor readings, a TimescaleDB hypertable partitioned on received_at (see
+/// the timescale migration). Kept out of the generated client (@@ignore):
+/// Prisma needs a unique key per row and a stream of readings has none.
+/// The backend writes and reads it with SQL (step 9). Listing it here keeps
+/// Prisma from ever treating the table as unknown and dropping it.
+model Telemetry {
+  /// Set by the backend when the message arrives: never depends on a device clock.
+  receivedAt DateTime @map("received_at") @db.Timestamptz(3)
+  /// The device's own timestamp (`ts` in the MQTT payload); may be off.
+  deviceTs   DateTime @map("device_ts") @db.Timestamptz(3)
+  sensorId   String   @map("sensor_id")
+  value      Float
+  source     Source
+
+  /// Charts read one sensor over a time range.
+  @@index([sensorId, receivedAt(sort: Desc)], map: "telemetry_sensor_time_idx")
+  @@map("telemetry")
+  @@ignore
+}
