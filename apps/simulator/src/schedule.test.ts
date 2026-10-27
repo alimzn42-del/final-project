@@ -1,13 +1,13 @@
 import { fileURLToPath } from 'node:url';
 
 import { decodeReading, sensorsByTopic, valueState } from '@mixline/shared';
+import { loadMachineFile } from '@mixline/shared/node';
 import { describe, expect, it } from 'vitest';
 
-import { loadMachine } from './machine.js';
 import { HEARTBEAT_MS, Schedule, TICK_MS } from './schedule.js';
 import { analogValue, okBand } from './values.js';
 
-const machine = loadMachine(
+const machine = loadMachineFile(
   fileURLToPath(new URL('../../../config/machine.json', import.meta.url)),
 );
 const sensors = machine.components.flatMap((c) => c.sensors);
