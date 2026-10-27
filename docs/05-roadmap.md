@@ -55,4 +55,10 @@ repo already created). Commit and push after every finished task; see the git wo
 | How customers reach the app from the internet (hosting, tunnel, or cloud server for ordering only) | customer ordering from phones |
 | Password reset and email verification (need an email provider) | customer self-signup hardening |
 
+### Deferred with "PLC alarm list ..."
+
+- The `alarms` table (owner, step 7). It is not created in phase 1. First draft, to revisit with
+  the PLC alarm list: `alarms` (id, component_id, level, message, raised_at, acked_at). Its final
+  shape follows how the PLC reports alarms and how they reach the web app.
+
 When one of these is decided, update `docs/02-line-spec.md` and `config/machine.json` together.
