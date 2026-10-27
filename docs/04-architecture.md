@@ -92,7 +92,17 @@ Modules:
 - Keep customer-facing endpoints (later: orders) in their own module, separate from telemetry and
   control, so the ordering part can be exposed to the internet later without exposing the line.
 - `machine`: loads and validates `config/machine.json` with the shared zod schema; serves it at
-  `GET /api/machine`.
+  `GET /api/machine`. Built in step 6:
+  - `machine.json` and both locale files are validated together at startup
+    (`loadConfigFiles`); any problem stops the backend listing every issue.
+  - `GET /api/locales/:lang` serves `en` or `ar` (404 otherwise): the frontend loads its labels
+    from the backend, so a new machine needs only new config files.
+  - `GET /api/health` for Docker and monitoring.
+  - These routes are public until auth (step 8) decides which roles may call them.
+  - Settings: `PORT` (default 3000), `MACHINE_CONFIG`, `LOCALES_DIR` (defaults: the repo's `config/`).
+- NestJS 12 (ES modules). Dependencies are injected with explicit `@Inject(...)` tokens, not with
+  emitted type metadata (`emitDecoratorMetadata` is off): tsx and Vitest cannot emit that metadata,
+  so explicit tokens make `pnpm dev`, the tests and the build behave the same.
 - `telemetry`: subscribes to `lab/mixline/+/sensors/+`, writes to the hypertable, keeps the latest
   value per sensor in memory, pushes updates to the frontend over WebSocket.
   `GET /api/telemetry/:sensorId?from&to` for trend charts.
@@ -159,10 +169,13 @@ Database:
 
 ## Workspace packages and images
 
+- `@mixline/shared/node` (Node only): `loadMachineFile`, `loadConfigFiles` read and validate the
+  config files; the main `@mixline/shared` entry has no file-system code, for the browser.
 - `@mixline/shared` exports a `source` condition: in development, TypeScript (`customConditions`),
   Vitest and tsx (`--conditions=source`) read its `.ts` files directly, so no build is needed
   between edits. Production builds (`tsconfig.build.json`) and images use its `dist/`.
-- App images: multi-stage Dockerfile per app, build context = repo root, base image pinned
+- App images: one multi-stage `docker/node-app.Dockerfile` for every Node app (build argument
+  `APP`: `backend`, `simulator`), build context = repo root, base image pinned
   (`node:24.22.0-alpine3.24`, multi-arch). The runtime stage holds only the app's `dist/` and
   production dependencies (`pnpm deploy`), runs as the unprivileged `node` user, and gets
   `config/` mounted read-only. `.dockerignore` keeps `.env`, `node_modules` and docs out.
