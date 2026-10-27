@@ -1,3 +1,4 @@
+export * from './auth.js';
 export * from './issues.js';
 export * from './locales.js';
 export * from './machine.rules.js';
