@@ -1,0 +1,15 @@
+# Docker build context = repo root. Keep it small and never send secrets.
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+.git
+.env
+.env.*
+!.env.example
+*.log
+
+# Not needed inside any image; config/ is mounted at run time.
+docs
+reference
+config

@@ -1,6 +1,6 @@
 # Local MixLine stack. Copy .env.example to .env first.
-# Step 2 runs the infrastructure only (database + broker); each app is added
-# here in the plan step that builds it.
+# Services: db + mqtt (infrastructure) and simulator. The backend and frontend
+# are added in the plan steps that build them.
 name: mixline
 
 services:
@@ -53,6 +53,25 @@ services:
       timeout: 5s
       retries: 12
       start_period: 5s
+
+  simulator:
+    # Publishes fake telemetry on the real topics until the hardware exists.
+    build:
+      context: .
+      dockerfile: apps/simulator/Dockerfile
+    image: mixline/simulator:local
+    restart: unless-stopped
+    depends_on:
+      mqtt:
+        condition: service_healthy
+    environment:
+      MQTT_URL: mqtt://mqtt:1883
+      MQTT_USERNAME: ${MQTT_USERNAME:?set MQTT_USERNAME in .env}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?set MQTT_PASSWORD in .env}
+      MACHINE_CONFIG: /config/machine.json
+    volumes:
+      # Read-only: the simulator reads the line description, never changes it.
+      - ./config:/config:ro
 
 volumes:
   db-data:
