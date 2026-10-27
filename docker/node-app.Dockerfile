@@ -11,6 +11,9 @@ ARG NODE_IMAGE=node:24.22.0-alpine3.24
 FROM ${NODE_IMAGE} AS build
 ARG APP
 RUN test -n "$APP" || (echo "build argument APP is required" && exit 1)
+# OpenSSL: Prisma's migration engine needs it (backend; harmless for other apps).
+# Build stage only: runtime images do not get it.
+RUN apk add --no-cache openssl
 RUN corepack enable
 WORKDIR /repo
 
@@ -29,6 +32,15 @@ RUN pnpm --filter "@mixline/${APP}..." build
 # A self-contained folder: the app's dist/ plus production dependencies only
 # (shared included as a normal package with its dist/).
 RUN pnpm --filter "@mixline/${APP}" deploy --prod --legacy /out
+
+# ---- migrate (backend only): applies the database migrations, then exits ----
+# Built with `target: migrate` by docker-compose.yml. It reuses the build stage,
+# which already has the Prisma CLI and its migration engine (downloaded at
+# install time, so nothing is fetched when the container starts).
+FROM build AS migrate
+WORKDIR /repo/apps/backend
+USER node
+CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
 
 # ---- runtime: only what the app needs to run ----
 FROM ${NODE_IMAGE} AS runtime
