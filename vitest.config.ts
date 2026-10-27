@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 // Resolve workspace packages (e.g. @mixline/shared) to their TypeScript
 // source through the "source" export condition, so tests never need a build
@@ -13,7 +13,15 @@ export default defineConfig({
   test: {
     projects: [
       { extends: true, test: { name: '@mixline/shared', root: 'packages/shared' } },
-      { extends: true, test: { name: '@mixline/backend', root: 'apps/backend' } },
+      {
+        extends: true,
+        // *.db.test.ts need Docker: they run with `pnpm test:db` (vitest.db.config.ts).
+        test: {
+          name: '@mixline/backend',
+          root: 'apps/backend',
+          exclude: [...configDefaults.exclude, '**/*.db.test.ts'],
+        },
+      },
       { extends: true, test: { name: '@mixline/simulator', root: 'apps/simulator' } },
       { extends: true, test: { name: '@mixline/frontend', root: 'apps/frontend' } },
     ],
