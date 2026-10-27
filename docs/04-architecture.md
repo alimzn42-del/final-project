@@ -142,8 +142,8 @@ Database:
   the backend) is the hypertable's time column, so partitioning and retention never depend on a
   device clock. Raw data kept **7 days** (retention
   policy). A 1-minute continuous aggregate (min, max, avg) kept **1 year**. Compression after 1 day.
-- `alarms` (id, component_id, level, message, raised_at, acked_at) — table now, UI later. Its shape
-  may change with the open item on PLC alarms (`docs/05-roadmap.md`).
+- No `alarms` table in phase 1: its design depends on the PLC alarm list (open item in
+  `docs/05-roadmap.md`, owner decision in step 7).
 - Migrations in code (Prisma or TypeORM; Timescale hypertable created in a raw SQL migration).
 
 ## Simulator
