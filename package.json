@@ -22,7 +22,9 @@
     "infra:check": "node scripts/check-infra.mjs",
     "sim:check": "pnpm --filter @mixline/simulator check",
     "stack:up": "docker compose up -d --build --wait",
-    "stack:down": "docker compose down"
+    "stack:down": "docker compose down",
+    "db:migrate": "pnpm --filter @mixline/backend db:migrate",
+    "db:check": "node scripts/check-db.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
