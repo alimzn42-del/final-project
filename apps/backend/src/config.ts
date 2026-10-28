@@ -5,6 +5,7 @@
  */
 import { fileURLToPath } from 'node:url';
 
+import { DEFAULT_CLOCK_TOLERANCE_MS } from '@mixline/shared';
 import { z } from 'zod';
 
 /** Repo paths; this file runs from apps/backend/src or apps/backend/dist. */
@@ -39,6 +40,13 @@ const envSchema = z
       .default('false')
       .transform((v) => v === 'true'),
 
+    // MQTT broker (telemetry intake). Without a login the backend runs without intake.
+    MQTT_URL: z.url().default('mqtt://localhost:1883'),
+    MQTT_USERNAME: optional,
+    MQTT_PASSWORD: optional,
+    // Charts use the received time when a device clock is further off than this (owner).
+    CLOCK_TOLERANCE_MS: z.coerce.number().int().min(0).default(DEFAULT_CLOCK_TOLERANCE_MS),
+
     // The first manager account, created at startup if no manager exists.
     MANAGER_EMAIL: optional,
     MANAGER_PASSWORD: optional,
@@ -62,6 +70,9 @@ export interface BackendConfig {
   databaseUrl: string | undefined;
   session: { secret: string; hours: number; secureCookie: boolean };
   firstManager: { email: string; password: string } | undefined;
+  /** Undefined when MQTT_USERNAME / MQTT_PASSWORD are not set (no intake). */
+  mqtt: { url: string; username: string; password: string } | undefined;
+  clockToleranceMs: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig {
@@ -82,6 +93,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       e.MANAGER_EMAIL && e.MANAGER_PASSWORD
         ? { email: e.MANAGER_EMAIL.trim().toLowerCase(), password: e.MANAGER_PASSWORD }
         : undefined,
+    mqtt:
+      e.MQTT_USERNAME && e.MQTT_PASSWORD
+        ? { url: e.MQTT_URL, username: e.MQTT_USERNAME, password: e.MQTT_PASSWORD }
+        : undefined,
+    clockToleranceMs: e.CLOCK_TOLERANCE_MS,
   };
 }
 

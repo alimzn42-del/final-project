@@ -4,9 +4,12 @@ import { rawMachine } from './__fixtures__/config.js';
 import { machineSchema, type Sensor } from './machine.schema.js';
 import {
   batchEventSchema,
+  chartTime,
   decodeReading,
+  historyResolution,
   machineStateSchema,
   parseJson,
+  RAW_HISTORY_MAX_MS,
   readingSchema,
 } from './telemetry.js';
 
@@ -136,5 +139,21 @@ describe('machine-wide messages', () => {
     expect(
       batchEventSchema.safeParse({ ...base, recipe: { targetLab: [120, 0, 0] } }).success,
     ).toBe(false);
+  });
+});
+
+describe('chart time and history resolution', () => {
+  const received = Date.parse('2026-10-28T10:00:00.000Z');
+
+  it('uses the device time within the tolerance, the received time beyond it', () => {
+    expect(chartTime(received - 2000, received, 2000)).toBe(received - 2000);
+    expect(chartTime(received + 2000, received, 2000)).toBe(received + 2000);
+    expect(chartTime(received - 2001, received, 2000)).toBe(received);
+    expect(chartTime(received + 3_600_000, received, 2000)).toBe(received); // clock an hour ahead
+  });
+
+  it('reads raw readings up to one hour, the 1-minute summary beyond', () => {
+    expect(historyResolution(0, RAW_HISTORY_MAX_MS)).toBe('raw');
+    expect(historyResolution(0, RAW_HISTORY_MAX_MS + 1)).toBe('1m');
   });
 });

@@ -8,10 +8,13 @@ import { AuthService } from './auth/auth.service.js';
 import { FIRST_MANAGER, FirstManagerSeed } from './auth/first-manager.js';
 import { Sessions } from './auth/session.js';
 import type { BackendConfig } from './config.js';
-import { DATABASE_URL, PrismaService } from './database/prisma.service.js';
+import { DatabaseModule } from './database/database.module.js';
+import { PrismaService } from './database/prisma.service.js';
 import { HealthController } from './health/health.controller.js';
 import { MachineModule } from './machine/machine.module.js';
 import type { ConfigFiles } from './machine/machine.tokens.js';
+import { TelemetryModule } from './telemetry/telemetry.module.js';
+import type { TelemetryStore } from './telemetry/telemetry-store.js';
 import { PrismaUserStore } from './users/prisma-user-store.js';
 import { USER_STORE, type UserStore } from './users/user-store.js';
 import { UsersController } from './users/users.controller.js';
@@ -31,31 +34,39 @@ export const DEFAULT_RATE_LIMITS: RateLimits = {
 export interface AppOptions {
   files: ConfigFiles;
   config: BackendConfig;
-  /** Replaces the database user store (HTTP tests run without Docker). */
+  /** Replace the database stores (HTTP tests run without Docker). */
   userStore?: UserStore | undefined;
+  telemetryStore?: TelemetryStore | undefined;
   rateLimits?: RateLimits | undefined;
 }
 
-/** Root module. Later steps add the telemetry and state modules here. */
+/** Root module. Step 10 adds the WebSocket push and state modules here. */
 @Module({})
 export class AppModule {
   static register(options: AppOptions): DynamicModule {
     const limits = options.rateLimits ?? DEFAULT_RATE_LIMITS;
+    const { config } = options;
     return {
       module: AppModule,
       imports: [
+        ...databaseImports(options),
         MachineModule.register(options.files),
         ThrottlerModule.forRoot([
           { name: 'login', ...limits.login },
           { name: 'signup', ...limits.signup },
         ]),
+        TelemetryModule.register({
+          mqtt: config.mqtt,
+          clockToleranceMs: config.clockToleranceMs,
+          store: options.telemetryStore,
+        }),
       ],
       controllers: [HealthController, AuthController, UsersController],
       providers: [
-        ...userStoreProviders(options),
-        { provide: Sessions, useValue: new Sessions(options.config.session) },
+        userStoreProvider(options),
+        { provide: Sessions, useValue: new Sessions(config.session) },
         AuthService,
-        { provide: FIRST_MANAGER, useValue: options.config.firstManager },
+        { provide: FIRST_MANAGER, useValue: config.firstManager },
         FirstManagerSeed,
         // Default deny: runs before every route (see auth/access.ts).
         { provide: APP_GUARD, useClass: AccessGuard },
@@ -64,21 +75,23 @@ export class AppModule {
   }
 }
 
-function userStoreProviders(options: AppOptions): Provider[] {
-  if (options.userStore) return [{ provide: USER_STORE, useValue: options.userStore }];
+/** The database is needed unless every store is replaced (tests). */
+function databaseImports(options: AppOptions): DynamicModule[] {
+  if (options.userStore && options.telemetryStore) return [];
   const url = options.config.databaseUrl;
   if (!url) {
     throw new Error(
       'database settings are missing (check .env): set POSTGRES_USER, POSTGRES_PASSWORD and POSTGRES_DB, or DATABASE_URL',
     );
   }
-  return [
-    { provide: DATABASE_URL, useValue: url },
-    PrismaService,
-    {
-      provide: USER_STORE,
-      useFactory: (prisma: PrismaService) => new PrismaUserStore(prisma),
-      inject: [PrismaService],
-    },
-  ];
+  return [DatabaseModule.register(url)];
+}
+
+function userStoreProvider(options: AppOptions): Provider {
+  if (options.userStore) return { provide: USER_STORE, useValue: options.userStore };
+  return {
+    provide: USER_STORE,
+    useFactory: (prisma: PrismaService) => new PrismaUserStore(prisma),
+    inject: [PrismaService],
+  };
 }
