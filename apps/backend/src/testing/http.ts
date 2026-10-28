@@ -42,7 +42,16 @@ export interface TestApp {
 }
 
 export async function startTestApp(
-  options: { env?: Record<string, string>; rateLimits?: RateLimits } = {},
+  options: {
+    env?: Record<string, string>;
+    rateLimits?: RateLimits;
+    /**
+     * Keep the first manager's temporary-password flag. By default it is cleared
+     * after startup, so tests that only need a working manager can use it directly;
+     * the forced-change rule itself is tested with this option on.
+     */
+    keepFirstManagerTemporary?: boolean;
+  } = {},
 ): Promise<TestApp> {
   const store = new MemoryUserStore();
   const telemetry = new MemoryTelemetryStore();
@@ -52,7 +61,11 @@ export async function startTestApp(
     rateLimits: options.rateLimits ?? GENEROUS_LIMITS,
     logs: false,
   });
+  // The first manager is created during startup (inside listen), so clear its flag after.
   await app.listen(0, '127.0.0.1');
+  if (!options.keepFirstManagerTemporary) {
+    for (const row of store.rows.values()) row.mustChangePassword = false;
+  }
   const base = `${await app.getUrl()}/api`;
 
   const call: TestApp['call'] = async (method, path, body, cookie) => {
