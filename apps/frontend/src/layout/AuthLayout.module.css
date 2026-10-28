@@ -1,11 +1,13 @@
-/* The facet motif: two sets of thin angled lines, very faint, behind the card. */
+/* The facet motif: two sets of thin angled lines, faint (half the border colour), behind the card. */
 .page {
+  --facet: color-mix(in srgb, var(--line) 50%, transparent);
+
   min-height: 100vh;
   padding: 1rem;
   background-color: var(--bg);
   background-image:
-    repeating-linear-gradient(60deg, transparent 0 46px, var(--line) 46px 47px),
-    repeating-linear-gradient(-60deg, transparent 0 46px, var(--line) 46px 47px);
+    repeating-linear-gradient(60deg, transparent 0 46px, var(--facet) 46px 47px),
+    repeating-linear-gradient(-60deg, transparent 0 46px, var(--facet) 46px 47px);
 }
 
 .top {
