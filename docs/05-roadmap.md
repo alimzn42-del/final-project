@@ -40,6 +40,10 @@ repo already created). Commit and push after every finished task; see the git wo
 - Real hardware: Raspberry Pi and ESP32 publishing instead of the simulator.
 - Grafana dashboards (optional, reads the same database).
 
+## Before deploying to the Raspberry Pi
+
+- Slim the migrate image (now 702 MB).
+
 ## Open items (blocked on decisions or purchases)
 
 | Item | Blocks |

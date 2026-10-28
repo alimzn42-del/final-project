@@ -3,63 +3,61 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { INestApplication } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from './bootstrap.js';
 import { loadConfig } from './config.js';
+import { startTestApp, TEST_ENV, type TestApp } from './testing/http.js';
+import { MemoryUserStore } from './testing/memory-user-store.js';
 
 const configDir = fileURLToPath(new URL('../../../config/', import.meta.url));
 
-describe('backend HTTP API', () => {
-  let app: INestApplication;
-  let base: string;
+describe('backend HTTP API: machine, locales, health', () => {
+  let t: TestApp;
+  let manager: string;
 
   beforeAll(async () => {
-    ({ app } = await createApp({}));
-    await app.listen(0, '127.0.0.1');
-    base = `${await app.getUrl()}/api`;
+    t = await startTestApp();
+    manager = await t.login(TEST_ENV.MANAGER_EMAIL, TEST_ENV.MANAGER_PASSWORD);
   });
 
   afterAll(async () => {
-    await app.close();
+    await t.close();
   });
 
-  it('GET /api/health answers ok', async () => {
-    const res = await fetch(`${base}/health`);
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ status: 'ok' });
+  it('GET /api/health answers ok, without a login', async () => {
+    const r = await t.call('GET', '/health');
+    expect(r.status).toBe(200);
+    expect(r.body).toEqual({ status: 'ok' });
   });
 
-  it('GET /api/machine returns the validated machine.json', async () => {
-    const res = await fetch(`${base}/machine`);
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as {
-      site: string;
-      components: { id: string; anchor: string }[];
-    };
+  it('GET /api/machine returns the validated machine.json to staff', async () => {
+    const r = await t.call('GET', '/machine', undefined, manager);
+    expect(r.status).toBe(200);
+    const body = r.body as { site: string; components: { anchor: string }[] };
     expect(body.site).toBe('lab');
     expect(body.components).toHaveLength(103);
     // Parsed, not just the raw file: defaults such as anchor are filled in.
     expect(body.components.every((c) => c.anchor === 'bottom' || c.anchor === 'center')).toBe(true);
   });
 
-  it('GET /api/locales/en and /ar return the locale files', async () => {
-    const en = (await (await fetch(`${base}/locales/en`)).json()) as Record<string, string>;
-    const ar = (await (await fetch(`${base}/locales/ar`)).json()) as Record<string, string>;
+  it('GET /api/locales/en and /ar return the locale files, without a login', async () => {
+    const en = (await t.call('GET', '/locales/en')).body as Record<string, string>;
+    const ar = (await t.call('GET', '/locales/ar')).body;
     const rawAr = JSON.parse(readFileSync(join(configDir, 'locales/ar.json'), 'utf8')) as object;
     expect(en['part.vessel']).toBe('Mixing vessel');
     expect(ar).toEqual(rawAr);
   });
 
   it('answers 404 for an unknown language and an unknown route', async () => {
-    expect((await fetch(`${base}/locales/fr`)).status).toBe(404);
-    expect((await fetch(`${base}/nothing`)).status).toBe(404);
-    expect((await fetch(`${base.replace('/api', '')}/machine`)).status).toBe(404); // no /api prefix
+    expect((await t.call('GET', '/locales/fr')).status).toBe(404);
+    expect((await t.call('GET', '/nothing', undefined, manager)).status).toBe(404);
   });
 });
 
 describe('startup checks', () => {
+  const store = () => ({ userStore: new MemoryUserStore(), logs: false });
+
   it('refuses to start with a broken machine.json, listing every problem', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'mixline-backend-'));
     const m = JSON.parse(readFileSync(join(configDir, 'machine.json'), 'utf8')) as {
@@ -73,24 +71,53 @@ describe('startup checks', () => {
     writeFileSync(join(dir, 'machine.json'), JSON.stringify(m));
 
     await expect(
-      createApp({
-        MACHINE_CONFIG: join(dir, 'machine.json'),
-        LOCALES_DIR: join(configDir, 'locales'),
-      }),
+      createApp(
+        {
+          ...TEST_ENV,
+          MACHINE_CONFIG: join(dir, 'machine.json'),
+          LOCALES_DIR: join(configDir, 'locales'),
+        },
+        store(),
+      ),
     ).rejects.toThrow(
       /2 problem\(s\)[\s\S]*dye_c\/sensors\/mass[\s\S]*unknown component "nothing"/,
     );
   });
 
   it('refuses a missing locale folder', async () => {
-    await expect(createApp({ LOCALES_DIR: join(configDir, 'nope') })).rejects.toThrow(
-      /cannot read .*en\.json/,
+    await expect(
+      createApp({ ...TEST_ENV, LOCALES_DIR: join(configDir, 'nope') }, store()),
+    ).rejects.toThrow(/cannot read .*en\.json/);
+  });
+
+  it('refuses to start without database settings when no store is given', async () => {
+    await expect(createApp(TEST_ENV, { logs: false })).rejects.toThrow(
+      /database settings are missing/,
     );
   });
 
   it('checks the settings', () => {
-    expect(loadConfig({}).port).toBe(3000);
-    expect(loadConfig({ PORT: '8080' }).port).toBe(8080);
-    expect(() => loadConfig({ PORT: 'eighty' })).toThrow(/backend settings are invalid[\s\S]*PORT/);
+    expect(loadConfig(TEST_ENV).port).toBe(3000);
+    expect(loadConfig({ ...TEST_ENV, PORT: '8080' }).port).toBe(8080);
+    expect(() => loadConfig({ ...TEST_ENV, PORT: 'eighty' })).toThrow(
+      /backend settings are invalid[\s\S]*PORT/,
+    );
+    expect(() => loadConfig({})).toThrow(/JWT_SECRET/);
+    expect(() => loadConfig({ ...TEST_ENV, JWT_SECRET: 'short' })).toThrow(/at least 32/);
+    expect(() => loadConfig({ JWT_SECRET: TEST_ENV.JWT_SECRET, MANAGER_EMAIL: 'a@b.co' })).toThrow(
+      /MANAGER_EMAIL and MANAGER_PASSWORD together/,
+    );
+  });
+
+  it('builds the database address from the POSTGRES_* values', () => {
+    const c = loadConfig({
+      ...TEST_ENV,
+      POSTGRES_USER: 'mixline',
+      POSTGRES_PASSWORD: 'p@ss/word',
+      POSTGRES_DB: 'mixline',
+      POSTGRES_HOST: 'db',
+    });
+    expect(c.databaseUrl).toBe('postgresql://mixline:p%40ss%2Fword@db:5432/mixline');
+    expect(loadConfig(TEST_ENV).databaseUrl).toBeUndefined();
   });
 });

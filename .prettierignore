@@ -1,6 +1,7 @@
 pnpm-lock.yaml
 **/dist/
 **/coverage/
+apps/backend/src/generated/
 
 # Owner-authored files are kept exactly as written; Prettier would reflow
 # their tables and the arrays in machine.json.
