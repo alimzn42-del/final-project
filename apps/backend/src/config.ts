@@ -34,6 +34,10 @@ const envSchema = z
     // Login sessions.
     JWT_SECRET: z.string().min(32, 'at least 32 characters; use a long random value'),
     SESSION_HOURS: z.coerce.number().positive().max(168).default(8),
+    // Proxies in front of the backend (nginx in Docker = 1). Their X-Forwarded-For then gives the
+    // client's address, which the login and sign-up limits count. 0: the header is ignored, so a
+    // client reaching the backend directly cannot fake its address.
+    TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
     COOKIE_SECURE: z
       .enum(['true', 'false'])
       .default('false')
@@ -71,6 +75,8 @@ export interface BackendConfig {
   /** Undefined when MQTT_USERNAME / MQTT_PASSWORD are not set (no intake). */
   mqtt: { url: string; username: string; password: string } | undefined;
   clockToleranceMs: number;
+  /** Number of proxies in front (TRUST_PROXY). */
+  trustProxy: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig {
@@ -95,6 +101,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
         ? { url: e.MQTT_URL, username: e.MQTT_USERNAME, password: e.MQTT_PASSWORD }
         : undefined,
     clockToleranceMs: e.CLOCK_TOLERANCE_MS,
+    trustProxy: e.TRUST_PROXY,
   };
 }
 

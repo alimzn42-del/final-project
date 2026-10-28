@@ -23,7 +23,16 @@ export default defineConfig({
         },
       },
       { extends: true, test: { name: '@mixline/simulator', root: 'apps/simulator' } },
-      { extends: true, test: { name: '@mixline/frontend', root: 'apps/frontend' } },
+      {
+        // The web app's own Vite config (React, browser conditions), in a simulated browser.
+        extends: './apps/frontend/vite.config.ts',
+        test: {
+          name: '@mixline/frontend',
+          root: 'apps/frontend',
+          environment: 'jsdom',
+          setupFiles: ['./src/test/setup.ts'],
+        },
+      },
     ],
   },
 });

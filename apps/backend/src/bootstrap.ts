@@ -3,9 +3,11 @@ import 'reflect-metadata';
 import { loadConfigFiles } from '@mixline/shared/node';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 
 import { AppModule, type RateLimits } from './app.module.js';
+import type { SessionStore } from './auth/session-store.js';
 import { type BackendConfig, loadConfig } from './config.js';
 import type { DepartmentStore } from './departments/department-store.js';
 import type { TelemetryStore } from './telemetry/telemetry-store.js';
@@ -19,6 +21,7 @@ export interface CreateAppOptions {
   userStore?: UserStore;
   departmentStore?: DepartmentStore;
   telemetryStore?: TelemetryStore;
+  sessionStore?: SessionStore;
   rateLimits?: RateLimits;
   /** Nest's own startup logs; on by default. */
   logs?: boolean;
@@ -35,18 +38,21 @@ export async function createApp(
 ): Promise<{ app: INestApplication; config: BackendConfig }> {
   const config = loadConfig(env);
   const files = loadConfigFiles(config.machineConfigPath, config.localesDir);
-  const app = await NestFactory.create(
+  const app = await NestFactory.create<NestExpressApplication>(
     AppModule.register({
       files,
       config,
       userStore: options.userStore,
       departmentStore: options.departmentStore,
       telemetryStore: options.telemetryStore,
+      sessionStore: options.sessionStore,
       rateLimits: options.rateLimits,
     }),
     { logger: options.logs === false ? ['error'] : ['error', 'warn', 'log'] },
   );
   app.setGlobalPrefix(API_PREFIX);
+  // Behind nginx: the client's address comes from X-Forwarded-For (see config.ts, TRUST_PROXY).
+  app.set('trust proxy', config.trustProxy);
   // The live push (socket.io) shares the HTTP port; its path is set on the gateway, not by the prefix.
   app.useWebSocketAdapter(new IoAdapter(app));
   app.enableShutdownHooks();

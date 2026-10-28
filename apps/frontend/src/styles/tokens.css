@@ -1,0 +1,71 @@
+/*
+ * Colour tokens (docs/06-brand.md). Which theme shows (owner, step 11):
+ * - no data-theme on <html>: the browser's setting (visitors, and users who never picked one);
+ * - data-theme="dark" | "light": the theme saved with the user's account.
+ * The light values appear twice (browser setting and saved choice); tokens.test.ts keeps them equal
+ * and checks the contrast of text colours.
+ */
+:root {
+  color-scheme: dark;
+  --bg: #14181f;
+  --surface: #1c222c;
+  --line: #2c3542;
+  --text: #e8edf3;
+  --text-muted: #9aa6b4;
+  --brand: #2e9bff;
+  --brand-glow: #5fd3ff;
+  --link: #2e9bff;
+  --on-brand: #0b1520;
+  --steel: #c3cbd4;
+  --logo-steel: #c3cbd4;
+  --ok: #3cc27a;
+  --warning: #f2b533;
+  --fault: #f0524f;
+  --offline: #6b7684;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    color-scheme: light;
+    --bg: #f3f5f8;
+    --surface: #ffffff;
+    --line: #d6dce4;
+    --text: #141a22;
+    --text-muted: #5b6776;
+    --brand: #1677d2;
+    --brand-glow: #2e9bff;
+    --link: #1468c0;
+    --on-brand: #ffffff;
+    --steel: #8a96a3;
+    --logo-steel: #6e7b8a;
+    --ok: #1e9e5a;
+    --warning: #c98a00;
+    --fault: #d13330;
+    --offline: #9aa4b0;
+  }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --line: #d6dce4;
+  --text: #141a22;
+  --text-muted: #5b6776;
+  --brand: #1677d2;
+  --brand-glow: #2e9bff;
+  --link: #1468c0;
+  --on-brand: #ffffff;
+  --steel: #8a96a3;
+  --logo-steel: #6e7b8a;
+  --ok: #1e9e5a;
+  --warning: #c98a00;
+  --fault: #d13330;
+  --offline: #9aa4b0;
+}
+
+/* The logo's colours follow the theme. */
+:root {
+  --logo-facet: var(--brand);
+  --logo-glow: var(--brand-glow);
+}

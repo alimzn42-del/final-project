@@ -8,7 +8,7 @@
 | `mqtt` | `eclipse-mosquitto:2.0.22` | message broker |
 | `migrate` | `apps/backend` (Prisma CLI, one-shot) | applies database migrations, then exits |
 | `backend` | `apps/backend` (NestJS) | REST, auth, MQTT ingest, WebSocket push |
-| `frontend` | `apps/frontend` (Vite build served by nginx) | the web app |
+| `frontend` | `apps/frontend` (Vite build served by nginx) | the web app; passes `/api` and the live WebSocket to the backend |
 | `simulator` | `apps/simulator` (Node) | publishes fake telemetry |
 
 - All images must have arm64 builds (Raspberry Pi 5 later). Runs on a laptop for now.
@@ -16,7 +16,8 @@
 - Config through env vars; commit `.env.example` only.
 - Named volumes for db and broker data.
 - Host ports are bound to `127.0.0.1` only (local tools); services reach each other by service
-  name on the Compose network.
+  name on the Compose network. The one exception is `frontend` (`WEB_PORT`, 8080 by default):
+  browsers on the lab network open `http://<computer>:8080`.
 - Mosquitto: anonymous clients are refused. The account comes from `MQTT_USERNAME` /
   `MQTT_PASSWORD` in `.env`; `docker/mosquitto/entrypoint.sh` writes the password file at
   container start, so no password is stored in the repo or the image.
@@ -93,18 +94,29 @@ Modules:
   - **Default deny:** a global guard requires a login on every route unless it is marked
     `@Public()` (health, locales, login, sign-up, logout); `@Roles(...)` narrows further.
   - Endpoints: `POST /api/auth/signup` (always `customer`, logs in), `POST /api/auth/login`,
-    `POST /api/auth/logout`, `GET /api/auth/me`, `PATCH /api/auth/me` (language),
+    `POST /api/auth/logout`, `GET /api/auth/me`, `PATCH /api/auth/me` (language, theme),
     `POST /api/users` (managers create `manager` or `worker`).
   - Passwords: **argon2id** (`@node-rs/argon2`, OWASP settings: 19 MiB, 2 passes, 1 lane;
     prebuilt for Windows and Alpine x64/arm64, no install script). An unknown email still costs
     one password check, and wrong email and wrong password give the same answer.
-  - Session: HS256 JWT (`jose`) holding only the user id, in an **httpOnly, SameSite=Strict
-    cookie** `mixline_session` on `/api`; lifetime `SESSION_HOURS` (default 8). The user is
-    re-read on every request, so a deleted user or a changed role counts at once.
+  - Session: HS256 JWT (`jose`) holding the user id and a session id, in an **httpOnly,
+    SameSite=Strict cookie** `mixline_session` on `/api`; lifetime `SESSION_HOURS` (default 8).
+    The user is re-read on every request, so a deleted user or a changed role counts at once.
     `COOKIE_SECURE=true` only when served over HTTPS. `JWT_SECRET`: 32+ characters, required.
+  - Sessions on the server (owner, step 11): one row per login in `sessions`. A token counts only
+    while its row exists, so:
+    - **logout** deletes the row: a copied token gets 401 at once, and the live connections of
+      that session are closed at once. The user's other devices stay logged in;
+    - a **password change** deletes the user's other rows (logs out the other devices and closes
+      their live connections); the device that made the change stays logged in;
+    - a deleted user's rows go with it (`ON DELETE CASCADE`); expired rows are deleted at the next
+      login.
+    Tokens from before step 11 have no session id and stop working: everyone logs in once more.
   - Rate limits per client address: login 10 per minute, sign-up 20 per hour (a kiosk is one
-    address for many customers). Step 11 (nginx in front) must make Express trust the proxy, or
-    every request would share nginx's address.
+    address for many customers). Behind nginx (step 11) the backend trusts exactly one proxy
+    (`TRUST_PROXY=1`, set in docker-compose.yml) and counts the address nginx forwards; nginx
+    overwrites `X-Forwarded-For`, so a browser cannot fake it. Without a proxy (`pnpm dev`, the
+    default 0) the header is ignored. The backend's own port stays on this computer only.
   - First manager: `MANAGER_EMAIL` / `MANAGER_PASSWORD`, created at startup only if no manager
     exists; never changed afterwards. It starts with a temporary password that must be changed at
     first login (owner, step 9). The flag is set only when the seed creates the account: once any
@@ -193,8 +205,8 @@ Modules:
     Pi's bandwidth needs it (none are used yet).
   - The session cookie is `SameSite=Strict`, so another site's page cannot open the connection
     with it.
-  - Step 11 (nginx in front, and the Vite dev proxy) must pass WebSocket upgrades on
-    `/api/socket.io`; without that socket.io falls back to long-polling, which works but is slower.
+  - nginx and the Vite dev proxy pass WebSocket upgrades on `/api/socket.io` (step 11); without
+    that socket.io would fall back to long-polling, which works but is slower.
   - Tests use a real socket.io client against the app (memory stores, no Docker);
     `pnpm live:check` verifies the push on the running stack, including offline pushed with time
     alone (it stops the simulator for about 15 s).
@@ -202,11 +214,14 @@ Modules:
 Database:
 - `users` (one table for all roles):
   - Account: id, email (unique, stored lowercase), password_hash, role `manager|worker|customer`,
-    locale `en|ar`, created_by (null for self-signup and the seeded manager), created_at.
+    locale `en|ar`, theme `dark|light` or null (null: follow the browser; owner, step 11),
+    created_by (null for self-signup and the seeded manager), created_at.
   - Staff (owner, step 9): department_id (required for workers, null otherwise; foreign key to
     `departments`, ON DELETE RESTRICT), must_change_password (true for accounts a manager creates
     and for the first manager, until the first password change). full_name is required for staff
     too.
+- `sessions` (id, user_id, created_at, expires_at), owner, step 11: one row per login; foreign
+  key to `users` with ON DELETE CASCADE, indexed by user_id. See "Sessions on the server" above.
 - `departments` (id, name_en, name_ar, created_at), owner, step 9: names unique (the database
   indexes exact names; the backend also refuses the same name in another letter case). The
   migration that creates the table inserts Maintenance, Production and Quality, so they exist from
@@ -268,6 +283,45 @@ Database:
   - `pnpm db:check` creates an empty database, runs every migration, checks the result (including
     running the cleanup, compression and summary jobs), and removes it.
 
+## Frontend (React)
+
+Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
+
+- **One address**: the app calls `/api` on its own address (nginx in Docker, the Vite proxy in
+  `pnpm dev` on :5173), so the session cookie goes along by itself and nothing is configured.
+- **Labels from the backend** (`GET /api/locales/:lang`), not bundled: a new machine needs only new
+  config files. Keys are flat (`part.dyeTank`), so a dot is part of the key. Arabic sets
+  `dir="rtl"` on the page; layout uses logical CSS properties, so it mirrors by itself. The one
+  text outside the locale files is a bilingual message in `index.html` for when the backend cannot
+  be reached before any label loaded.
+- **No hardcoded text** (hard rule 6): ESLint `i18next/no-literal-string` rejects text in JSX and in
+  the attributes people read (`alt`, `title`, `placeholder`, `label`, `aria-label`). A test runs
+  the real ESLint config on two fixtures (one must fail, one must pass).
+- **Session**: `GET /api/auth/me` decides who is logged in (the cookie itself is httpOnly). A `401`
+  while in use returns to the login page with "your session has ended".
+- **Routes and guards** (doc 03): `/login`, `/signup` (visitors), `/change-password`, `/line/*`
+  and `/worker` (managers and workers), `/customer` (customers). Managers and workers land on
+  `/line`, customers on `/customer`; a page the role may not open sends the user to their own; a
+  temporary password allows only `/change-password`. The backend refuses anyway; the guards only
+  send people to a page they can use.
+- **Language and theme** (owner, step 11): saved with the account (`PATCH /api/auth/me`). Before
+  login: the visitor's last language in this browser (else English) and the browser's theme. A
+  user who never picked a theme keeps the browser's. During a forced password change the backend
+  accepts nothing else, so the language changes only in this browser and the theme is locked.
+- **Forms** check the shared zod rules before sending; every message comes from the locale files.
+  Mobile: a country picker (the browser's built-in country names, owner step 11; Syria selected
+  first), sent as E.164 (`libphonenumber-js`).
+- **Brand** (docs/06-brand.md): colour tokens in `src/styles/tokens.css` with a WCAG AA test; IBM
+  Plex Sans, Sans Arabic and Mono bundled (the lab is offline); the SVG mark in `src/brand/Logo.tsx`.
+- **nginx** (`docker/web.Dockerfile`, `docker/nginx/default.conf`; `nginx-unprivileged`, runs as a
+  normal user, multi-arch): `/api` and the WebSocket to `backend:3000` (re-resolved every 10 s,
+  so a recreated backend container is followed); any other address gets `index.html` (deep
+  links); `/assets/*` cached for a year (file names change with every build); `nosniff`,
+  `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`.
+- Tests: 21 app tests against a fake backend (Testing Library, jsdom), with the real locale files.
+  `pnpm web:check` checks the running stack through nginx: page, deep links, caching, API, login,
+  WebSocket, and that logout closes the session's live connection at once.
+
 ## Simulator
 
 - Reads `machine.json`, publishes every sensor on its real topic.
@@ -300,6 +354,9 @@ Database:
   TypeScript). pnpm linked them because both are installed as dev tools, and `pnpm deploy --prod`
   then put them, with Prisma Studio and an embedded Postgres, into the backend image (481 MB ->
   266 MB without them). The runtime client needs neither.
+- The web app has its own `docker/web.Dockerfile` (Vite build, then nginx); see "Frontend".
+  Its build type-checks the app code only (`tsconfig.build.json`): the tests read `config/`, which
+  is not in the Docker build context. `pnpm typecheck` still checks the tests.
 - App images: one multi-stage `docker/node-app.Dockerfile` for every Node app (build argument
   `APP`: `backend`, `simulator`), build context = repo root, base image pinned
   (`node:24.22.0-alpine3.24`, multi-arch). The runtime stage holds only the app's `dist/` and

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { FirstManagerSeed } from '../auth/first-manager.js';
 import { Sessions } from '../auth/session.js';
+import { MemorySessionStore } from '../testing/memory-session-store.js';
 import { DEFAULT_RATE_LIMITS, startTestApp, TEST_ENV, type TestApp } from '../testing/http.js';
 
 const customer = {
@@ -37,6 +38,7 @@ describe('auth over HTTP (in-memory users)', () => {
         email: 'rana.haddad@example.com',
         role: 'customer',
         locale: 'en',
+        theme: null,
         fullName: 'Rana Haddad',
         departmentId: null,
         mustChangePassword: false,
@@ -138,22 +140,20 @@ describe('auth over HTTP (in-memory users)', () => {
 
   describe('sessions', () => {
     it('refuses a forged token', async () => {
-      const forged = await new Sessions({
-        secret: 'another-secret-that-is-long-enough-0000',
-        hours: 8,
-        secureCookie: false,
-      }).sign([...t.store.rows.keys()][0] ?? '');
+      const forged = await new Sessions(
+        { secret: 'another-secret-that-is-long-enough-0000', hours: 8, secureCookie: false },
+        new MemorySessionStore(),
+      ).start([...t.store.rows.keys()][0] ?? '');
       const r = await t.call('GET', '/auth/me', undefined, `mixline_session=${forged}`);
       expect(r.status).toBe(401);
     });
 
     it('refuses an expired token', async () => {
-      const sessions = new Sessions({
-        secret: TEST_ENV.JWT_SECRET,
-        hours: -1,
-        secureCookie: false,
-      });
-      const token = await sessions.sign([...t.store.rows.keys()][0] ?? '');
+      const sessions = new Sessions(
+        { secret: TEST_ENV.JWT_SECRET, hours: -1, secureCookie: false },
+        t.sessions,
+      );
+      const token = await sessions.start([...t.store.rows.keys()][0] ?? '');
       expect((await t.call('GET', '/auth/me', undefined, `mixline_session=${token}`)).status).toBe(
         401,
       );
@@ -177,6 +177,24 @@ describe('auth over HTTP (in-memory users)', () => {
         ((await t.call('GET', '/auth/me', undefined, cookie)).body as { locale: string }).locale,
       ).toBe('ar');
       expect((await t.call('PATCH', '/auth/me', { locale: 'fr' }, cookie)).status).toBe(400);
+    });
+
+    it('remembers the theme per user; none until picked (owner, step 11)', async () => {
+      const cookie = await t.login('rana.haddad@example.com', customer.password);
+      const theme = async () =>
+        ((await t.call('GET', '/auth/me', undefined, cookie)).body as { theme: unknown }).theme;
+      expect(await theme()).toBeNull(); // follows the browser until picked
+
+      expect((await t.call('PATCH', '/auth/me', { theme: 'light' }, cookie)).status).toBe(200);
+      expect(await theme()).toBe('light');
+      const both = await t.call('PATCH', '/auth/me', { theme: 'dark', locale: 'en' }, cookie);
+      expect(both.body).toMatchObject({ theme: 'dark', locale: 'en' });
+      expect((await t.call('PATCH', '/auth/me', { theme: null }, cookie)).status).toBe(200);
+      expect(await theme()).toBeNull();
+
+      for (const bad of [{ theme: 'blue' }, {}, { theme: 'dark', role: 'manager' }]) {
+        expect((await t.call('PATCH', '/auth/me', bad, cookie)).status).toBe(400);
+      }
     });
   });
 

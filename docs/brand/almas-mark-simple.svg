@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- ALMAS mark, initial design (step 11, owner review pending). Dark-theme colours; the app draws it from apps/frontend/src/brand/Logo.tsx with the theme's colours. -->
+  <g style="fill: var(--logo-facet, #2E9BFF)">
+    <path d="M4 24 18 12 25 24Z" fill-opacity=".35"/>
+    <path d="M18 12H32L25 24Z" fill-opacity=".625"/>
+    <path d="M32 12 39 24H25Z" fill-opacity=".2"/>
+    <path d="M32 12H46L39 24Z" fill-opacity=".525"/>
+    <path d="M46 12 60 24H39Z" fill-opacity=".775"/>
+    <path d="M4 24H25L32 58Z" fill-opacity=".25"/>
+    <path d="M25 24H39L32 58Z" fill-opacity=".125"/>
+    <path d="M39 24H60L32 58Z" fill-opacity=".475"/>
+  </g>
+  <path d="M4 24H60M18 12 25 24 32 12 39 24 46 12M25 24 32 58M39 24 32 58" fill="none" style="stroke: var(--logo-glow, #5FD3FF)" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M18 12H46L60 24 32 58 4 24Z" fill="none" style="stroke: var(--logo-steel, #C3CBD4)" stroke-width="3.2" stroke-linejoin="round"/>
+  <rect x="24.5" y="26" width="15" height="15" rx="3" style="fill: var(--logo-facet, #2E9BFF); stroke: var(--logo-glow, #5FD3FF)" stroke-width="1.4"/>
+  <path d="M27.5 37.5 30 29.5 32.5 37.5M28.3 35H31.7M35.8 29.5V37.5" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

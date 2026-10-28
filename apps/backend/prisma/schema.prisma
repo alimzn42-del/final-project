@@ -23,6 +23,12 @@ enum Locale {
   ar
 }
 
+/// Colour theme (owner, step 11); null on a user = follow the browser's setting.
+enum Theme {
+  dark
+  light
+}
+
 /// The 14 Syrian governorates, plus "outside" (then `country` is filled in).
 enum Governorate {
   damascus
@@ -56,6 +62,8 @@ model User {
   passwordHash String   @map("password_hash")
   role         Role
   locale       Locale   @default(en)
+  /// Null until the user picks one: the app follows the browser's setting (owner, step 11).
+  theme        Theme?
   /// Null for self-signup and for the manager seeded from .env.
   createdById  String?  @map("created_by") @db.Uuid
   createdBy    User?    @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -82,7 +90,24 @@ model User {
   occupation   String?
   paintPurpose String?      @map("paint_purpose")
 
+  sessions Session[]
+
   @@map("users")
+}
+
+/// One row per login (owner, step 11). The session token names its row, and
+/// every request checks that the row still exists: logout deletes it, so a
+/// copied token stops working at once. A password change deletes the user's
+/// other rows. Rows of a deleted user go with it (ON DELETE CASCADE).
+model Session {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("sessions")
 }
 
 /// Worker departments (owner, step 9), managed by managers. Maintenance,
