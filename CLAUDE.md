@@ -39,7 +39,7 @@ config/locales/     en.json and ar.json for every label key
 docs/              specs (docs/brand/ holds the logo files)
 docker/            container config: node-app.Dockerfile (image for every Node app, build arg APP),
                    mosquitto/ (broker config and entrypoint)
-scripts/           repo scripts (check-infra.mjs)
+scripts/           repo scripts (check-infra, check-db, check-telemetry, check-live)
 reference/         earlier planning files, kept unchanged, not used by the code
 docker-compose.yml
 .env.example       every setting; copy to .env (git-ignored) and set real passwords
@@ -117,6 +117,7 @@ Run from the repo root:
 | `pnpm --filter @mixline/backend db:migrate:dev` | After changing `schema.prisma`: create a new migration |
 | `pnpm sim:check` | Listen 12 s and verify a running simulator (topics, payloads, intervals) |
 | `pnpm telemetry:check` | Verify simulator -> MQTT -> backend -> database -> API on the running stack |
+| `pnpm live:check` | Verify the live push (socket.io) on the running stack; stops the simulator ~15 s |
 | `pnpm stack:down` / `pnpm infra:down` | Stop the Docker stack; data volumes are kept |
 | `pnpm dev` | Runs each app's `dev` script with live reload, using `.env` (backend on :3000, simulator) |
 
