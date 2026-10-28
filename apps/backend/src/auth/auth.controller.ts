@@ -19,12 +19,13 @@ import {
   Inject,
   Patch,
   Post,
+  Req,
   Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 
 import { ZodPipe } from '../common/zod.pipe.js';
 import {
@@ -34,9 +35,9 @@ import {
   USER_STORE,
   type UserStore,
 } from '../users/user-store.js';
-import { AllowDuringPasswordChange, CurrentUser, Public } from './access.js';
+import { AllowDuringPasswordChange, CurrentSession, CurrentUser, Public } from './access.js';
 import { AuthService, WrongPasswordError } from './auth.service.js';
-import { SESSION_COOKIE, Sessions } from './session.js';
+import { readCookie, type Session, SESSION_COOKIE, Sessions } from './session.js';
 
 /**
  * /api/auth: sign-up (customers only), login, logout, and the logged-in
@@ -86,11 +87,16 @@ export class AuthController {
     return toPublic(user);
   }
 
-  /** Public, so an expired session can still be cleared. */
+  /**
+   * Ends this session on the server (a copied token stops working, its live
+   * connection is closed) and clears the cookie. Public, so an expired
+   * session can still be cleared.
+   */
   @Post('logout')
   @HttpCode(204)
   @Public()
-  logout(@Res({ passthrough: true }) res: Response): void {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
+    await this.sessions.end(readCookie(req.headers.cookie, SESSION_COOKIE));
     res.clearCookie(SESSION_COOKIE, this.sessions.clearCookieOptions());
   }
 
@@ -101,8 +107,9 @@ export class AuthController {
   }
 
   /**
-   * Changes my password (and ends a temporary one). Counted under the login
-   * rate limit, since it also checks a password.
+   * Changes my password (and ends a temporary one). Logs out my other devices;
+   * this one stays logged in (owner, step 11). Counted under the login rate
+   * limit, since it also checks a password.
    */
   @Post('change-password')
   @HttpCode(200)
@@ -111,10 +118,13 @@ export class AuthController {
   @SkipThrottle({ signup: true })
   async changePassword(
     @CurrentUser() user: PublicUser,
+    @CurrentSession() session: Session,
     @Body(new ZodPipe(changePasswordSchema)) input: ChangePasswordInput,
   ): Promise<PublicUser> {
     try {
-      return toPublic(await this.auth.changePassword(user.id, input));
+      const changed = toPublic(await this.auth.changePassword(user.id, input));
+      await this.sessions.endOthers(session);
+      return changed;
     } catch (error) {
       if (error instanceof WrongPasswordError) {
         throw new BadRequestException({
@@ -136,6 +146,6 @@ export class AuthController {
   }
 
   private async startSession(res: Response, user: StoredUser): Promise<void> {
-    res.cookie(SESSION_COOKIE, await this.sessions.sign(user.id), this.sessions.cookieOptions());
+    res.cookie(SESSION_COOKIE, await this.sessions.start(user.id), this.sessions.cookieOptions());
   }
 }

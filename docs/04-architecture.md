@@ -98,10 +98,19 @@ Modules:
   - Passwords: **argon2id** (`@node-rs/argon2`, OWASP settings: 19 MiB, 2 passes, 1 lane;
     prebuilt for Windows and Alpine x64/arm64, no install script). An unknown email still costs
     one password check, and wrong email and wrong password give the same answer.
-  - Session: HS256 JWT (`jose`) holding only the user id, in an **httpOnly, SameSite=Strict
-    cookie** `mixline_session` on `/api`; lifetime `SESSION_HOURS` (default 8). The user is
-    re-read on every request, so a deleted user or a changed role counts at once.
+  - Session: HS256 JWT (`jose`) holding the user id and a session id, in an **httpOnly,
+    SameSite=Strict cookie** `mixline_session` on `/api`; lifetime `SESSION_HOURS` (default 8).
+    The user is re-read on every request, so a deleted user or a changed role counts at once.
     `COOKIE_SECURE=true` only when served over HTTPS. `JWT_SECRET`: 32+ characters, required.
+  - Sessions on the server (owner, step 11): one row per login in `sessions`. A token counts only
+    while its row exists, so:
+    - **logout** deletes the row: a copied token gets 401 at once, and the live connections of
+      that session are closed at once. The user's other devices stay logged in;
+    - a **password change** deletes the user's other rows (logs out the other devices and closes
+      their live connections); the device that made the change stays logged in;
+    - a deleted user's rows go with it (`ON DELETE CASCADE`); expired rows are deleted at the next
+      login.
+    Tokens from before step 11 have no session id and stop working: everyone logs in once more.
   - Rate limits per client address: login 10 per minute, sign-up 20 per hour (a kiosk is one
     address for many customers). Step 11 (nginx in front) must make Express trust the proxy, or
     every request would share nginx's address.
@@ -207,6 +216,8 @@ Database:
     `departments`, ON DELETE RESTRICT), must_change_password (true for accounts a manager creates
     and for the first manager, until the first password change). full_name is required for staff
     too.
+- `sessions` (id, user_id, created_at, expires_at), owner, step 11: one row per login; foreign
+  key to `users` with ON DELETE CASCADE, indexed by user_id. See "Sessions on the server" above.
 - `departments` (id, name_en, name_ar, created_at), owner, step 9: names unique (the database
   indexes exact names; the backend also refuses the same name in another letter case). The
   migration that creates the table inserts Maintenance, Production and Quality, so they exist from
