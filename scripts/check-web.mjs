@@ -67,7 +67,8 @@ const checks = [
         'cache-control': 'no-cache',
       };
       for (const [name, value] of Object.entries(expected)) {
-        if (res.headers.get(name) !== value) throw new Error(`${name}: ${String(res.headers.get(name))}`);
+        if (res.headers.get(name) !== value)
+          throw new Error(`${name}: ${String(res.headers.get(name))}`);
       }
     },
   ],
@@ -97,9 +98,11 @@ const checks = [
     'the API through nginx: health, and the Arabic labels',
     async () => {
       const health = await get('/api/health');
-      if (health.res.status !== 200) throw new Error(`health answered ${String(health.res.status)}`);
+      if (health.res.status !== 200)
+        throw new Error(`health answered ${String(health.res.status)}`);
       const ar = JSON.parse((await get('/api/locales/ar')).text);
-      if (ar['brand.name'] !== 'ألماس') throw new Error(`brand.name is "${String(ar['brand.name'])}"`);
+      if (ar['brand.name'] !== 'ألماس')
+        throw new Error(`brand.name is "${String(ar['brand.name'])}"`);
     },
   ],
   [
@@ -133,13 +136,15 @@ const checks = [
       try {
         if (out.status !== 204) throw new Error(`logout answered ${String(out.status)}`);
         const reason = await Promise.race([closed, sleep(3000).then(() => 'still open')]);
-        if (reason !== 'io server disconnect') throw new Error(`live connection: ${String(reason)}`);
+        if (reason !== 'io server disconnect')
+          throw new Error(`live connection: ${String(reason)}`);
         const copied = (await get('/api/auth/me', cookie)).res.status;
         if (copied !== 401) throw new Error(`the copied cookie answered ${String(copied)}`);
         if ((await get('/api/auth/me', other)).res.status !== 200) {
           throw new Error('the other device was logged out too');
         }
-        if (!otherLive.socket.connected) throw new Error("the other device's live connection closed");
+        if (!otherLive.socket.connected)
+          throw new Error("the other device's live connection closed");
         return `closed ${String(Date.now() - started)} ms after the logout; the other device stays in`;
       } finally {
         live.socket.disconnect();
