@@ -1,11 +1,12 @@
 import 'reflect-metadata';
 
-import { loadConfigFiles, loadDepartmentsFile } from '@mixline/shared/node';
+import { loadConfigFiles } from '@mixline/shared/node';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule, type RateLimits } from './app.module.js';
 import { type BackendConfig, loadConfig } from './config.js';
+import type { DepartmentStore } from './departments/department-store.js';
 import type { TelemetryStore } from './telemetry/telemetry-store.js';
 import type { UserStore } from './users/user-store.js';
 
@@ -15,6 +16,7 @@ export const API_PREFIX = 'api';
 export interface CreateAppOptions {
   /** Replace the database stores (HTTP tests run without Docker). */
   userStore?: UserStore;
+  departmentStore?: DepartmentStore;
   telemetryStore?: TelemetryStore;
   rateLimits?: RateLimits;
   /** Nest's own startup logs; on by default. */
@@ -31,14 +33,13 @@ export async function createApp(
   options: CreateAppOptions = {},
 ): Promise<{ app: INestApplication; config: BackendConfig }> {
   const config = loadConfig(env);
-  const { machine, locales } = loadConfigFiles(config.machineConfigPath, config.localesDir);
-  const departments = loadDepartmentsFile(config.departmentsPath, locales);
-  const files = { machine, locales, departments };
+  const files = loadConfigFiles(config.machineConfigPath, config.localesDir);
   const app = await NestFactory.create(
     AppModule.register({
       files,
       config,
       userStore: options.userStore,
+      departmentStore: options.departmentStore,
       telemetryStore: options.telemetryStore,
       rateLimits: options.rateLimits,
     }),

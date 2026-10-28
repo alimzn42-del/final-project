@@ -159,8 +159,5 @@
   "value.holding": "Holding",
   "value.releasing": "Releasing",
   "brand.name": "ALMAS",
-  "brand.tagline": "Automation | Robotics | Artificial Intelligence",
-  "department.maintenance": "Maintenance",
-  "department.production": "Production",
-  "department.quality": "Quality"
+  "brand.tagline": "Automation | Robotics | Artificial Intelligence"
 }

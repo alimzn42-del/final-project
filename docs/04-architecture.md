@@ -170,10 +170,18 @@ Database:
 - `users` (one table for all roles):
   - Account: id, email (unique, stored lowercase), password_hash, role `manager|worker|customer`,
     locale `en|ar`, created_by (null for self-signup and the seeded manager), created_at.
-  - Staff (owner, step 9): department (required for workers, null otherwise; an id from
-    `config/departments.json`, checked by the backend, not a database enum, so the list can change),
-    must_change_password (true for accounts a manager creates, until the first password change).
-    full_name is required for staff too.
+  - Staff (owner, step 9): department_id (required for workers, null otherwise; foreign key to
+    `departments`, ON DELETE RESTRICT), must_change_password (true for accounts a manager creates
+    and for the first manager, until the first password change). full_name is required for staff
+    too.
+- `departments` (id, name_en, name_ar, created_at), owner, step 9: names unique (the database
+  indexes exact names; the backend also refuses the same name in another letter case). The
+  migration that creates the table inserts Maintenance, Production and Quality, so they exist from
+  the first start and are never re-created. A department with workers cannot be deleted (foreign
+  key; the API answers 409 with the number of workers).
+  - API: `GET /api/departments` (manager and worker: id, names, number of workers);
+    `POST /api/departments`, `PATCH /api/departments/:id`, `DELETE /api/departments/:id`
+    (managers). A worker's department is set with `departmentId` when the account is created.
   - Sign-up profile. Required for `customer` (enforced by the signup validation); null for staff
     accounts (except full_name):
     - full_name
@@ -199,7 +207,12 @@ Database:
     for compression) after 1 day, segmented by `sensor_id`.
   - Continuous aggregate `telemetry_1m` (bucket, sensor_id, min, max, avg, samples), bucketed on
     `received_at`, refreshed every minute over the last 3 hours (well inside the 7 days of raw
-    data, so no summary loses its source), kept 1 year.
+    data, so no summary loses its source), kept 1 year, compressed after 7 days (owner, step 9;
+    segmented by `sensor_id`).
+  - Measured in step 9 with one synthetic day in the simulator's pattern: 40.8 readings/s =
+    3.5 million a day; raw 506 MB a day uncompressed, 27 MB compressed (19x); raw steady state
+    about 1.2 GB at most (7 days, the newest 1-2 uncompressed). The summary grows 14 MB a day
+    uncompressed (86,400 rows), hence its compression.
 - No `alarms` table in phase 1: its design depends on the PLC alarm list (open item in
   `docs/05-roadmap.md`, owner decision in step 7).
 - Migrations: **Prisma 7.10.1** (pinned: the CLI's `latest` npm tag points at an 8.0 release

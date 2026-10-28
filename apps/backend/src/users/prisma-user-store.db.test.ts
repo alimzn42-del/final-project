@@ -29,6 +29,13 @@ afterAll(async () => {
 
 const base = { passwordHash: 'x', locale: 'en' as const };
 
+/** The id of a starting department (inserted by the migration). */
+async function departmentId(nameEn: string): Promise<string> {
+  const row = await prisma.department.findUnique({ where: { nameEn } });
+  if (!row) throw new Error(`no department ${nameEn}`);
+  return row.id;
+}
+
 describe('PrismaUserStore on the real database', () => {
   it('creates and finds a customer with the full sign-up profile', async () => {
     const created = await store.create({
@@ -70,7 +77,7 @@ describe('PrismaUserStore on the real database', () => {
       ...base,
       email: 'sami@lab.sy',
       role: 'worker',
-      department: 'production',
+      departmentId: await departmentId('Production'),
       mustChangePassword: true,
       createdById: boss.id,
     });
@@ -83,7 +90,10 @@ describe('PrismaUserStore on the real database', () => {
 
   it('stores the department and the temporary-password flag; setPassword clears it', async () => {
     const sami = await store.findByEmail('sami@lab.sy');
-    expect(sami).toMatchObject({ department: 'production', mustChangePassword: true });
+    expect(sami).toMatchObject({
+      departmentId: await departmentId('Production'),
+      mustChangePassword: true,
+    });
     const changed = await store.setPassword(sami?.id ?? '', 'new-hash');
     expect(changed).toMatchObject({ passwordHash: 'new-hash', mustChangePassword: false });
   });
@@ -93,7 +103,12 @@ describe('PrismaUserStore on the real database', () => {
       /users_department_only_for_workers/,
     );
     await expect(
-      store.create({ ...base, email: 'm2@lab.sy', role: 'manager', department: 'quality' }),
+      store.create({
+        ...base,
+        email: 'm2@lab.sy',
+        role: 'manager',
+        departmentId: await departmentId('Quality'),
+      }),
     ).rejects.toThrow(/users_department_only_for_workers/);
   });
 

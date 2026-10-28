@@ -51,38 +51,52 @@ enum Source {
 /// (checked by the sign-up validation) and empty for staff accounts.
 /// Emails are stored lowercase (a database check refuses capitals).
 model User {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email        String    @unique
-  passwordHash String    @map("password_hash")
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
   role         Role
-  locale       Locale    @default(en)
+  locale       Locale   @default(en)
   /// Null for self-signup and for the manager seeded from .env.
-  createdById  String?   @map("created_by") @db.Uuid
-  createdBy    User?     @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  created      User[]    @relation("CreatedBy")
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  String?  @map("created_by") @db.Uuid
+  createdBy    User?    @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  created      User[]   @relation("CreatedBy")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   // Staff (owner, step 9).
-  /// Workers only: an id from config/departments.json (checked by the backend,
-  /// not an enum, so the list can change). A database check enforces
-  /// "department if and only if worker".
-  department         String?
+  /// Workers only (database check "department if and only if worker"). The
+  /// foreign key refuses to delete a department that still has workers.
+  departmentId       String?     @map("department_id") @db.Uuid
+  department         Department? @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   /// True for accounts a manager creates, until the temporary password is changed.
-  mustChangePassword Boolean @default(false) @map("must_change_password")
+  mustChangePassword Boolean     @default(false) @map("must_change_password")
 
   // Sign-up profile (customers).
-  fullName     String?   @map("full_name")
+  fullName     String?      @map("full_name")
   /// E.164, e.g. +963912345678.
   mobile       String?
-  dateOfBirth  DateTime? @map("date_of_birth") @db.Date
+  dateOfBirth  DateTime?    @map("date_of_birth") @db.Date
   governorate  Governorate?
   /// Only when governorate is "outside".
   country      String?
-  cityArea     String?   @map("city_area")
+  cityArea     String?      @map("city_area")
   occupation   String?
-  paintPurpose String?   @map("paint_purpose")
+  paintPurpose String?      @map("paint_purpose")
 
   @@map("users")
+}
+
+/// Worker departments (owner, step 9), managed by managers. Maintenance,
+/// Production and Quality are inserted once, by the migration that creates the
+/// table, so deleting them later never brings them back. A department that
+/// still has workers cannot be deleted (foreign key on users.department_id).
+model Department {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nameEn    String   @unique @map("name_en")
+  nameAr    String   @unique @map("name_ar")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  workers   User[]
+
+  @@map("departments")
 }
 
 /// Sensor readings, a TimescaleDB hypertable partitioned on received_at (see

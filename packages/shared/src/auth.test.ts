@@ -110,11 +110,12 @@ describe('loginSchema and createStaffSchema', () => {
   });
 
   const staff = { fullName: 'Sami Khoury', email: 'w@lab.sy', password: 'long enough' };
+  const DEPT = '0b5e2c1a-8f4d-4c3b-9a2e-7d6f5e4c3b2a';
 
   it('lets a manager create only managers and workers', () => {
-    expect(
-      createStaffSchema.parse({ ...staff, role: 'worker', department: 'production' }).role,
-    ).toBe('worker');
+    expect(createStaffSchema.parse({ ...staff, role: 'worker', departmentId: DEPT }).role).toBe(
+      'worker',
+    );
     expect(createStaffSchema.safeParse({ ...staff, role: 'customer' }).success).toBe(false);
   });
 
@@ -123,9 +124,9 @@ describe('loginSchema and createStaffSchema', () => {
       const r = createStaffSchema.safeParse(input);
       return r.success ? [] : r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
     };
-    expect(issues({ ...staff, role: 'worker' })).toEqual(['department: required for a worker']);
-    expect(issues({ ...staff, role: 'manager', department: 'quality' })).toEqual([
-      'department: only for workers',
+    expect(issues({ ...staff, role: 'worker' })).toEqual(['departmentId: required for a worker']);
+    expect(issues({ ...staff, role: 'manager', departmentId: DEPT })).toEqual([
+      'departmentId: only for workers',
     ]);
     expect(issues({ email: 'm@lab.sy', password: 'long enough', role: 'manager' })).toEqual([
       'fullName: Invalid input: expected string, received undefined',

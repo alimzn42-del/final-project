@@ -13,12 +13,22 @@ import {
   type StoredUser,
   type UserStore,
 } from '../users/user-store.js';
+import { DepartmentNotFoundError } from '../departments/department-store.js';
+import type { MemoryDepartmentStore } from './memory-department-store.js';
 
 export class MemoryUserStore implements UserStore {
   readonly rows = new Map<
     string,
-    StoredUser & Omit<NewUser, 'fullName' | 'department' | 'mustChangePassword'>
+    StoredUser & Omit<NewUser, 'fullName' | 'departmentId' | 'mustChangePassword'>
   >();
+
+  /** Linked like the database: workers point at existing departments (foreign key). */
+  constructor(private readonly departments?: MemoryDepartmentStore) {
+    if (departments) {
+      departments.workersIn = (id) =>
+        [...this.rows.values()].filter((u) => u.departmentId === id).length;
+    }
+  }
 
   findByEmail(email: string): Promise<StoredUser | undefined> {
     return Promise.resolve(copy([...this.rows.values()].find((u) => u.email === email)));
@@ -32,8 +42,11 @@ export class MemoryUserStore implements UserStore {
     if (input.email !== input.email.toLowerCase()) {
       return Promise.reject(new Error('users_email_lowercase: email must be lowercase'));
     }
-    if ((input.role === 'worker') !== Boolean(input.department)) {
+    if ((input.role === 'worker') !== Boolean(input.departmentId)) {
       return Promise.reject(new Error('users_department_only_for_workers'));
+    }
+    if (input.departmentId && this.departments && !this.departments.rows.has(input.departmentId)) {
+      return Promise.reject(new DepartmentNotFoundError(input.departmentId));
     }
     if ([...this.rows.values()].some((u) => u.email === input.email)) {
       return Promise.reject(new EmailTakenError(input.email));
@@ -42,7 +55,7 @@ export class MemoryUserStore implements UserStore {
       ...input,
       id: randomUUID(),
       fullName: input.fullName ?? null,
-      department: input.department ?? null,
+      departmentId: input.departmentId ?? null,
       mustChangePassword: input.mustChangePassword ?? false,
     };
     this.rows.set(row.id, row);

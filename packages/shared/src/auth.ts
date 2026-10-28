@@ -128,8 +128,8 @@ export type LoginInput = z.infer<typeof loginSchema>;
 /**
  * A manager creates a manager or worker account (owner, step 9): full name,
  * email, role and a temporary password are required; language is optional.
- * Workers also need a department; whether it is one of the departments in
- * config/departments.json is checked by the backend, which has the file.
+ * Workers also need a department (its id); whether it exists is checked by the
+ * backend against the departments table.
  * The new user must change the password at first login.
  */
 export const createStaffSchema = z
@@ -141,14 +141,14 @@ export const createStaffSchema = z
     password: newPassword,
     locale: z.enum(LANGUAGES).default('en'),
     /** Required for workers, not allowed for managers. */
-    department: optionalText(50),
+    departmentId: z.uuid('expected a department id').optional(),
   })
   .superRefine((s, ctx) => {
-    if (s.role === 'worker' && !s.department) {
-      ctx.addIssue({ code: 'custom', path: ['department'], message: 'required for a worker' });
+    if (s.role === 'worker' && !s.departmentId) {
+      ctx.addIssue({ code: 'custom', path: ['departmentId'], message: 'required for a worker' });
     }
-    if (s.role === 'manager' && s.department) {
-      ctx.addIssue({ code: 'custom', path: ['department'], message: 'only for workers' });
+    if (s.role === 'manager' && s.departmentId) {
+      ctx.addIssue({ code: 'custom', path: ['departmentId'], message: 'only for workers' });
     }
   });
 export type CreateStaffInput = z.infer<typeof createStaffSchema>;
@@ -164,8 +164,8 @@ export interface PublicUser {
   role: Role;
   locale: (typeof LANGUAGES)[number];
   fullName: string | null;
-  /** Workers only: an id from config/departments.json. */
-  department: string | null;
+  /** Workers only: the id of their department (GET /api/departments for the names). */
+  departmentId: string | null;
   /** True until a manager-created account has replaced its temporary password. */
   mustChangePassword: boolean;
 }

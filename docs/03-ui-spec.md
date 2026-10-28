@@ -26,9 +26,15 @@
 - Self-registration can never create `manager` or `worker`. Enforce in the backend, not only the UI.
 - A manager creates a worker or manager account with (owner, step 9):
   - Required: full name, email, role, a **temporary password**. Optional: language.
-  - Workers also need a **department** (required): Maintenance, Production or Quality. The list is
-    in `config/departments.json` (labels in the locale files as `department.<id>`), so it can change
-    without code.
+  - Workers also need a **department** (required).
+- Departments (owner, step 9) are kept in the database, not in a config file:
+  - Maintenance (الصيانة), Production (الإنتاج) and Quality (الجودة) are created once, on first
+    start; deleting them later never brings them back.
+  - Managers add, rename and delete departments (API now, the user-management page later). Each
+    department has an English and an Arabic name, both required, unique ignoring letter case.
+    They are data typed by a manager, so they are not in the locale files.
+  - A department that still has workers **cannot be deleted**: the answer gives the number of
+    workers, and the database enforces it too (foreign key).
   - The new user **must change the password at first login**: until then the account can only see
     who is logged in, change its password, or log out. The same applies to the first manager
     created from `.env` (set once, at creation; a restart never resets it).

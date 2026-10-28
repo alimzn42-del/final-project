@@ -10,7 +10,8 @@
 5. Frontend: login, language switch (en/ar, RTL), the four navigation levels, 3D scene built from
    `machine.json`, state colors, component page with live values and trend charts, SIMULATION badge.
 6. Worker and customer routes as placeholders. Customer sign-up page works.
-7. Last step of phase 1: user management page for managers (create manager and worker accounts).
+7. Last step of phase 1: user management page for managers: create manager and worker accounts,
+   manage departments (add, rename, delete), and edit a worker's department (owner, step 9).
 
 Done when: `docker compose up --build` starts everything, a manager can log in, browse every level,
 and see values moving.
@@ -40,6 +41,16 @@ repo already created). Commit and push after every finished task; see the git wo
   what-if scenarios.
 - Alarms UI and acknowledgement from the web.
 - Real hardware: Raspberry Pi and ESP32 publishing instead of the simulator.
+  - Rejection counting (owner, step 9: not before, since the simulator never sends invalid data,
+    so the counts would always be zero). Starting draft:
+    - count dropped messages per station (the station segment of the topic), plus one "unknown"
+      bucket for topics that do not belong to this machine;
+    - per station: total, a count per reason (bad JSON, wrong unit, unknown code, ...), and the
+      last reason and time;
+    - exposed at `GET /api/telemetry/rejections` to managers and workers; later shown on screen;
+    - log one warning when a station starts rejecting and one when it stops (not one per
+      message, to avoid flooding the log);
+    - kept in memory: starts from zero when the backend restarts.
 - Grafana dashboards (optional, reads the same database).
 
 ## Before deploying to the Raspberry Pi

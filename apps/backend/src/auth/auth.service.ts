@@ -1,19 +1,19 @@
 import type {
   ChangePasswordInput,
   CreateStaffInput,
-  DepartmentsFile,
   LoginInput,
   PublicUser,
   SignupInput,
 } from '@mixline/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
-import { DEPARTMENTS } from '../machine/machine.tokens.js';
+import {
+  DEPARTMENT_STORE,
+  DepartmentNotFoundError,
+  type DepartmentStore,
+} from '../departments/department-store.js';
 import { type StoredUser, USER_STORE, type UserStore } from '../users/user-store.js';
 import { dummyPasswordHash, hashPassword, verifyPassword } from './password.js';
-
-/** The department is not one of config/departments.json. */
-export class UnknownDepartmentError extends Error {}
 
 /** The current password given for a password change is wrong. */
 export class WrongPasswordError extends Error {}
@@ -23,7 +23,7 @@ export class WrongPasswordError extends Error {}
 export class AuthService {
   constructor(
     @Inject(USER_STORE) private readonly users: UserStore,
-    @Inject(DEPARTMENTS) private readonly departments: DepartmentsFile,
+    @Inject(DEPARTMENT_STORE) private readonly departments: DepartmentStore,
   ) {}
 
   /** Always creates a customer, whatever the request contained (doc 03). */
@@ -60,8 +60,8 @@ export class AuthService {
 
   /** A manager creates a manager or worker account. */
   async createStaff(creator: PublicUser, input: CreateStaffInput): Promise<StoredUser> {
-    if (input.department && !this.departments.departments.some((d) => d.id === input.department)) {
-      throw new UnknownDepartmentError(input.department);
+    if (input.departmentId && !(await this.departments.findById(input.departmentId))) {
+      throw new DepartmentNotFoundError(input.departmentId);
     }
     return this.users.create({
       email: input.email,
@@ -69,7 +69,7 @@ export class AuthService {
       role: input.role,
       locale: input.locale,
       fullName: input.fullName,
-      department: input.department,
+      departmentId: input.departmentId,
       createdById: creator.id,
       // The password was chosen by the manager: the user must replace it (owner, step 9).
       mustChangePassword: true,

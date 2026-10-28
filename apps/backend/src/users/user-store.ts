@@ -22,8 +22,8 @@ export interface NewUser {
   cityArea?: string | undefined;
   occupation?: string | undefined;
   paintPurpose?: string | undefined;
-  /** Workers only (database check). */
-  department?: string | undefined;
+  /** Workers only (database check); must exist (foreign key). */
+  departmentId?: string | undefined;
   /** True for accounts a manager creates (temporary password). */
   mustChangePassword?: boolean | undefined;
 }
@@ -57,7 +57,7 @@ export function toPublic(user: StoredUser): PublicUser {
     role: user.role,
     locale: user.locale,
     fullName: user.fullName,
-    department: user.department,
+    departmentId: user.departmentId,
     mustChangePassword: user.mustChangePassword,
   };
 }
