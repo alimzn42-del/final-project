@@ -86,8 +86,10 @@ export class AuthService {
   }
 
   /**
-   * Creates the first manager from .env if no manager exists yet. Never
-   * changes an existing account.
+   * Creates the first manager from .env if no manager exists yet, with a
+   * temporary password: it must be changed at first login (owner, step 9).
+   * The flag is set only here, at creation. Once any manager exists this does
+   * nothing, so a restart or a re-run never resets the flag or the password.
    */
   async seedFirstManager(
     first: { email: string; password: string } | undefined,
@@ -99,6 +101,7 @@ export class AuthService {
       passwordHash: await hashPassword(first.password),
       role: 'manager',
       locale: 'en',
+      mustChangePassword: true,
     });
     return 'created';
   }

@@ -30,7 +30,8 @@
     in `config/departments.json` (labels in the locale files as `department.<id>`), so it can change
     without code.
   - The new user **must change the password at first login**: until then the account can only see
-    who is logged in, change its password, or log out.
+    who is logged in, change its password, or log out. The same applies to the first manager
+    created from `.env` (set once, at creation; a restart never resets it).
   - Later, the department will decide which sections a worker can open; for now every worker can
     open every section (open item in `docs/05-roadmap.md`).
 - Customers order from two places (later phase):

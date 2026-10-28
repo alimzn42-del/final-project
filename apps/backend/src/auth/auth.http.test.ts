@@ -392,6 +392,51 @@ describe('first manager from .env', () => {
     await t.close();
   });
 
+  it('starts with a temporary password: must be changed at first login (owner, step 9)', async () => {
+    const t = await startTestApp({ keepFirstManagerTemporary: true });
+    const cookie = await t.login(TEST_ENV.MANAGER_EMAIL, TEST_ENV.MANAGER_PASSWORD);
+    expect((await t.call('GET', '/auth/me', undefined, cookie)).body).toMatchObject({
+      role: 'manager',
+      mustChangePassword: true,
+    });
+    const blocked = await t.call('GET', '/machine', undefined, cookie);
+    expect(blocked.status).toBe(403);
+    expect(blocked.body).toMatchObject({ code: 'PASSWORD_CHANGE_REQUIRED' });
+    await t.close();
+  });
+
+  it('a restart or a re-run of the seed never resets the flag or the password', async () => {
+    const t = await startTestApp({ keepFirstManagerTemporary: true });
+    const cookie = await t.login(TEST_ENV.MANAGER_EMAIL, TEST_ENV.MANAGER_PASSWORD);
+    const changed = await t.call(
+      'POST',
+      '/auth/change-password',
+      { currentPassword: TEST_ENV.MANAGER_PASSWORD, newPassword: 'boss-own-pass' },
+      cookie,
+    );
+    expect(changed.status).toBe(200);
+    const before = await t.store.findByEmail(TEST_ENV.MANAGER_EMAIL);
+
+    const seed = t.app.get(FirstManagerSeed);
+    await seed.onApplicationBootstrap(); // as if the backend restarted
+    await seed.onApplicationBootstrap(); // and again
+
+    const after = await t.store.findByEmail(TEST_ENV.MANAGER_EMAIL);
+    expect(after).toEqual(before);
+    expect(after?.mustChangePassword).toBe(false);
+    // The .env password no longer works; the changed one does.
+    expect(
+      (
+        await t.call('POST', '/auth/login', {
+          email: TEST_ENV.MANAGER_EMAIL,
+          password: TEST_ENV.MANAGER_PASSWORD,
+        })
+      ).status,
+    ).toBe(401);
+    await t.login(TEST_ENV.MANAGER_EMAIL, 'boss-own-pass');
+    await t.close();
+  });
+
   it('is skipped (with a warning) when not configured', async () => {
     const t = await startTestApp({ env: { JWT_SECRET: TEST_ENV.JWT_SECRET } });
     expect(t.store.rows.size).toBe(0);

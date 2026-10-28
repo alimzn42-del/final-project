@@ -69,6 +69,13 @@ const checks = [
       });
       if (res.status !== 200) throw new Error(`login answered ${String(res.status)}`);
       cookie = (res.headers.get('set-cookie') ?? '').split(';')[0];
+      const me = await (await fetch(`${api}/auth/me`, { headers: { cookie } })).json();
+      if (me.mustChangePassword) {
+        throw new Error(
+          'the first manager still has its temporary password: log in once and change it, ' +
+            'then put the new password in MANAGER_PASSWORD for this check',
+        );
+      }
     },
   ],
   [

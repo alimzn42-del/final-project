@@ -117,7 +117,7 @@ describe('the whole app on the real database', () => {
     await app.close();
   });
 
-  it('seeds the first manager, who can log in and read the machine', async () => {
+  it('seeds the first manager with a temporary password; after the change it can read the machine', async () => {
     const login = await fetch(`${api}/auth/login`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -125,7 +125,19 @@ describe('the whole app on the real database', () => {
     });
     expect(login.status).toBe(200);
     const cookie = login.headers.get('set-cookie')?.split(';')[0] ?? '';
+    expect((await fetch(`${api}/machine`, { headers: { cookie } })).status).toBe(403);
+    const changed = await fetch(`${api}/auth/change-password`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({
+        currentPassword: TEST_ENV.MANAGER_PASSWORD,
+        newPassword: 'boss-own-pass',
+      }),
+    });
+    expect(changed.status).toBe(200);
     expect((await fetch(`${api}/machine`, { headers: { cookie } })).status).toBe(200);
+    const row = await prisma.user.findUnique({ where: { email: TEST_ENV.MANAGER_EMAIL } });
+    expect(row?.mustChangePassword).toBe(false);
   });
 
   it('signs up a customer into the users table, as a customer', async () => {

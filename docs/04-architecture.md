@@ -106,7 +106,9 @@ Modules:
     address for many customers). Step 11 (nginx in front) must make Express trust the proxy, or
     every request would share nginx's address.
   - First manager: `MANAGER_EMAIL` / `MANAGER_PASSWORD`, created at startup only if no manager
-    exists; never changed afterwards.
+    exists; never changed afterwards. It starts with a temporary password that must be changed at
+    first login (owner, step 9). The flag is set only when the seed creates the account: once any
+    manager exists the seed does nothing, so a restart never resets the flag or the password.
   - Validation with the shared zod rules (`packages/shared/src/auth.ts`); a 400 answer lists
     every invalid field. Users are stored through a `UserStore` interface: Prisma 7 client in
     the app, in memory in the HTTP tests (`pnpm test` needs no Docker); `pnpm test:db` runs the
