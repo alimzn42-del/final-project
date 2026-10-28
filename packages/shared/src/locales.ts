@@ -43,6 +43,54 @@ export function translate(
   return text.replace(/\{\{(\w+)\}\}/g, (_match, name: string) => values.get(name) ?? '');
 }
 
+/**
+ * Plural forms (i18next, owner step 11): a number followed by a counted noun is
+ * one message written once per form, as `key_one`, `key_other`... The forms
+ * each language needs come from the browser's own plural rules: English one
+ * and other; Arabic zero, one, two, few, many and other.
+ */
+const PLURAL_SUFFIX = /^(.+)_(zero|one|two|few|many|other)$/;
+
+export function pluralForms(lang: Language): string[] {
+  return new Intl.PluralRules(lang).resolvedOptions().pluralCategories;
+}
+
+interface Message {
+  plural: boolean;
+  /** For a plain message, one form named "text". */
+  forms: Record<string, string>;
+}
+
+/** The messages of a locale file: plain keys, and plural keys grouped by their base key. */
+function messagesOf(dict: LocaleDict): Map<string, Message> {
+  const out = new Map<string, Message>();
+  for (const [key, text] of Object.entries(dict)) {
+    const [, base, form] = PLURAL_SUFFIX.exec(key) ?? [];
+    if (base && form) {
+      // Every form joins its group; forms the language does not use are reported by the rules.
+      const msg = out.get(base) ?? { plural: true, forms: {} };
+      msg.forms[form] = text;
+      out.set(base, msg);
+    } else {
+      out.set(key, { plural: false, forms: { text } });
+    }
+  }
+  return out;
+}
+
+/**
+ * `value.*` keys in the locale files that no sensor uses (no `valueLabels`
+ * entry in machine.json). A test keeps this empty, so value words that were
+ * removed from the line do not linger (owner, step 11).
+ */
+export function unusedValueKeys(machine: Machine, locales: Locales): string[] {
+  const used = new Set(
+    machine.components.flatMap((c) => c.sensors.flatMap((s) => Object.values(s.valueLabels ?? {}))),
+  );
+  const keys = new Set(LANGUAGES.flatMap((lang) => Object.keys(locales[lang])));
+  return [...keys].filter((k) => k.startsWith('value.') && !used.has(k)).sort();
+}
+
 export function componentName(dict: LocaleDict, c: MachineComponent): string | undefined {
   return translate(dict, c.labelKey, c.labelParams);
 }
@@ -52,21 +100,48 @@ export function checkLocales(machine: Machine, locales: Locales): Issue[] {
   const add = (path: string, message: string) => issues.push({ path, message });
   const { en, ar } = locales;
 
-  // 1. Both files have the same keys, with the same placeholders.
-  for (const [lang, dict, other, otherLang] of [
-    ['en', en, ar, 'ar'],
-    ['ar', ar, en, 'en'],
+  // 1. Both files have the same messages, with the same placeholders. A plural message is a
+  //    group of keys (`key_one`, `key_other`...) with exactly the forms its language needs.
+  const messages = { en: messagesOf(en), ar: messagesOf(ar) };
+  for (const [lang, otherLang] of [
+    ['en', 'ar'],
+    ['ar', 'en'],
   ] as const) {
-    for (const key of Object.keys(dict)) {
-      if (!(key in other)) add(`locales.${otherLang}["${key}"]`, `missing (exists in ${lang})`);
+    for (const [id, msg] of messages[lang]) {
+      const other = messages[otherLang].get(id);
+      if (!other) {
+        add(`locales.${otherLang}["${id}"]`, `missing (exists in ${lang})`);
+      } else if (msg.plural !== other.plural) {
+        add(`locales.${otherLang}["${id}"]`, `plural in one language only`);
+      }
+    }
+    for (const [id, msg] of messages[lang]) {
+      if (!msg.plural) continue;
+      const wanted = pluralForms(lang);
+      const forms = Object.keys(msg.forms);
+      const missing = wanted.filter((f) => !forms.includes(f));
+      const extra = forms.filter((f) => !wanted.includes(f));
+      if (missing.length)
+        add(`locales.${lang}["${id}"]`, `plural forms missing: ${missing.join(', ')}`);
+      if (extra.length)
+        add(`locales.${lang}["${id}"]`, `plural forms ${lang} does not use: ${extra.join(', ')}`);
+      if (msg.forms.other !== undefined && !placeholders(msg.forms.other).includes('count')) {
+        add(`locales.${lang}["${id}_other"]`, 'a plural text needs {{count}}');
+      }
     }
   }
-  for (const [key, enText] of Object.entries(en)) {
-    const arText = ar[key];
-    if (arText === undefined) continue;
-    const a = placeholders(enText).sort().join(',');
-    const b = placeholders(arText).sort().join(',');
-    if (a !== b) add(`locales["${key}"]`, `placeholders differ: en {${a}}, ar {${b}}`);
+  for (const [id, enMsg] of messages.en) {
+    const arMsg = messages.ar.get(id);
+    if (arMsg?.plural !== enMsg.plural) continue;
+    // In plural texts {{count}} may be left out of a form ("two characters" in Arabic).
+    const names = (m: Message) =>
+      [...new Set(Object.values(m.forms).flatMap(placeholders))]
+        .filter((n) => !(m.plural && n === 'count'))
+        .sort()
+        .join(',');
+    const a = names(enMsg);
+    const b = names(arMsg);
+    if (a !== b) add(`locales["${id}"]`, `placeholders differ: en {${a}}, ar {${b}}`);
   }
 
   // 2. Every key machine.json uses exists in both files.

@@ -18,7 +18,7 @@ import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 
 import { toPublic, USER_STORE, type UserStore } from '../users/user-store.js';
-import { readCookie, SESSION_COOKIE, Sessions } from './session.js';
+import { readCookie, type Session, SESSION_COOKIE, Sessions } from './session.js';
 
 const IS_PUBLIC = 'mixline:public';
 const ROLES = 'mixline:roles';
@@ -39,7 +39,7 @@ export const AllowDuringPasswordChange = () => SetMetadata(DURING_PASSWORD_CHANG
 /** The 403 answer while a temporary password is still in use; the frontend checks the code. */
 export const PASSWORD_CHANGE_REQUIRED = 'PASSWORD_CHANGE_REQUIRED';
 
-export type AuthedRequest = Request & { user?: PublicUser };
+export type AuthedRequest = Request & { user?: PublicUser; session?: Session };
 
 /** The logged-in user (on routes that require a login). */
 export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionContext) => {
@@ -48,10 +48,18 @@ export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionC
   return user;
 });
 
+/** The session of this request (on routes that require a login). */
+export const CurrentSession = createParamDecorator((_data: unknown, ctx: ExecutionContext) => {
+  const session = ctx.switchToHttp().getRequest<AuthedRequest>().session;
+  if (!session) throw new UnauthorizedException();
+  return session;
+});
+
 /**
- * Runs before every route. Reads the session cookie, re-reads the user from
- * the database (so a deleted user or a changed role counts at once), then
- * applies @Public and @Roles.
+ * Runs before every route. Reads the session cookie, checks that its session
+ * has not ended (logout, password change), re-reads the user from the database
+ * (so a deleted user or a changed role counts at once), then applies @Public
+ * and @Roles.
  */
 @Injectable()
 export class AccessGuard implements CanActivate {
@@ -65,9 +73,12 @@ export class AccessGuard implements CanActivate {
     const targets = [ctx.getHandler(), ctx.getClass()];
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();
 
-    const userId = await this.sessions.verify(readCookie(req.headers.cookie, SESSION_COOKIE));
-    const user = userId ? await this.users.findById(userId) : undefined;
-    if (user) req.user = toPublic(user);
+    const session = await this.sessions.verify(readCookie(req.headers.cookie, SESSION_COOKIE));
+    const user = session ? await this.users.findById(session.userId) : undefined;
+    if (user) {
+      req.user = toPublic(user);
+      req.session = session;
+    }
 
     if (this.reflector.getAllAndOverride<boolean | undefined>(IS_PUBLIC, targets)) return true;
     if (!user) throw new UnauthorizedException('login required');

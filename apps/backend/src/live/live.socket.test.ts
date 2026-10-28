@@ -12,8 +12,10 @@ import {
 import { io, type Socket } from 'socket.io-client';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { hashPassword } from '../auth/password.js';
 import { SESSION_COOKIE, Sessions } from '../auth/session.js';
 import { MACHINE } from '../machine/machine.tokens.js';
+import { MemorySessionStore } from '../testing/memory-session-store.js';
 import { StateService } from '../state/state.service.js';
 import { TelemetryIngest } from '../telemetry/ingest.js';
 import { startTestApp, TEST_ENV, type TestApp } from '../testing/http.js';
@@ -45,8 +47,11 @@ describe('live push (socket.io)', () => {
 
   /** A session cookie signed like a real login; `hours` sets its lifetime. */
   async function cookieFor(userId: string, hours = 8): Promise<string> {
-    const sessions = new Sessions({ secret: TEST_ENV.JWT_SECRET, hours, secureCookie: false });
-    return `${SESSION_COOKIE}=${await sessions.sign(userId)}`;
+    const sessions = new Sessions(
+      { secret: TEST_ENV.JWT_SECRET, hours, secureCookie: false },
+      t.sessions,
+    );
+    return `${SESSION_COOKIE}=${await sessions.start(userId)}`;
   }
 
   /** A user straight in the store, logged in. */
@@ -130,11 +135,10 @@ describe('live push (socket.io)', () => {
   describe('who may connect', () => {
     it('refuses anonymous visitors, forged and expired sessions: LOGIN_REQUIRED', async () => {
       const { id } = await user('worker');
-      const forged = await new Sessions({
-        secret: 'another-secret-that-is-long-enough-0000',
-        hours: 8,
-        secureCookie: false,
-      }).sign(id);
+      const forged = await new Sessions(
+        { secret: 'another-secret-that-is-long-enough-0000', hours: 8, secureCookie: false },
+        new MemorySessionStore(),
+      ).start(id);
       expect(await refusal()).toBe('LOGIN_REQUIRED');
       expect(await refusal(`${SESSION_COOKIE}=${forged}`)).toBe('LOGIN_REQUIRED');
       expect(await refusal(await cookieFor(id, -1))).toBe('LOGIN_REQUIRED');
@@ -250,5 +254,48 @@ describe('live push (socket.io)', () => {
       expect(await reasons).toEqual(Array<string>(4).fill('io server disconnect'));
       expect(stays.socket.connected).toBe(true);
     }, 10_000);
+  });
+
+  describe('a session that ends closes its connections at once (owner, step 11)', () => {
+    it('logout closes that session’s connection; the same user’s other device stays', async () => {
+      const phone = await t.login(TEST_ENV.MANAGER_EMAIL, TEST_ENV.MANAGER_PASSWORD);
+      const laptop = await t.login(TEST_ENV.MANAGER_EMAIL, TEST_ENV.MANAGER_PASSWORD);
+      const onPhone = connect(phone);
+      const onLaptop = connect(laptop);
+      await Promise.all([onPhone.snapshot, onLaptop.snapshot]);
+
+      const reason = closed(onPhone.socket);
+      expect((await t.call('POST', '/auth/logout', undefined, phone)).status).toBe(204);
+      expect(await reason).toBe('io server disconnect'); // no re-check needed
+      expect(onLaptop.socket.connected).toBe(true);
+      expect(await refusal(phone)).toBe('LOGIN_REQUIRED'); // the copied cookie cannot reconnect
+    });
+
+    it('a password change closes the other devices’ connections; this device stays', async () => {
+      const email = `${randomUUID()}@lab.sy`;
+      await t.store.create({
+        email,
+        passwordHash: await hashPassword('worker-pass-1'),
+        role: 'worker',
+        locale: 'en',
+        departmentId: t.departments.idOf('Production'),
+      });
+      const here = await t.login(email, 'worker-pass-1');
+      const other = await t.login(email, 'worker-pass-1');
+      const onHere = connect(here);
+      const onOther = connect(other);
+      await Promise.all([onHere.snapshot, onOther.snapshot]);
+
+      const reason = closed(onOther.socket);
+      const changed = await t.call(
+        'POST',
+        '/auth/change-password',
+        { currentPassword: 'worker-pass-1', newPassword: 'worker-pass-2' },
+        here,
+      );
+      expect(changed.status).toBe(200);
+      expect(await reason).toBe('io server disconnect');
+      expect(onHere.socket.connected).toBe(true);
+    });
   });
 });

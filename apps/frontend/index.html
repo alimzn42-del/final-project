@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>ALMAS MixLine</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!--
+      The only text not in config/locales: every label comes from the backend,
+      so when the backend cannot be reached there is no label to show.
+    -->
+    <div
+      id="boot-error"
+      hidden
+      style="padding: 2rem; font-family: system-ui, sans-serif; text-align: center"
+    >
+      <p>Cannot reach the server. Check the connection, then reload the page.</p>
+      <p dir="rtl" lang="ar">تعذّر الاتصال بالخادم. تحقّق من الاتصال ثم أعد تحميل الصفحة.</p>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

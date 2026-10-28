@@ -82,7 +82,10 @@ describe('PrismaUserStore on the real database', () => {
       createdById: boss.id,
     });
     expect(await store.countByRole('manager')).toBe(1);
-    expect((await store.setLocale(worker.id, 'ar')).locale).toBe('ar');
+    expect((await store.setPreferences(worker.id, { locale: 'ar' })).locale).toBe('ar');
+    const dark = await store.setPreferences(worker.id, { theme: 'dark' });
+    expect([dark.locale, dark.theme]).toEqual(['ar', 'dark']); // the language is kept
+    expect((await store.setPreferences(worker.id, { theme: null })).theme).toBeNull();
     const [row] = await prisma.$queryRaw<{ created_by: string }[]>`
       SELECT created_by::text FROM users WHERE id = ${worker.id}::uuid`;
     expect(row?.created_by).toBe(boss.id);

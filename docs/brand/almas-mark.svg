@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- ALMAS mark, initial design (step 11, owner review pending). Dark-theme colours; the app draws it from apps/frontend/src/brand/Logo.tsx with the theme's colours. -->
+  <g style="fill: var(--logo-facet, #2E9BFF)">
+    <path d="M4 24 18 12 25 24Z" fill-opacity=".28"/>
+    <path d="M18 12H32L25 24Z" fill-opacity=".5"/>
+    <path d="M32 12 39 24H25Z" fill-opacity=".16"/>
+    <path d="M32 12H46L39 24Z" fill-opacity=".42"/>
+    <path d="M46 12 60 24H39Z" fill-opacity=".62"/>
+    <path d="M4 24H25L32 58Z" fill-opacity=".2"/>
+    <path d="M25 24H39L32 58Z" fill-opacity=".1"/>
+    <path d="M39 24H60L32 58Z" fill-opacity=".38"/>
+  </g>
+  <path d="M4 24H60M18 12 25 24 32 12 39 24 46 12M25 24 32 58M39 24 32 58" fill="none" style="stroke: var(--logo-glow, #5FD3FF)" stroke-width=".8" stroke-linejoin="round" stroke-opacity=".85"/>
+  <path d="M18 12H46L60 24 32 58 4 24Z" fill="none" style="stroke: var(--logo-steel, #C3CBD4)" stroke-width="1.8" stroke-linejoin="round"/>
+  <g fill="none" style="stroke: var(--logo-glow, #5FD3FF)" stroke-width=".9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M39.5 30H43L46 27M39.5 35H45L49 31M34.5 25V21L37 18.5M32 40V47"/>
+    <path d="M24.5 30H26.5M24.5 35H26.5M37.5 30H39.5M37.5 35H39.5M29.5 25V27M34.5 25V27M29.5 38V40M34.5 38V40"/>
+  </g>
+  <g style="fill: var(--logo-glow, #5FD3FF)">
+    <circle cx="46" cy="27" r="1.1"/><circle cx="49" cy="31" r="1.1"/><circle cx="37" cy="18.5" r="1.1"/><circle cx="32" cy="47" r="1.1"/>
+  </g>
+  <!-- robot arm: base plate, two links, ring joints, a two-jaw gripper reaching for the chip -->
+  <g fill="none" style="stroke: var(--logo-steel, #C3CBD4)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M23 47H28.5" stroke-width="2.4"/>
+    <path d="M25.6 44.5 13.5 31.5 19.5 19.8" stroke-width="2.8"/>
+    <path d="M19.5 19.8 22.8 18.2 24 19.6M19.5 19.8 22.4 22 21.9 23.6" stroke-width="1.5"/>
+  </g>
+  <g style="fill: var(--logo-steel, #C3CBD4)">
+    <circle cx="25.6" cy="44.5" r="2.6"/><circle cx="13.5" cy="31.5" r="2.4"/><circle cx="19.5" cy="19.8" r="2"/>
+  </g>
+  <g style="fill: var(--logo-facet, #2E9BFF)">
+    <circle cx="25.6" cy="44.5" r="1"/><circle cx="13.5" cy="31.5" r=".9"/><circle cx="19.5" cy="19.8" r=".75"/>
+  </g>
+  <rect x="26.5" y="27" width="11" height="11" rx="2" style="fill: var(--logo-facet, #2E9BFF); stroke: var(--logo-glow, #5FD3FF)" stroke-width=".8"/>
+  <path d="M28.6 36 30.4 29.5 32.2 36M29.2 34H31.6M34.6 29.5V36" fill="none" stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M47 6.5 48 10 51.5 11 48 12 47 15.5 46 12 42.5 11 46 10Z" style="fill: var(--logo-glow, #5FD3FF)"/>
+</svg>

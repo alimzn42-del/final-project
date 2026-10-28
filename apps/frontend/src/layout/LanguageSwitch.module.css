@@ -1,0 +1,13 @@
+.switch {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.switch:hover {
+  border-color: var(--brand);
+}

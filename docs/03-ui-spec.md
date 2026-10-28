@@ -10,7 +10,7 @@
 | Role | Who | How the account is created | Phase 1 |
 |---|---|---|---|
 | `manager` | runs the line | first one seeded from env; managers can create managers and workers (page built as the **last** step of phase 1) | full interface |
-| `worker` | operates the line | created by a manager | placeholder page |
+| `worker` | operates the line | created by a manager | line pages (monitoring), like a manager; own tools page is a placeholder |
 | `customer` | orders a color and quantity | **self-registration** (public sign-up page creates `customer` only) | placeholder page |
 
 - Customer sign-up fields:
@@ -49,8 +49,15 @@
      the normal session.
 - A customer must never reach line monitoring, telemetry or control endpoints. Role guards on both
   backend and frontend.
-- Phase 1 builds the **manager** interface only. Worker and customer routes exist as protected
+- Phase 1 builds the monitoring interface (the line pages) for **managers and workers** (owner,
+  step 11, as decided with departments in step 9: every worker can open every section for now).
+  The worker's own tools (`/worker`) and the customer interface (`/customer`) are protected
   routes with an empty "coming soon" page. The sign-up page for customers is built in phase 1.
+- After login (owner, step 11): managers and workers land on `/line`, customers on `/customer`.
+  A user with a temporary password lands on the change-password page and cannot leave it until
+  the password is changed. A page the role may not open sends the user to their own landing page.
+- Logout ends the session on the server too (owner, step 11): see "Sessions on the server" in
+  `docs/04-architecture.md`.
 - Manager actions (start batch, recipes, control) are **not defined yet**. Phase 1 is monitoring only.
 
 ## Navigation: four levels, each level is its own page
@@ -96,10 +103,11 @@ Suggested routes:
 /line/:sectionId/:subsectionId
 /line/:sectionId/:subsectionId/:componentId
 /line/:sectionId/part/:componentId   (parts with subsection: null; "part" is a reserved id)
-/worker            (placeholder)
+/worker            (placeholder for the worker's own tools)
 /customer          (placeholder)
 /login
 /signup            (customers only)
+/change-password   (forced while the password is temporary; also reachable from the user menu)
 /users             (managers only, built last in phase 1)
 ```
 
@@ -164,6 +172,13 @@ Number and unit display:
   numbers: use `valueLabels` (for example `check.decision` 2 = `value.reject`).
 
 Default language on first visit: **English**. After that, the user's saved choice.
+
+## Theme
+
+Dark and light themes from the same tokens (`docs/06-brand.md`). Owner, step 11:
+- Before login (login, sign-up): the browser's setting (`prefers-color-scheme`).
+- After login: the theme saved with the user's account, like the language. A user who never picked
+  one keeps the browser's setting.
 
 ## Devices
 
