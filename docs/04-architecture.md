@@ -149,12 +149,16 @@ Database:
 - `users` (one table for all roles):
   - Account: id, email (unique, stored lowercase), password_hash, role `manager|worker|customer`,
     locale `en|ar`, created_by (null for self-signup and the seeded manager), created_at.
+  - Staff (owner, step 9): department (required for workers, null otherwise; an id from
+    `config/departments.json`, checked by the backend, not a database enum, so the list can change),
+    must_change_password (true for accounts a manager creates, until the first password change).
+    full_name is required for staff too.
   - Sign-up profile. Required for `customer` (enforced by the signup validation); null for staff
-    accounts unless decided otherwise:
+    accounts (except full_name):
     - full_name
     - mobile: E.164 string, for example `+963912345678`. The form has a country picker that
       defaults to Syria (+963).
-    - date_of_birth (date)
+    - date_of_birth (date): at least 18 years before the sign-up date
     - governorate: one of the 14 codes below, or `outside`
     - country: free text, required only when governorate is `outside`
     - city_area: free text (city or area)

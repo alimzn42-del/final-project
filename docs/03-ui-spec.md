@@ -15,6 +15,8 @@
 
 - Customer sign-up fields:
   - Required: full name, email, mobile number, password, date of birth, location.
+  - Age: at least **18 years old on the sign-up date** (date in Syria, Asia/Damascus). Enforced in
+    the shared sign-up rules, which the backend applies to every sign-up (owner, step 9).
   - Optional: occupation, and what they need the paint for (free text).
   - Mobile: international E.164 format, with a country picker that defaults to Syria (+963).
     Stored as E.164.
@@ -22,9 +24,22 @@
     required free-text city / area field. "Outside Syria" adds a required free-text country field.
   - Storage: see `users` in `docs/04-architecture.md`.
 - Self-registration can never create `manager` or `worker`. Enforce in the backend, not only the UI.
+- A manager creates a worker or manager account with (owner, step 9):
+  - Required: full name, email, role, a **temporary password**. Optional: language.
+  - Workers also need a **department** (required): Maintenance, Production or Quality. The list is
+    in `config/departments.json` (labels in the locale files as `department.<id>`), so it can change
+    without code.
+  - The new user **must change the password at first login**: until then the account can only see
+    who is logged in, change its password, or log out.
+  - Later, the department will decide which sections a worker can open; for now every worker can
+    open every section (open item in `docs/05-roadmap.md`).
 - Customers order from two places (later phase):
-  1. A kiosk screen next to the line (local network).
-  2. Their own phone from home (internet). See the open item in `docs/05-roadmap.md`.
+  1. A kiosk screen next to the line (local network). It is **one shared device**: an 8-hour session
+     there would let the next customer use the previous customer's account. On the kiosk, log out
+     automatically after each order and after a few minutes without activity (gap recorded by the
+     owner in step 9, to build in the customer phase).
+  2. Their own phone from home (internet). See the open item in `docs/05-roadmap.md`. Phones keep
+     the normal session.
 - A customer must never reach line monitoring, telemetry or control endpoints. Role guards on both
   backend and frontend.
 - Phase 1 builds the **manager** interface only. Worker and customer routes exist as protected

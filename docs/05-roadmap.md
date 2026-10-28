@@ -34,6 +34,8 @@ repo already created). Commit and push after every finished task; see the git wo
 - Manager actions: start/stop batch, recipes, color targets, orders.
 - Worker interface.
 - Customer interface: order a color and quantity, from a kiosk next to the line and from a phone.
+  The kiosk is one shared device: log out automatically after each order and after a few minutes
+  without activity; phones keep the normal session (owner, step 9).
 - Digital twin: predicted values, residuals, fault detection, health index, remaining useful life,
   what-if scenarios.
 - Alarms UI and acknowledgement from the web.
@@ -43,6 +45,10 @@ repo already created). Commit and push after every finished task; see the git wo
 ## Before deploying to the Raspberry Pi
 
 - Slim the migrate image (now 702 MB).
+
+Decided not to do (owner, step 9): trimming Prisma's query engines for databases we do not use
+(~60 MB). 60 MB does not matter on the Pi, and the trimming would break on Prisma upgrades.
+Revisit only if space becomes a real problem.
 
 ## Open items (blocked on decisions or purchases)
 
@@ -55,6 +61,7 @@ repo already created). Commit and push after every finished task; see the git wo
 | Batch tray mechanism (6-slot linear tray does not fit the table) | tray geometry and sensors |
 | Vessel anti-rotation | small parts under the vessel |
 | PLC model (supervisor) | cabinet interior |
+| Worker departments: which sections each department can open (now every worker can open every section) | per-department access in the backend and the navigation |
 | PLC alarm list, message-format rules, and how alarms reach the web app | warning / fault states, alarm display, the `alarms` table, limits in `machine.json` |
 | How customers reach the app from the internet (hosting, tunnel, or cloud server for ordering only) | customer ordering from phones |
 | Password reset and email verification (need an email provider) | customer self-signup hardening |
