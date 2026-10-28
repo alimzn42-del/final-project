@@ -23,8 +23,9 @@ professional and calm, readable at a glance, and impressive without being flashy
 
 Take the logo's world: a precise, faceted diamond made of light on a dark steel background.
 
-- **Dark theme by default**, close to the logo's charcoal background. A light theme is also required
-  (for daylight / projectors), built from the same tokens.
+- **Dark theme** close to the logo's charcoal background, and a **light theme** (for daylight /
+  projectors), built from the same tokens. Which one shows (owner, step 11): the browser's setting
+  until the user picks one; the choice is saved with the account, like the language.
 - **Facets as a quiet motif**: thin angled lines, chamfered corners on panels, a faceted outline on
   the line overview. Use it sparingly; never decorate data.
 - **Blue is the brand, not a state.** Status colors stay separate (green / amber / red / grey) so a
@@ -64,7 +65,8 @@ Check contrast (WCAG AA) for text on `bg` and `surface` in both themes.
 - Line and section pages: 3D scene fills the main area; a slim side panel lists children with their
   state chips.
 - Component page: 3D close-up and a values panel side by side on desktop, stacked on phones.
-- Login and sign-up: dark background, centered logo, a faint faceted diamond pattern behind the form.
+- Login and sign-up: the current theme's background (they follow the browser's setting, owner,
+  step 11), centered logo, a faint faceted diamond pattern behind the form.
 
 ## Motion
 

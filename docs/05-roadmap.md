@@ -16,6 +16,30 @@
 Done when: `docker compose up --build` starts everything, a manager can log in, browse every level,
 and see values moving.
 
+### Build plan: one step at a time, each reviewed by the owner before the next
+
+Agreed with the owner before step 1; brand items added after the brand doc; later owner decisions
+noted in the rows. Each step has its own branch and is merged into `main` after the owner's review.
+
+| # | What it builds | Why here | How we check it | Status |
+|---|---|---|---|---|
+| 1 | Monorepo: pnpm workspace, strict TypeScript, ESLint + Prettier, Vitest, empty `shared` / `backend` / `simulator` / `frontend` packages, root scripts, git | Everything sits on this | `pnpm i && pnpm lint && pnpm test && pnpm build` pass; a deliberate lint error fails | done |
+| 2 | Docker Compose with `db` (TimescaleDB, PG16) and `mqtt` (Mosquitto with a password), `.env.example`, named volumes, health checks | Backend and simulator need a database and a broker | Both containers healthy; a test message goes through the broker and back; the `timescaledb` extension is present | done |
+| 3 | `shared`: zod schema for `machine.json`, a loader, data-rule tests (unique topics, unique names per page, every key in both locale files) | This schema is the contract for all other packages | Tests pass on the real file; a copy with a duplicate topic fails with a clear message | done |
+| 4 | `shared`: topic builder/parser, payload schema, state logic (limits, offline by data age, worst-state roll-up) | Simulator, backend and frontend all use it | Unit tests for every limit key, "fault beats warn", offline timing and the roll-up | done |
+| 5 | Simulator v1: publishes all 60 sensors from `machine.json`, Dockerfile | Gives the backend real messages | `lab/mixline/#` shows exactly 60 topics; every payload passes the shared schema | done |
+| 6 | Backend skeleton: settings checked at startup, `GET /api/machine`, locale files served, health endpoint, Dockerfile | Smallest backend, proves the config flow | The checked JSON is served; a broken `machine.json` stops startup with a clear error | done |
+| 7 | Database: Prisma, hypertable, 7-day raw data, 1-year 1-minute summary, compression | Auth and telemetry need tables | Migrations run on an empty database; the hypertable and policies exist | done |
+| 8 | Auth: hashed passwords, seeded manager, login, customer sign-up, manager-creates-user endpoint, role guards, rate limits | The API must be protected before telemetry is exposed | Sign-up with `role: manager` still creates a customer; a customer gets 403 on telemetry; too many logins get 429 | done |
+| 9 | Telemetry intake: MQTT subscription, batched inserts, latest value per sensor, latest/history endpoints | Turns messages into stored data | Rows grow with the simulator running; history returns points; latest returns 60 values | done |
+| 10 | Live push (socket.io) and state module | The UI needs live updates | A test client receives updates; a customer is refused at connect; stopping the simulator turns parts offline after 10 s | done |
+| 11 | Frontend skeleton: routes, en/ar with right-to-left, login, sign-up and forced password change pages, role guards, placeholder pages, nginx proxy, Dockerfile. **Brand:** dark and light themes from the colour tokens, bundled IBM Plex fonts, initial SVG logo, header. **Owner, step 11:** sessions on the server (logout revokes, password change logs out other devices) | The pages need routing, auth and language before the 3D scene | Manager logs in; a new customer lands on `/customer`; a customer typing `/line` is redirected; Arabic switches to right-to-left; a lint rule rejects hardcoded strings; a token used after logout gets 401 and its live connection is closed | in progress |
+| 12 | 3D scene, static, from `machine.json` (boxes, cylinders, anchors, rotation, hollow boxes, liquids, pending placeholders), orbit limits. **Brand:** brand blue glow on hover, status colours kept separate from brand blue | Hardest visual part, so it is isolated | Owner reviews it against the spec; transform tests for known parts; frame rate on a phone | |
+| 13 | Navigation: 4 levels, framing per page, breadcrumbs, hover names, click to navigate. **Brand:** camera glides between levels, honours reduced motion | Builds on the static scene | Every section, sub-section and part is reachable by click and by URL | |
+| 14 | Live data in the UI: state colours and roll-up, values panel, trend charts, reserved twin slots, SIMULATION badge. **Brand:** state chips, Plex Mono numbers that do not jump, one pulse on a state change | Connects the UI to steps 9 and 10 | Values move; parts with no data turn grey (offline), visible from level 1. (Planned as "a fault value shows red"; phase 1 has no limits since the owner's step 6 decision.) | |
+| 15 | Simulator v2: batch of about 3 minutes, masses balance, state and batch messages | Realism only matters once the UI can show it | Watch one full cycle; masses balance across scales | |
+| 16 | User management page (`/users`, managers only): create manager and worker accounts, manage departments, change a worker's department. Then the phase 1 acceptance run: `docker compose up --build` from a clean clone, arm64 build check, README | The phase 1 "done when" test | Walk through the done criteria together | |
+
 ## Design decisions that shape phase 1
 
 - **The PLC owns all limits, alarms, interlocks and safety decisions** (owner, step 6). The web app
