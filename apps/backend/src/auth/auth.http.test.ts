@@ -1,3 +1,4 @@
+import { dateInSyria } from '@mixline/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { FirstManagerSeed } from '../auth/first-manager.js';
@@ -70,6 +71,21 @@ describe('auth over HTTP (in-memory users)', () => {
         email: 'RANA.HADDAD@example.com',
       });
       expect(r.status).toBe(409);
+    });
+
+    it('refuses a customer under 18 on the sign-up date (owner, step 9)', async () => {
+      const today = dateInSyria();
+      const seventeen = String(Number(today.slice(0, 4)) - 17) + today.slice(4);
+      const r = await t.call('POST', '/auth/signup', {
+        ...customer,
+        email: 'young@example.com',
+        dateOfBirth: seventeen,
+      });
+      expect(r.status).toBe(400);
+      expect(r.body).toMatchObject({
+        issues: [{ path: 'dateOfBirth', message: 'must be at least 18 years old' }],
+      });
+      expect(await t.store.findByEmail('young@example.com')).toBeUndefined();
     });
 
     it('lists every invalid field', async () => {
