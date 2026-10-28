@@ -24,3 +24,27 @@ export interface LiveSnapshot {
 
 export type LiveReadings = Record<string, LatestReading>;
 export type LiveStates = StateChanges;
+
+/** Server -> client events with their data, for typed socket.io servers and clients. */
+export interface LiveServerEvents {
+  [LIVE_EVENTS.snapshot]: (data: LiveSnapshot) => void;
+  [LIVE_EVENTS.readings]: (data: LiveReadings) => void;
+  [LIVE_EVENTS.states]: (data: LiveStates) => void;
+}
+
+/**
+ * Why a connection was refused: the message of the client's `connect_error`.
+ * Same access as /api/telemetry. A connection the server closes later (every
+ * minute it re-checks the user) gets no code: ask GET /api/auth/me why.
+ */
+export const LIVE_REFUSALS = {
+  /** No valid session (none, forged, expired, or the user was deleted). */
+  loginRequired: 'LOGIN_REQUIRED',
+  /** Same code as the HTTP 403: the temporary password must be changed first. */
+  passwordChangeRequired: 'PASSWORD_CHANGE_REQUIRED',
+  /** Logged in, but not staff: customers never reach line data. */
+  forbidden: 'FORBIDDEN',
+  /** The login could not be checked (database down); try again later. */
+  unavailable: 'UNAVAILABLE',
+} as const;
+export type LiveRefusal = (typeof LIVE_REFUSALS)[keyof typeof LIVE_REFUSALS];

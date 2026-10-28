@@ -3,6 +3,7 @@ import 'reflect-metadata';
 import { loadConfigFiles } from '@mixline/shared/node';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 import { AppModule, type RateLimits } from './app.module.js';
 import { type BackendConfig, loadConfig } from './config.js';
@@ -46,6 +47,8 @@ export async function createApp(
     { logger: options.logs === false ? ['error'] : ['error', 'warn', 'log'] },
   );
   app.setGlobalPrefix(API_PREFIX);
+  // The live push (socket.io) shares the HTTP port; its path is set on the gateway, not by the prefix.
+  app.useWebSocketAdapter(new IoAdapter(app));
   app.enableShutdownHooks();
   return { app, config };
 }
