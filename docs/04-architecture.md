@@ -140,6 +140,25 @@ Modules:
     wrong unit, unknown code...): it drops the message and continues. This is robustness, not a
     line rule. There is no rejection log, no per-sensor rejection count and no rejections endpoint
     (removed by the owner in step 6); how faults and alarms reach the web app is an open item.
+  - Built in step 9:
+    - Intake: `MqttIntake` (client id `mixline-backend-<pid>`, QoS 0, reconnects every 2 s) feeds
+      `TelemetryIngest`, which accepts only sensor topics of this machine whose payload passes
+      `decodeReading()`. Without `MQTT_USERNAME`/`MQTT_PASSWORD` the backend runs without intake
+      (warning at startup).
+    - The clock rule is applied when reading (SQL `CASE` for history, `chartTime()` for latest),
+      so a changed tolerance also applies to stored data. A drifting clock is logged once per
+      station when it goes out of tolerance, and once when it is back.
+    - Writes: `BatchWriter`, one `INSERT ... SELECT FROM unnest(...)` every 500 ms (or at 1000
+      waiting readings). While the database is down, up to 20,000 readings wait in memory (~5 min
+      now) and are written when it is back; beyond that the oldest are dropped, with a warning.
+    - `GET /api/telemetry/latest`: every sensor heard so far, from memory (`ts` = chart time).
+    - `GET /api/telemetry/:sensorId?from&to`: default the last 5 minutes; up to 1 hour from raw
+      readings (`{ t, v }`), longer spans up to 7 days from the 1-minute summary
+      (`{ t, min, max, avg }`). The summary is real-time (`materialized_only = false`), so it
+      includes the newest minutes.
+    - Both endpoints: manager and worker only.
+    - `pnpm telemetry:check` verifies the live path, including broken messages and a clock
+      an hour off.
 - `state`: computes ok / warning / fault / offline per component and rolls up to sub-section,
   section, line (generic logic in `shared/state.ts`). The PLC owns all limits and alarms (design
   decision, `docs/01-overview.md`); until PLC alarms are defined, `machine.json` has no limits, so

@@ -87,6 +87,8 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+      mqtt:
+        condition: service_healthy
     environment:
       PORT: 3000
       MACHINE_CONFIG: /config/machine.json
@@ -101,6 +103,11 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       MANAGER_EMAIL: ${MANAGER_EMAIL:-}
       MANAGER_PASSWORD: ${MANAGER_PASSWORD:-}
+      DEPARTMENTS_CONFIG: /config/departments.json
+      MQTT_URL: mqtt://mqtt:1883
+      MQTT_USERNAME: ${MQTT_USERNAME:?set MQTT_USERNAME in .env}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?set MQTT_PASSWORD in .env}
+      CLOCK_TOLERANCE_MS: ${CLOCK_TOLERANCE_MS:-2000}
     ports:
       - '127.0.0.1:${PORT:-3000}:3000'
     volumes:
