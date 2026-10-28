@@ -331,6 +331,30 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
     across the belt, the cabinet's six walls, the line not mirrored from the front view), and the
     scene graph without WebGL (`@react-three/test-renderer`): every part present, pending parts
     see-through, liquids coloured, hover lights exactly one section.
+- **Navigation** (step 13, `src/navigation/`): the four levels of doc 03, one page each, with its
+  own address (`/line`, `/line/:section`, `/line/:section/:subsection`, `.../:part`,
+  `/line/:section/part/:part`). `places.ts` is plain data and says, for each page, which parts it
+  shows, where clicking each leads, the breadcrumbs, and which boxes are see-through:
+  - line: a part leads to its section; section: to its sub-section, or its own page when it has
+    none (the cabinet: level 3 skipped); sub-section: to each part; part: shows the parts grouped
+    under it, each leading to its own page.
+  - Below the line page only the subject is drawn, with the table (and on a part's page the box
+    around it) as a faint ghost that never reacts.
+  - A closed box is see-through, with thin edge lines, when the page offers its inside parts
+    separately or is about the box or one of them (owner, step 12); it then lets a click through
+    to the part behind its wall.
+  - Mouse: hover lights everything leading to the same page and shows that page's name; a click
+    opens it; a drag (more than 6 px) only turns the view. Touch: the first tap shows the name,
+    the second opens it.
+  - The camera frames each page from the line view's direction and glides to it in 0.7 s (a jump
+    on first show and with reduced motion).
+  - Breadcrumbs in the header (doc 06), the current page as the title. A list beside the view
+    (below it on phones) holds the same links, so every page is reachable without 3D; on a part's
+    page it shows status, the box it belongs to, the parts inside and the sensors.
+  - Tests: every section, sub-section and part has an address and is reachable by clicks from
+    `/line`; targets per level; see-through rule; framing fits on wide screens and phones; clicks,
+    drags, taps and the click-through in the scene graph; the pages in the app (breadcrumbs, list,
+    unknown addresses).
 - **Brand** (docs/06-brand.md): colour tokens in `src/styles/tokens.css` with a WCAG AA test; IBM
   Plex Sans, Sans Arabic and Mono bundled (the lab is offline); the SVG mark in `src/brand/Logo.tsx`.
 - **nginx** (`docker/web.Dockerfile`, `docker/nginx/default.conf`; `nginx-unprivileged`, runs as a
