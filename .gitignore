@@ -3,6 +3,8 @@ node_modules/
 
 # Build output
 dist/
+# Generated Prisma client (pnpm i and every build regenerate it)
+apps/backend/src/generated/
 *.tsbuildinfo
 
 # Test output

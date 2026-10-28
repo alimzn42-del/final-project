@@ -104,7 +104,8 @@ Run from the repo root:
 | `pnpm i` | Install all workspace dependencies |
 | `pnpm lint` | ESLint + Prettier check (must pass before every commit) |
 | `pnpm lint:fix` / `pnpm format` | Auto-fix lint issues / reformat code |
-| `pnpm test` | All Vitest tests in every package (must pass before every commit) |
+| `pnpm test` | All Vitest tests in every package, no Docker needed (must pass before every commit) |
+| `pnpm test:db` | Database tests on a temporary real database (needs `pnpm infra:up`) |
 | `pnpm test:watch` | Re-run tests on change |
 | `pnpm typecheck` | TypeScript check of every package, tests included |
 | `pnpm build` | Build every package to its `dist/` |

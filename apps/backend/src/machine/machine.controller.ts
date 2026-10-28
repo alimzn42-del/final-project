@@ -7,6 +7,7 @@ import {
 } from '@mixline/shared';
 import { Controller, Get, Inject, NotFoundException, Param } from '@nestjs/common';
 
+import { Public, Roles } from '../auth/access.js';
 import { LOCALES, MACHINE } from './machine.tokens.js';
 
 /**
@@ -20,14 +21,19 @@ export class MachineController {
     @Inject(LOCALES) private readonly locales: Locales,
   ) {}
 
-  /** The validated machine.json (defaults applied, e.g. anchor). */
+  /**
+   * The validated machine.json (defaults applied, e.g. anchor). Staff only:
+   * customers never reach line data (doc 03).
+   */
   @Get('machine')
+  @Roles('manager', 'worker')
   getMachine(): Machine {
     return this.machine;
   }
 
-  /** One locale file: en or ar. */
+  /** One locale file: en or ar. Public: the login and sign-up pages need it. */
   @Get('locales/:lang')
+  @Public()
   getLocale(@Param('lang') lang: string): LocaleDict {
     if (!isLanguage(lang)) throw new NotFoundException(`no locale "${lang}"`);
     return this.locales[lang];

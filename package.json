@@ -24,7 +24,8 @@
     "stack:up": "docker compose up -d --build --wait",
     "stack:down": "docker compose down",
     "db:migrate": "pnpm --filter @mixline/backend db:migrate",
-    "db:check": "node scripts/check-db.mjs"
+    "db:check": "node scripts/check-db.mjs",
+    "test:db": "vitest run --config vitest.db.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
