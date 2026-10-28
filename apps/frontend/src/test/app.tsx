@@ -16,6 +16,9 @@ import { AppProviders } from '../app/AppProviders';
 import { createI18n, switchLanguage } from '../i18n/i18n';
 import { visitorLanguage } from '../prefs/language';
 
+/** The real line description, as GET /api/machine returns it. */
+export const MACHINE = machineSchema.parse(machine);
+
 export const USERS = {
   manager: {
     id: 'u-manager',
@@ -65,7 +68,7 @@ export function fakeApi(routes: Record<string, Handler | Reply> = {}): FakeApi {
   };
   on('GET /api/locales/en', { status: 200, body: en });
   on('GET /api/locales/ar', { status: 200, body: ar });
-  on('GET /api/machine', { status: 200, body: machineSchema.parse(machine) });
+  on('GET /api/machine', { status: 200, body: MACHINE });
   for (const [route, handler] of Object.entries(routes)) on(route, handler);
 
   const calls: FakeApi['calls'] = [];
