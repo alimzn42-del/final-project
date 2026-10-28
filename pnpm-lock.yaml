@@ -70,6 +70,9 @@ importers:
       jose:
         specifier: ^6.2.13
         version: 6.2.13
+      mqtt:
+        specifier: ^5.16.1
+        version: 5.16.1
       pg:
         specifier: ^8.23.1
         version: 8.23.1

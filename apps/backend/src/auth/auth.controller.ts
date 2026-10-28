@@ -1,4 +1,6 @@
 import {
+  type ChangePasswordInput,
+  changePasswordSchema,
   type LoginInput,
   loginSchema,
   type PublicUser,
@@ -8,6 +10,7 @@ import {
   updateMeSchema,
 } from '@mixline/shared';
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -31,8 +34,8 @@ import {
   USER_STORE,
   type UserStore,
 } from '../users/user-store.js';
-import { CurrentUser, Public } from './access.js';
-import { AuthService } from './auth.service.js';
+import { AllowDuringPasswordChange, CurrentUser, Public } from './access.js';
+import { AuthService, WrongPasswordError } from './auth.service.js';
 import { SESSION_COOKIE, Sessions } from './session.js';
 
 /**
@@ -92,8 +95,35 @@ export class AuthController {
   }
 
   @Get('me')
+  @AllowDuringPasswordChange()
   me(@CurrentUser() user: PublicUser): PublicUser {
     return user;
+  }
+
+  /**
+   * Changes my password (and ends a temporary one). Counted under the login
+   * rate limit, since it also checks a password.
+   */
+  @Post('change-password')
+  @HttpCode(200)
+  @AllowDuringPasswordChange()
+  @UseGuards(ThrottlerGuard)
+  @SkipThrottle({ signup: true })
+  async changePassword(
+    @CurrentUser() user: PublicUser,
+    @Body(new ZodPipe(changePasswordSchema)) input: ChangePasswordInput,
+  ): Promise<PublicUser> {
+    try {
+      return toPublic(await this.auth.changePassword(user.id, input));
+    } catch (error) {
+      if (error instanceof WrongPasswordError) {
+        throw new BadRequestException({
+          message: 'invalid request',
+          issues: [{ path: 'currentPassword', message: 'wrong password' }],
+        });
+      }
+      throw error;
+    }
   }
 
   /** Remembers the user's language (doc 03: remembered per user). */

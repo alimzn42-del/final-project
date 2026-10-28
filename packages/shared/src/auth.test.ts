@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { createStaffSchema, loginSchema, signupSchema } from './auth.js';
+import {
+  changePasswordSchema,
+  createStaffSchema,
+  dateInSyria,
+  isAtLeast,
+  loginSchema,
+  signupSchema,
+} from './auth.js';
 
 const valid = {
   email: '  Rana.Haddad@Example.COM ',
@@ -62,6 +69,38 @@ describe('signupSchema', () => {
   });
 });
 
+describe('age: at least 18 on the sign-up date', () => {
+  it('counts the 18th birthday itself as old enough', () => {
+    expect(isAtLeast(18, '2008-10-28', '2026-10-28')).toBe(true);
+    expect(isAtLeast(18, '2008-10-29', '2026-10-28')).toBe(false);
+    expect(isAtLeast(18, '1990-01-01', '2026-10-28')).toBe(true);
+  });
+
+  it('born on 29 February: 18 from 1 March in a non-leap year', () => {
+    expect(isAtLeast(18, '2008-02-29', '2026-02-28')).toBe(false);
+    expect(isAtLeast(18, '2008-02-29', '2026-03-01')).toBe(true);
+  });
+
+  it('uses the date in Syria (UTC+3), not UTC', () => {
+    // 22:30 UTC on 27 October is already 28 October in Damascus.
+    expect(dateInSyria(new Date('2026-10-27T22:30:00Z'))).toBe('2026-10-28');
+    expect(dateInSyria(new Date('2026-10-27T20:00:00Z'))).toBe('2026-10-27');
+  });
+
+  it('refuses a 17-year-old at sign-up, accepts an 18-year-old', () => {
+    const today = dateInSyria();
+    const year = Number(today.slice(0, 4));
+    const turns18Today = `${String(year - 18)}${today.slice(4)}`;
+    const turns18Tomorrow = new Date(Date.parse(turns18Today) + 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    expect(signupSchema.safeParse({ ...valid, dateOfBirth: turns18Today }).success).toBe(true);
+    expect(errors(signupSchema.safeParse({ ...valid, dateOfBirth: turns18Tomorrow }))).toEqual({
+      dateOfBirth: 'must be at least 18 years old',
+    });
+  });
+});
+
 describe('loginSchema and createStaffSchema', () => {
   it('lowercases the login email and refuses unknown fields', () => {
     expect(loginSchema.parse({ email: 'A@B.CO', password: 'x' }).email).toBe('a@b.co');
@@ -70,9 +109,45 @@ describe('loginSchema and createStaffSchema', () => {
     );
   });
 
+  const staff = { fullName: 'Sami Khoury', email: 'w@lab.sy', password: 'long enough' };
+  const DEPT = '0b5e2c1a-8f4d-4c3b-9a2e-7d6f5e4c3b2a';
+
   it('lets a manager create only managers and workers', () => {
-    const base = { email: 'w@lab.sy', password: 'long enough' };
-    expect(createStaffSchema.parse({ ...base, role: 'worker' }).role).toBe('worker');
-    expect(createStaffSchema.safeParse({ ...base, role: 'customer' }).success).toBe(false);
+    expect(createStaffSchema.parse({ ...staff, role: 'worker', departmentId: DEPT }).role).toBe(
+      'worker',
+    );
+    expect(createStaffSchema.safeParse({ ...staff, role: 'customer' }).success).toBe(false);
+  });
+
+  it('requires a full name and, for workers, a department (owner, step 9)', () => {
+    const issues = (input: object) => {
+      const r = createStaffSchema.safeParse(input);
+      return r.success ? [] : r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
+    };
+    expect(issues({ ...staff, role: 'worker' })).toEqual(['departmentId: required for a worker']);
+    expect(issues({ ...staff, role: 'manager', departmentId: DEPT })).toEqual([
+      'departmentId: only for workers',
+    ]);
+    expect(issues({ email: 'm@lab.sy', password: 'long enough', role: 'manager' })).toEqual([
+      'fullName: Invalid input: expected string, received undefined',
+    ]);
+    expect(createStaffSchema.parse({ ...staff, role: 'manager' }).locale).toBe('en');
+  });
+});
+
+describe('changePasswordSchema', () => {
+  it('needs a new password of 8+ characters that differs from the current one', () => {
+    expect(
+      changePasswordSchema.safeParse({ currentPassword: 'temp-pass-1', newPassword: 'mine-now-1' })
+        .success,
+    ).toBe(true);
+    expect(
+      changePasswordSchema.safeParse({ currentPassword: 'temp-pass-1', newPassword: 'temp-pass-1' })
+        .success,
+    ).toBe(false);
+    expect(
+      changePasswordSchema.safeParse({ currentPassword: 'temp-pass-1', newPassword: 'short' })
+        .success,
+    ).toBe(false);
   });
 });

@@ -29,6 +29,13 @@ afterAll(async () => {
 
 const base = { passwordHash: 'x', locale: 'en' as const };
 
+/** The id of a starting department (inserted by the migration). */
+async function departmentId(nameEn: string): Promise<string> {
+  const row = await prisma.department.findUnique({ where: { nameEn } });
+  if (!row) throw new Error(`no department ${nameEn}`);
+  return row.id;
+}
+
 describe('PrismaUserStore on the real database', () => {
   it('creates and finds a customer with the full sign-up profile', async () => {
     const created = await store.create({
@@ -70,6 +77,8 @@ describe('PrismaUserStore on the real database', () => {
       ...base,
       email: 'sami@lab.sy',
       role: 'worker',
+      departmentId: await departmentId('Production'),
+      mustChangePassword: true,
       createdById: boss.id,
     });
     expect(await store.countByRole('manager')).toBe(1);
@@ -77,6 +86,30 @@ describe('PrismaUserStore on the real database', () => {
     const [row] = await prisma.$queryRaw<{ created_by: string }[]>`
       SELECT created_by::text FROM users WHERE id = ${worker.id}::uuid`;
     expect(row?.created_by).toBe(boss.id);
+  });
+
+  it('stores the department and the temporary-password flag; setPassword clears it', async () => {
+    const sami = await store.findByEmail('sami@lab.sy');
+    expect(sami).toMatchObject({
+      departmentId: await departmentId('Production'),
+      mustChangePassword: true,
+    });
+    const changed = await store.setPassword(sami?.id ?? '', 'new-hash');
+    expect(changed).toMatchObject({ passwordHash: 'new-hash', mustChangePassword: false });
+  });
+
+  it('the database itself refuses a worker without a department, and a manager with one', async () => {
+    await expect(store.create({ ...base, email: 'w2@lab.sy', role: 'worker' })).rejects.toThrow(
+      /users_department_only_for_workers/,
+    );
+    await expect(
+      store.create({
+        ...base,
+        email: 'm2@lab.sy',
+        role: 'manager',
+        departmentId: await departmentId('Quality'),
+      }),
+    ).rejects.toThrow(/users_department_only_for_workers/);
   });
 
   it('treats a malformed id as "no user" instead of a database error', async () => {
@@ -99,7 +132,7 @@ describe('the whole app on the real database', () => {
     await app.close();
   });
 
-  it('seeds the first manager, who can log in and read the machine', async () => {
+  it('seeds the first manager with a temporary password; after the change it can read the machine', async () => {
     const login = await fetch(`${api}/auth/login`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -107,7 +140,19 @@ describe('the whole app on the real database', () => {
     });
     expect(login.status).toBe(200);
     const cookie = login.headers.get('set-cookie')?.split(';')[0] ?? '';
+    expect((await fetch(`${api}/machine`, { headers: { cookie } })).status).toBe(403);
+    const changed = await fetch(`${api}/auth/change-password`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({
+        currentPassword: TEST_ENV.MANAGER_PASSWORD,
+        newPassword: 'boss-own-pass',
+      }),
+    });
+    expect(changed.status).toBe(200);
     expect((await fetch(`${api}/machine`, { headers: { cookie } })).status).toBe(200);
+    const row = await prisma.user.findUnique({ where: { email: TEST_ENV.MANAGER_EMAIL } });
+    expect(row?.mustChangePassword).toBe(false);
   });
 
   it('signs up a customer into the users table, as a customer', async () => {

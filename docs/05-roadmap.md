@@ -10,7 +10,8 @@
 5. Frontend: login, language switch (en/ar, RTL), the four navigation levels, 3D scene built from
    `machine.json`, state colors, component page with live values and trend charts, SIMULATION badge.
 6. Worker and customer routes as placeholders. Customer sign-up page works.
-7. Last step of phase 1: user management page for managers (create manager and worker accounts).
+7. Last step of phase 1: user management page for managers: create manager and worker accounts,
+   manage departments (add, rename, delete), and edit a worker's department (owner, step 9).
 
 Done when: `docker compose up --build` starts everything, a manager can log in, browse every level,
 and see values moving.
@@ -34,15 +35,31 @@ repo already created). Commit and push after every finished task; see the git wo
 - Manager actions: start/stop batch, recipes, color targets, orders.
 - Worker interface.
 - Customer interface: order a color and quantity, from a kiosk next to the line and from a phone.
+  The kiosk is one shared device: log out automatically after each order and after a few minutes
+  without activity; phones keep the normal session (owner, step 9).
 - Digital twin: predicted values, residuals, fault detection, health index, remaining useful life,
   what-if scenarios.
 - Alarms UI and acknowledgement from the web.
 - Real hardware: Raspberry Pi and ESP32 publishing instead of the simulator.
+  - Rejection counting (owner, step 9: not before, since the simulator never sends invalid data,
+    so the counts would always be zero). Starting draft:
+    - count dropped messages per station (the station segment of the topic), plus one "unknown"
+      bucket for topics that do not belong to this machine;
+    - per station: total, a count per reason (bad JSON, wrong unit, unknown code, ...), and the
+      last reason and time;
+    - exposed at `GET /api/telemetry/rejections` to managers and workers; later shown on screen;
+    - log one warning when a station starts rejecting and one when it stops (not one per
+      message, to avoid flooding the log);
+    - kept in memory: starts from zero when the backend restarts.
 - Grafana dashboards (optional, reads the same database).
 
 ## Before deploying to the Raspberry Pi
 
 - Slim the migrate image (now 702 MB).
+
+Decided not to do (owner, step 9): trimming Prisma's query engines for databases we do not use
+(~60 MB). 60 MB does not matter on the Pi, and the trimming would break on Prisma upgrades.
+Revisit only if space becomes a real problem.
 
 ## Open items (blocked on decisions or purchases)
 
@@ -55,6 +72,7 @@ repo already created). Commit and push after every finished task; see the git wo
 | Batch tray mechanism (6-slot linear tray does not fit the table) | tray geometry and sensors |
 | Vessel anti-rotation | small parts under the vessel |
 | PLC model (supervisor) | cabinet interior |
+| Worker departments: which sections each department can open (now every worker can open every section) | per-department access in the backend and the navigation |
 | PLC alarm list, message-format rules, and how alarms reach the web app | warning / fault states, alarm display, the `alarms` table, limits in `machine.json` |
 | How customers reach the app from the internet (hosting, tunnel, or cloud server for ordering only) | customer ordering from phones |
 | Password reset and email verification (need an email provider) | customer self-signup hardening |

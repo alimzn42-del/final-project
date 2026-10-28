@@ -7,6 +7,8 @@ import type { INestApplication } from '@nestjs/common';
 
 import { DEFAULT_RATE_LIMITS, type RateLimits } from '../app.module.js';
 import { createApp } from '../bootstrap.js';
+import { MemoryDepartmentStore } from './memory-department-store.js';
+import { MemoryTelemetryStore } from './memory-telemetry-store.js';
 import { MemoryUserStore } from './memory-user-store.js';
 
 export const TEST_ENV = {
@@ -33,6 +35,8 @@ export interface Reply {
 export interface TestApp {
   app: INestApplication;
   store: MemoryUserStore;
+  departments: MemoryDepartmentStore;
+  telemetry: MemoryTelemetryStore;
   call(method: string, path: string, body?: unknown, cookie?: string): Promise<Reply>;
   /** Logs in and returns the session cookie. */
   login(email: string, password: string): Promise<string>;
@@ -40,15 +44,32 @@ export interface TestApp {
 }
 
 export async function startTestApp(
-  options: { env?: Record<string, string>; rateLimits?: RateLimits } = {},
+  options: {
+    env?: Record<string, string>;
+    rateLimits?: RateLimits;
+    /**
+     * Keep the first manager's temporary-password flag. By default it is cleared
+     * after startup, so tests that only need a working manager can use it directly;
+     * the forced-change rule itself is tested with this option on.
+     */
+    keepFirstManagerTemporary?: boolean;
+  } = {},
 ): Promise<TestApp> {
-  const store = new MemoryUserStore();
+  const departments = new MemoryDepartmentStore();
+  const store = new MemoryUserStore(departments);
+  const telemetry = new MemoryTelemetryStore();
   const { app } = await createApp(options.env ?? TEST_ENV, {
     userStore: store,
+    departmentStore: departments,
+    telemetryStore: telemetry,
     rateLimits: options.rateLimits ?? GENEROUS_LIMITS,
     logs: false,
   });
+  // The first manager is created during startup (inside listen), so clear its flag after.
   await app.listen(0, '127.0.0.1');
+  if (!options.keepFirstManagerTemporary) {
+    for (const row of store.rows.values()) row.mustChangePassword = false;
+  }
   const base = `${await app.getUrl()}/api`;
 
   const call: TestApp['call'] = async (method, path, body, cookie) => {
@@ -78,7 +99,7 @@ export async function startTestApp(
     return reply.cookie;
   };
 
-  return { app, store, call, login, close: () => app.close() };
+  return { app, store, departments, telemetry, call, login, close: () => app.close() };
 }
 
 export { DEFAULT_RATE_LIMITS };

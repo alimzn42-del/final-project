@@ -49,6 +49,15 @@ describe('backend HTTP API: machine, locales, health', () => {
     expect(ar).toEqual(rawAr);
   });
 
+  it('GET /api/departments: the three starting departments, in English and Arabic', async () => {
+    const r = await t.call('GET', '/departments', undefined, manager);
+    expect(r.status).toBe(200);
+    expect(
+      (r.body as { nameEn: string; nameAr: string }[]).map((d) => `${d.nameEn}/${d.nameAr}`),
+    ).toEqual(['Maintenance/الصيانة', 'Production/الإنتاج', 'Quality/الجودة']);
+    expect((await t.call('GET', '/departments')).status).toBe(401);
+  });
+
   it('answers 404 for an unknown language and an unknown route', async () => {
     expect((await t.call('GET', '/locales/fr')).status).toBe(404);
     expect((await t.call('GET', '/nothing', undefined, manager)).status).toBe(404);
