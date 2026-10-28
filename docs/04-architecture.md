@@ -130,7 +130,7 @@ Modules:
   emitted type metadata (`emitDecoratorMetadata` is off): tsx and Vitest cannot emit that metadata,
   so explicit tokens make `pnpm dev`, the tests and the build behave the same.
 - `telemetry`: subscribes to `lab/mixline/+/sensors/+`, writes to the hypertable, keeps the latest
-  value per sensor in memory, pushes updates to the frontend over WebSocket.
+  value per sensor in memory; the `live` module pushes updates to the frontend over WebSocket.
   `GET /api/telemetry/:sensorId?from&to` for trend charts.
   - **Device clocks are unreliable** (owner, built in steps 7 and 9): the ESP32 has no battery
     clock and the lab is offline. Every reading stores both the device `ts` and the backend's
@@ -165,6 +165,39 @@ Modules:
   section, line (generic logic in `shared/state.ts`). The PLC owns all limits and alarms (design
   decision, `docs/01-overview.md`); until PLC alarms are defined, `machine.json` has no limits, so
   a sensor is only `ok` or `offline` (no message received for more than 10 s).
+  - Built in step 10: `StateService` recomputes every state every **1 s** from the latest values
+    in memory (offline depends on time alone, so new messages are not enough). It keeps the last
+    snapshot and reports only what changed (`stateChanges()` in `shared/state.ts`).
+  - `GET /api/state`: the last snapshot (`line`, `sections`, `subsections`, `components`,
+    `sensors`, each a state by id). Manager and worker only.
+- `live` (built in step 10): the push to the web app, **socket.io** at **`/api/socket.io`** on the
+  backend's port. The path is under `/api` because the session cookie is sent only there.
+  - Access is the same as `/api/telemetry`: managers and workers. It is checked when the connection
+    opens (session cookie, user re-read), and again **every 60 s**, because a connection stays open
+    for hours: a deleted user, a changed role, a reset password or an expired session is closed
+    within a minute. A refused connection gets `connect_error` with a code (`LIVE_REFUSALS` in
+    `shared/live.ts`: `LOGIN_REQUIRED`, `PASSWORD_CHANGE_REQUIRED`, `FORBIDDEN`, `UNAVAILABLE`).
+    A connection closed by the re-check gets no code; the web app asks `GET /api/auth/me` why.
+    If the database is down during a re-check, open connections are kept and checked again a
+    minute later.
+  - Server to client only (event names and data types in `shared/live.ts`):
+    - `snapshot`, once on connect: every latest reading and every state.
+    - `readings`, checked every **0.5 s**: only the sensors with a new reading since the last
+      batch; nothing is sent when nothing is new. The simulator publishes once a second, so a
+      batch comes about every second: about 41 sensors and **4.8 KB** (measured), about
+      38 kbit/s per open browser.
+    - `states`, checked every 1 s: only the states that changed.
+    - A client that starts from the snapshot and applies every `states` event is always exact:
+      both come from the same sequence of snapshots.
+  - Every staff client gets everything. socket.io rooms per section can be added later if the
+    Pi's bandwidth needs it (none are used yet).
+  - The session cookie is `SameSite=Strict`, so another site's page cannot open the connection
+    with it.
+  - Step 11 (nginx in front, and the Vite dev proxy) must pass WebSocket upgrades on
+    `/api/socket.io`; without that socket.io falls back to long-polling, which works but is slower.
+  - Tests use a real socket.io client against the app (memory stores, no Docker);
+    `pnpm live:check` verifies the push on the running stack, including offline pushed with time
+    alone (it stops the simulator for about 15 s).
 
 Database:
 - `users` (one table for all roles):
