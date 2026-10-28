@@ -6,7 +6,9 @@ import { AccessGuard } from './auth/access.js';
 import { AuthController } from './auth/auth.controller.js';
 import { AuthService } from './auth/auth.service.js';
 import { FIRST_MANAGER, FirstManagerSeed } from './auth/first-manager.js';
+import { PrismaSessionStore } from './auth/prisma-session-store.js';
 import { Sessions } from './auth/session.js';
+import { SESSION_STORE, type SessionStore } from './auth/session-store.js';
 import type { BackendConfig } from './config.js';
 import { DatabaseModule } from './database/database.module.js';
 import { PrismaService } from './database/prisma.service.js';
@@ -45,6 +47,7 @@ export interface AppOptions {
   userStore?: UserStore | undefined;
   departmentStore?: DepartmentStore | undefined;
   telemetryStore?: TelemetryStore | undefined;
+  sessionStore?: SessionStore | undefined;
   rateLimits?: RateLimits | undefined;
 }
 
@@ -82,7 +85,12 @@ export class AppModule {
         DepartmentsService,
         StateService,
         LiveGateway,
-        { provide: Sessions, useValue: new Sessions(config.session) },
+        sessionStoreProvider(options),
+        {
+          provide: Sessions,
+          useFactory: (store: SessionStore) => new Sessions(config.session, store),
+          inject: [SESSION_STORE],
+        },
         AuthService,
         { provide: FIRST_MANAGER, useValue: config.firstManager },
         FirstManagerSeed,
@@ -95,7 +103,8 @@ export class AppModule {
 
 /** The database is needed unless every store is replaced (tests). */
 function databaseImports(options: AppOptions): DynamicModule[] {
-  if (options.userStore && options.departmentStore && options.telemetryStore) return [];
+  const { userStore, departmentStore, telemetryStore, sessionStore } = options;
+  if (userStore && departmentStore && telemetryStore && sessionStore) return [];
   const url = options.config.databaseUrl;
   if (!url) {
     throw new Error(
@@ -110,6 +119,15 @@ function userStoreProvider(options: AppOptions): Provider {
   return {
     provide: USER_STORE,
     useFactory: (prisma: PrismaService) => new PrismaUserStore(prisma),
+    inject: [PrismaService],
+  };
+}
+
+function sessionStoreProvider(options: AppOptions): Provider {
+  if (options.sessionStore) return { provide: SESSION_STORE, useValue: options.sessionStore };
+  return {
+    provide: SESSION_STORE,
+    useFactory: (prisma: PrismaService) => new PrismaSessionStore(prisma),
     inject: [PrismaService],
   };
 }

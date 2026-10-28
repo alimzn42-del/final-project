@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { FirstManagerSeed } from '../auth/first-manager.js';
 import { Sessions } from '../auth/session.js';
+import { MemorySessionStore } from '../testing/memory-session-store.js';
 import { DEFAULT_RATE_LIMITS, startTestApp, TEST_ENV, type TestApp } from '../testing/http.js';
 
 const customer = {
@@ -138,22 +139,20 @@ describe('auth over HTTP (in-memory users)', () => {
 
   describe('sessions', () => {
     it('refuses a forged token', async () => {
-      const forged = await new Sessions({
-        secret: 'another-secret-that-is-long-enough-0000',
-        hours: 8,
-        secureCookie: false,
-      }).sign([...t.store.rows.keys()][0] ?? '');
+      const forged = await new Sessions(
+        { secret: 'another-secret-that-is-long-enough-0000', hours: 8, secureCookie: false },
+        new MemorySessionStore(),
+      ).start([...t.store.rows.keys()][0] ?? '');
       const r = await t.call('GET', '/auth/me', undefined, `mixline_session=${forged}`);
       expect(r.status).toBe(401);
     });
 
     it('refuses an expired token', async () => {
-      const sessions = new Sessions({
-        secret: TEST_ENV.JWT_SECRET,
-        hours: -1,
-        secureCookie: false,
-      });
-      const token = await sessions.sign([...t.store.rows.keys()][0] ?? '');
+      const sessions = new Sessions(
+        { secret: TEST_ENV.JWT_SECRET, hours: -1, secureCookie: false },
+        t.sessions,
+      );
+      const token = await sessions.start([...t.store.rows.keys()][0] ?? '');
       expect((await t.call('GET', '/auth/me', undefined, `mixline_session=${token}`)).status).toBe(
         401,
       );

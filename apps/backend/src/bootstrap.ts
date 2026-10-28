@@ -6,6 +6,7 @@ import { NestFactory } from '@nestjs/core';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 
 import { AppModule, type RateLimits } from './app.module.js';
+import type { SessionStore } from './auth/session-store.js';
 import { type BackendConfig, loadConfig } from './config.js';
 import type { DepartmentStore } from './departments/department-store.js';
 import type { TelemetryStore } from './telemetry/telemetry-store.js';
@@ -19,6 +20,7 @@ export interface CreateAppOptions {
   userStore?: UserStore;
   departmentStore?: DepartmentStore;
   telemetryStore?: TelemetryStore;
+  sessionStore?: SessionStore;
   rateLimits?: RateLimits;
   /** Nest's own startup logs; on by default. */
   logs?: boolean;
@@ -42,6 +44,7 @@ export async function createApp(
       userStore: options.userStore,
       departmentStore: options.departmentStore,
       telemetryStore: options.telemetryStore,
+      sessionStore: options.sessionStore,
       rateLimits: options.rateLimits,
     }),
     { logger: options.logs === false ? ['error'] : ['error', 'warn', 'log'] },

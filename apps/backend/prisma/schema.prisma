@@ -82,7 +82,24 @@ model User {
   occupation   String?
   paintPurpose String?      @map("paint_purpose")
 
+  sessions Session[]
+
   @@map("users")
+}
+
+/// One row per login (owner, step 11). The session token names its row, and
+/// every request checks that the row still exists: logout deletes it, so a
+/// copied token stops working at once. A password change deletes the user's
+/// other rows. Rows of a deleted user go with it (ON DELETE CASCADE).
+model Session {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("sessions")
 }
 
 /// Worker departments (owner, step 9), managed by managers. Maintenance,

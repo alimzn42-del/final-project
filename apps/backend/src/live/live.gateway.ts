@@ -5,13 +5,14 @@
  * checked when the connection opens (session cookie, user re-read from the
  * database, like AccessGuard), and again every minute: a connection stays
  * open for hours, so a deleted user, a changed role, a reset password or an
- * expired session must still be cut off.
+ * expired session must still be cut off. A session that ends (logout, or a
+ * password change on another device) closes its connections at once.
  *
  * Server -> client only (docs/04-architecture.md):
  * - `snapshot` once on connect: every latest reading and every state;
  * - `readings` every 0.5 s: only the sensors that sent something new;
  * - `states` when a state changes (checked every second): only the changes.
- * Every staff client gets everything (about 2 KB per batch for 60 sensors).
+ * Every staff client gets everything (about 4.8 KB a second, measured).
  * Rooms per section can be added later if the Pi's bandwidth needs it.
  */
 import {
@@ -28,7 +29,7 @@ import { Inject, Logger, type OnModuleDestroy } from '@nestjs/common';
 import { type OnGatewayConnection, type OnGatewayInit, WebSocketGateway } from '@nestjs/websockets';
 import type { DefaultEventsMap, Server, Socket } from 'socket.io';
 
-import { readCookie, SESSION_COOKIE, Sessions } from '../auth/session.js';
+import { readCookie, type Session, SESSION_COOKIE, Sessions } from '../auth/session.js';
 import { StateService } from '../state/state.service.js';
 import { TelemetryIngest } from '../telemetry/ingest.js';
 import { USER_STORE, type UserStore } from '../users/user-store.js';
@@ -38,9 +39,10 @@ export const RECHECK_EVERY_MS = 60_000;
 
 const STAFF: readonly Role[] = ['manager', 'worker'];
 
-/** Kept per connection: the session token, to check it again later. */
+/** Kept per connection: the session token, to check it again later, and its session id. */
 interface LiveData {
   token: string | undefined;
+  sessionId: string | undefined;
 }
 
 type LiveServer = Server<DefaultEventsMap, LiveServerEvents, DefaultEventsMap, LiveData>;
@@ -55,7 +57,7 @@ export class LiveGateway
   /** The last reading pushed for each sensor, so a batch holds only what is new. */
   private readonly sent = new Map<string, LatestReading>();
   private readonly timers: NodeJS.Timeout[] = [];
-  private stopStates: (() => void) | undefined;
+  private readonly stops: (() => void)[] = [];
 
   constructor(
     @Inject(USER_STORE) private readonly users: UserStore,
@@ -69,13 +71,14 @@ export class LiveGateway
     // Runs before a connection is accepted; a refusal reaches the client as connect_error.
     server.use((socket, next) => {
       const token = readCookie(socket.handshake.headers.cookie, SESSION_COOKIE);
-      this.refusal(token).then(
-        (refusal) => {
-          if (refusal) {
-            next(new Error(refusal));
+      this.check(token).then(
+        (verdict) => {
+          if ('refusal' in verdict) {
+            next(new Error(verdict.refusal));
             return;
           }
           socket.data.token = token;
+          socket.data.sessionId = verdict.session.sessionId;
           next();
         },
         (error: unknown) => {
@@ -84,9 +87,14 @@ export class LiveGateway
         },
       );
     });
-    this.stopStates = this.state.onChange((changes) => {
-      server.emit(LIVE_EVENTS.states, changes);
-    });
+    this.stops.push(
+      this.state.onChange((changes) => {
+        server.emit(LIVE_EVENTS.states, changes);
+      }),
+      this.sessions.onEnded((sessionIds) => {
+        this.closeSessions(sessionIds);
+      }),
+    );
     this.timers.push(
       setInterval(() => {
         this.pushReadings();
@@ -107,7 +115,7 @@ export class LiveGateway
 
   onModuleDestroy(): void {
     for (const timer of this.timers) clearInterval(timer);
-    this.stopStates?.();
+    for (const stop of this.stops) stop();
   }
 
   /** Sends the readings that are new since the last batch, if any. */
@@ -129,7 +137,7 @@ export class LiveGateway
     if (!this.server) return;
     for (const socket of this.server.sockets.sockets.values()) {
       try {
-        if (await this.refusal(socket.data.token)) socket.disconnect(true);
+        if ('refusal' in (await this.check(socket.data.token))) socket.disconnect(true);
       } catch (error) {
         // Database down: keep the connection (it passed a check a minute ago); retry next time.
         this.logger.warn(`could not recheck a live login: ${String(error)}`);
@@ -137,14 +145,25 @@ export class LiveGateway
     }
   }
 
-  /** Why this session may not use the live view; undefined if it may. */
-  private async refusal(token: string | undefined): Promise<LiveRefusal | undefined> {
-    const userId = await this.sessions.verify(token);
-    const user = userId ? await this.users.findById(userId) : undefined;
-    if (!user) return LIVE_REFUSALS.loginRequired;
-    if (user.mustChangePassword) return LIVE_REFUSALS.passwordChangeRequired;
-    if (!STAFF.includes(user.role)) return LIVE_REFUSALS.forbidden;
-    return undefined;
+  /** Closes the connections of sessions that ended (logout, password change). */
+  private closeSessions(sessionIds: string[]): void {
+    if (!this.server) return;
+    const ended = new Set(sessionIds);
+    for (const socket of this.server.sockets.sockets.values()) {
+      if (socket.data.sessionId && ended.has(socket.data.sessionId)) socket.disconnect(true);
+    }
+  }
+
+  /** The session if it may use the live view, or why not. */
+  private async check(
+    token: string | undefined,
+  ): Promise<{ session: Session } | { refusal: LiveRefusal }> {
+    const session = await this.sessions.verify(token);
+    const user = session ? await this.users.findById(session.userId) : undefined;
+    if (!session || !user) return { refusal: LIVE_REFUSALS.loginRequired };
+    if (user.mustChangePassword) return { refusal: LIVE_REFUSALS.passwordChangeRequired };
+    if (!STAFF.includes(user.role)) return { refusal: LIVE_REFUSALS.forbidden };
+    return { session };
   }
 }
 
