@@ -38,7 +38,7 @@ config/machine.json  single source of truth for the line
 config/locales/     en.json and ar.json for every label key
 docs/              specs (docs/brand/ holds the logo files)
 docker/            container config: node-app.Dockerfile (image for every Node app, build arg APP),
-                   mosquitto/ (broker config and entrypoint)
+                   web.Dockerfile + nginx/ (the web app behind nginx), mosquitto/ (broker config)
 scripts/           repo scripts (check-infra, check-db, check-telemetry, check-live)
 reference/         earlier planning files, kept unchanged, not used by the code
 docker-compose.yml
@@ -118,10 +118,13 @@ Run from the repo root:
 | `pnpm sim:check` | Listen 12 s and verify a running simulator (topics, payloads, intervals) |
 | `pnpm telemetry:check` | Verify simulator -> MQTT -> backend -> database -> API on the running stack |
 | `pnpm live:check` | Verify the live push (socket.io) on the running stack; stops the simulator ~15 s |
+| `pnpm web:check` | Verify the web app through nginx (page, API, login, WebSocket, logout) |
 | `pnpm stack:down` / `pnpm infra:down` | Stop the Docker stack; data volumes are kept |
-| `pnpm dev` | Runs each app's `dev` script with live reload, using `.env` (backend on :3000, simulator) |
+| `pnpm dev` | Runs each app's `dev` script with live reload, using `.env` (backend :3000, web app :5173, simulator) |
 
-`pnpm dev` and `pnpm sim:check` run on the laptop and need `pnpm infra:up` first.
+`pnpm dev` and `pnpm sim:check` run on the laptop and need `pnpm infra:up` first. In Docker the web
+app is at http://localhost:8080 (`WEB_PORT`). Build images one at a time on this laptop (Docker
+Desktop has ~4 GB): `docker compose build migrate`, then `backend`, `simulator`, `frontend`.
 
 Shell note: this laptop's fnm hook switches Node on `cd` into a folder with `.nvmrc`; in a
 non-interactive shell use `builtin cd` if that hook errors.
