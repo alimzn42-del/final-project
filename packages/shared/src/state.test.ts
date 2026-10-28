@@ -8,6 +8,8 @@ import {
   OFFLINE_AFTER_MS,
   sensorState,
   type State,
+  stateChanges,
+  toStateSnapshot,
   valueState,
   worstState,
 } from './state.js';
@@ -166,6 +168,76 @@ describe('machineStates roll-up (real machine.json + test limits)', () => {
     expect(st.sections.get('mixingColor')).toBe('offline');
     expect(st.sections.get('cabinet')).toBe('fault');
     expect(st.line).toBe('fault');
+  });
+});
+
+describe('toStateSnapshot: plain JSON for the WebSocket and GET /api/state', () => {
+  it('keeps every id and survives a JSON round trip', () => {
+    const st = machineStates(machine, readings({ 'color.deltaE': 7 }), NOW);
+    const snap = toStateSnapshot(st);
+    expect(snap.line).toBe('fault');
+    expect(snap.sections.mixingColor).toBe('fault');
+    expect(snap.subsections['mixingColor/color']).toBe('fault');
+    expect(snap.components.camera).toBe('fault');
+    expect(snap.sensors['color.deltaE']).toBe('fault');
+    expect(Object.keys(snap.sensors)).toHaveLength(st.sensors.size);
+    expect(Object.keys(snap.components)).toHaveLength(st.components.size);
+    expect(Object.keys(snap.subsections)).toHaveLength(st.subsections.size);
+    expect(Object.keys(snap.sections)).toHaveLength(st.sections.size);
+    expect(JSON.parse(JSON.stringify(snap))).toEqual(snap);
+  });
+});
+
+describe('stateChanges: only what changed, for the live push', () => {
+  const okSnap = toStateSnapshot(machineStates(machine, readings(), NOW));
+
+  it('sends everything when there is no previous snapshot', () => {
+    expect(stateChanges(undefined, okSnap)).toEqual(okSnap);
+  });
+
+  it('is undefined when nothing changed (nothing to push)', () => {
+    const again = toStateSnapshot(machineStates(machine, readings(), NOW + 500));
+    expect(stateChanges(okSnap, again)).toBeUndefined();
+  });
+
+  it('lists only the changed ids, through every level', () => {
+    const fault = toStateSnapshot(machineStates(machine, readings({ 'color.deltaE': 7 }), NOW));
+    expect(stateChanges(okSnap, fault)).toEqual({
+      line: 'fault',
+      sections: { mixingColor: 'fault' },
+      subsections: { 'mixingColor/color': 'fault' },
+      components: { camera: 'fault' },
+      sensors: { 'color.deltaE': 'fault' },
+    });
+  });
+
+  it('leaves out the line and the groups that did not change', () => {
+    const latest = readings({ 'cabinet.estop': 1 });
+    const prev = toStateSnapshot(machineStates(machine, latest, NOW));
+    latest.set('conveyor.slip', { value: 12, receivedAt: NOW });
+    const next = toStateSnapshot(machineStates(machine, latest, NOW));
+    const changes = stateChanges(prev, next);
+    expect(changes).toEqual({
+      sections: { conveyor: 'fault' },
+      components: { conveyorMotor: 'fault' },
+      sensors: { 'conveyor.slip': 'fault' },
+    });
+    expect(changes).not.toHaveProperty('line');
+    expect(changes).not.toHaveProperty('subsections');
+  });
+
+  it('reports a recovery too (fault back to ok)', () => {
+    const fault = toStateSnapshot(machineStates(machine, readings({ 'color.deltaE': 7 }), NOW));
+    expect(stateChanges(fault, okSnap)?.line).toBe('ok');
+    expect(stateChanges(fault, okSnap)?.sensors).toEqual({ 'color.deltaE': 'ok' });
+  });
+
+  it('reports going offline with time alone, with no new message', () => {
+    const later = toStateSnapshot(machineStates(machine, readings(), NOW + OFFLINE_AFTER_MS + 1));
+    const changes = stateChanges(okSnap, later);
+    expect(changes?.line).toBe('offline');
+    expect(Object.values(changes?.sensors ?? {}).every((s) => s === 'offline')).toBe(true);
+    expect(Object.keys(changes?.sensors ?? {})).toHaveLength(allSensors.length);
   });
 });
 

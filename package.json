@@ -26,7 +26,8 @@
     "db:migrate": "pnpm --filter @mixline/backend db:migrate",
     "db:check": "node scripts/check-db.mjs",
     "test:db": "vitest run --config vitest.db.config.ts",
-    "telemetry:check": "node scripts/check-telemetry.mjs"
+    "telemetry:check": "node scripts/check-telemetry.mjs",
+    "live:check": "node scripts/check-live.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -35,6 +36,7 @@
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.13.0",
     "prettier": "^3.9.10",
+    "socket.io-client": "^4.8.4",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1",

@@ -129,3 +129,40 @@ export function machineStates(
 
   return { sensors, components, subsections, sections, line: worstState(sections.values()) };
 }
+
+/** machineStates() as plain JSON (for the WebSocket and GET /api/state). */
+export interface StateSnapshot {
+  line: State;
+  sections: Record<string, State>;
+  subsections: Record<string, State>;
+  components: Record<string, State>;
+  sensors: Record<string, State>;
+}
+
+export function toStateSnapshot(s: MachineStates): StateSnapshot {
+  return {
+    line: s.line,
+    sections: Object.fromEntries(s.sections),
+    subsections: Object.fromEntries(s.subsections),
+    components: Object.fromEntries(s.components),
+    sensors: Object.fromEntries(s.sensors),
+  };
+}
+
+/** Only what changed: groups with no change are left out. */
+export type StateChanges = Partial<StateSnapshot>;
+
+/** What changed from `prev` to `next`; undefined when nothing did (nothing to push). */
+export function stateChanges(
+  prev: StateSnapshot | undefined,
+  next: StateSnapshot,
+): StateChanges | undefined {
+  if (!prev) return next;
+  const changes: StateChanges = {};
+  if (prev.line !== next.line) changes.line = next.line;
+  for (const group of ['sections', 'subsections', 'components', 'sensors'] as const) {
+    const changed = Object.entries(next[group]).filter(([id, state]) => prev[group][id] !== state);
+    if (changed.length) changes[group] = Object.fromEntries(changed);
+  }
+  return Object.keys(changes).length ? changes : undefined;
+}
