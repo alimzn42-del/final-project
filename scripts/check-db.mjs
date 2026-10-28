@@ -121,6 +121,26 @@ const checks = [
     },
   ],
   [
+    'the 1-minute summary is real-time (includes the newest minutes)',
+    () => {
+      const only = q(
+        "SELECT materialized_only FROM timescaledb_information.continuous_aggregates WHERE view_name = 'telemetry_1m'",
+      );
+      if (only !== 'f') throw new Error(`materialized_only = ${only}`);
+    },
+  ],
+  [
+    'only workers have a department (database check)',
+    () => {
+      try {
+        q("INSERT INTO users (email, password_hash, role) VALUES ('w@lab.sy', 'x', 'worker')");
+      } catch {
+        return;
+      }
+      throw new Error('a worker without a department was accepted');
+    },
+  ],
+  [
     'the database refuses an email with capitals',
     () => {
       q(
