@@ -165,7 +165,8 @@ export function SignupPage() {
               >
                 {countries.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {`${c.name} +${c.dial}`}
+                    {/* The code is isolated left to right, so "+963" stays whole in Arabic. */}
+                    {`${c.name} ⁦+${c.dial}⁩`}
                   </option>
                 ))}
               </select>
