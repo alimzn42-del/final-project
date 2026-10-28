@@ -65,6 +65,8 @@ export class TelemetryModule {
         },
         MqttIntake,
       ],
+      // The state and live modules read the latest values from memory.
+      exports: [TelemetryIngest],
     };
   }
 }
