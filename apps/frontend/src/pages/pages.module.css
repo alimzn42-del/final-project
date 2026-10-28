@@ -16,6 +16,26 @@
   flex-direction: column;
 }
 
+/* The 3D view and the panel beside it; on narrow screens the panel goes under the view (doc 03). */
+.sceneLayout {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) 17rem;
+  gap: 1rem;
+}
+
+@media (width < 48rem) {
+  .sceneLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 .button {
   padding: 0.45rem 1.1rem;
   border: 1px solid var(--line);

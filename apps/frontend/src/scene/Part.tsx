@@ -19,6 +19,10 @@ export interface PartProps {
   glow?: string | undefined;
   /** Closed boxes: see-through walls when their inside is the subject (owner, step 12). */
   seeThrough?: boolean;
+  /** Drawn faintly, for orientation only (the table under a section, the box around a part). */
+  ghost?: boolean;
+  /** Edge colour of a see-through box, so its shape stays readable. */
+  outline?: string | undefined;
   /** Text of the tag on a pending part; no tag when undefined. */
   pendingTag?: string | undefined;
   onPointerOver?: (e: ThreeEvent<PointerEvent>) => void;
@@ -31,13 +35,15 @@ export function Part({
   machine,
   glow,
   seeThrough = false,
+  ghost = false,
+  outline,
   pendingTag,
   onPointerOver,
   onPointerOut,
   onClick,
 }: PartProps) {
   const frame = partFrame(part);
-  const look = partLook(part, { seeThrough });
+  const look = partLook(part, { seeThrough, ghost });
   const g = part.geometry;
   const [, height] = frame.size;
   const surface = <Surface look={look} glow={glow} />;
@@ -57,7 +63,9 @@ export function Part({
             <mesh key={i} position={wall.center}>
               <boxGeometry args={wall.size} />
               {surface}
-              {glow && <Edges color={glow} threshold={20} />}
+              {(glow ?? (seeThrough ? outline : undefined)) && (
+                <Edges color={glow ?? outline} threshold={20} />
+              )}
             </mesh>
           ))
         ) : (

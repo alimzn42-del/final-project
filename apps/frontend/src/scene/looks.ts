@@ -33,15 +33,18 @@ export const MATERIAL_LOOKS: Record<Material, Look> = {
 export const PENDING_OPACITY = 0.35;
 /** The walls of a closed box when its inside is the subject of the page (owner, step 12). */
 export const SEE_THROUGH_OPACITY = 0.14;
+/** Parts drawn only for orientation (the table under a section, the box around a part). */
+export const GHOST_OPACITY = 0.18;
 
 export function partLook(
   c: MachineComponent,
-  { seeThrough = false }: { seeThrough?: boolean } = {},
+  { seeThrough = false, ghost = false }: { seeThrough?: boolean; ghost?: boolean } = {},
 ): Look {
   const base = MATERIAL_LOOKS[c.material];
   let opacity = base.opacity;
   if (c.status === 'pending') opacity = Math.min(opacity, PENDING_OPACITY);
   if (seeThrough) opacity = Math.min(opacity, SEE_THROUGH_OPACITY);
+  if (ghost) opacity = Math.min(opacity, GHOST_OPACITY);
   return { ...base, color: c.color ?? base.color, opacity };
 }
 
