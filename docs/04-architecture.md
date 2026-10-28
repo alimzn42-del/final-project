@@ -311,6 +311,26 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
 - **Forms** check the shared zod rules before sending; every message comes from the locale files.
   Mobile: a country picker (the browser's built-in country names, owner step 11; Syria selected
   first), sent as E.164 (`libphonenumber-js`).
+- **3D scene** (step 12, `src/scene/`): React Three Fiber 9 (three.js 0.186, drei 10), built from
+  `GET /api/machine` at run time; no part is hardcoded.
+  - Units: the scene is in metres (machine.json in mm). machine.json's frame (x right, y up, z away
+    from the viewer) is left-handed and three.js is right-handed, so the scene flips z and a
+    rotation about x or y turns the other way (`frame.ts`); otherwise the line appears mirrored.
+  - Each part is a group at its anchor, turned about it (X, Y, Z); boxes, cylinders (axis along
+    y), hollow boxes as six walls of `wallThickness`; tanks show their liquid at `level` (live
+    levels and the live mix colour come in step 14). Pending parts are see-through placeholders
+    with a "Pending" tag. Material colours (`looks.ts`) apply when a part has no `color`.
+  - Line page: a part leads to its section; hovering lights up the whole section in brand light
+    blue (surfaces and edges), never a state colour. The table and the floor do not react.
+  - Camera from the front, a little above; orbit limits: never from below the table, distance
+    0.25 to 4 m, panning stays over the table. Renders only when something changes (saves phone
+    batteries); no damping when the user asks for reduced motion.
+  - The 3D code is a separate file loaded only on line pages (944 kB, 252 kB compressed); a browser
+    without WebGL gets a message instead of the scene.
+  - Tests: transforms of known parts (table top at y = 0, vessel on its pedestal, the drive roller
+    across the belt, the cabinet's six walls, the line not mirrored from the front view), and the
+    scene graph without WebGL (`@react-three/test-renderer`): every part present, pending parts
+    see-through, liquids coloured, hover lights exactly one section.
 - **Brand** (docs/06-brand.md): colour tokens in `src/styles/tokens.css` with a WCAG AA test; IBM
   Plex Sans, Sans Arabic and Mono bundled (the lab is offline); the SVG mark in `src/brand/Logo.tsx`.
 - **nginx** (`docker/web.Dockerfile`, `docker/nginx/default.conf`; `nginx-unprivileged`, runs as a
