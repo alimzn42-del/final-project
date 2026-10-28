@@ -11,6 +11,7 @@ import type { BackendConfig } from './config.js';
 import { DatabaseModule } from './database/database.module.js';
 import { PrismaService } from './database/prisma.service.js';
 import { HealthController } from './health/health.controller.js';
+import { LiveGateway } from './live/live.gateway.js';
 import { MachineModule } from './machine/machine.module.js';
 import type { ConfigFiles } from './machine/machine.tokens.js';
 import { StateController } from './state/state.controller.js';
@@ -47,7 +48,7 @@ export interface AppOptions {
   rateLimits?: RateLimits | undefined;
 }
 
-/** Root module. Step 10 adds the WebSocket push and state modules here. */
+/** Root module. */
 @Module({})
 export class AppModule {
   static register(options: AppOptions): DynamicModule {
@@ -80,6 +81,7 @@ export class AppModule {
         departmentStoreProvider(options),
         DepartmentsService,
         StateService,
+        LiveGateway,
         { provide: Sessions, useValue: new Sessions(config.session) },
         AuthService,
         { provide: FIRST_MANAGER, useValue: config.firstManager },
