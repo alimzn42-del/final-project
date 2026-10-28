@@ -38,8 +38,10 @@ describe('auth over HTTP (in-memory users)', () => {
         role: 'customer',
         locale: 'en',
         fullName: 'Rana Haddad',
+        department: null,
+        mustChangePassword: false,
       });
-      expect(JSON.stringify(r.body)).not.toMatch(/hash|password/i);
+      expect(JSON.stringify(r.body)).not.toMatch(/passwordHash|argon2/i);
       const me = await t.call('GET', '/auth/me', undefined, r.cookie);
       expect(me.status).toBe(200);
     });
@@ -186,11 +188,24 @@ describe('auth over HTTP (in-memory users)', () => {
       const created = await t.call(
         'POST',
         '/users',
-        { email: 'Worker@Lab.sy', password: 'worker-pass-1', role: 'worker', fullName: 'Sami' },
+        {
+          email: 'Worker@Lab.sy',
+          password: 'temporary-1',
+          role: 'worker',
+          fullName: 'Sami',
+          department: 'production',
+        },
         manager,
       );
       expect(created.status).toBe(201);
-      worker = await t.login('worker@lab.sy', 'worker-pass-1');
+      worker = await t.login('worker@lab.sy', 'temporary-1');
+      const changed = await t.call(
+        'POST',
+        '/auth/change-password',
+        { currentPassword: 'temporary-1', newPassword: 'worker-pass-1' },
+        worker,
+      );
+      expect(changed.status).toBe(200);
       client = await t.login('rana.haddad@example.com', customer.password);
     });
 
@@ -202,14 +217,21 @@ describe('auth over HTTP (in-memory users)', () => {
     });
 
     it('only a manager creates accounts, and only managers and workers', async () => {
-      const staff = { email: 'new@lab.sy', password: 'long enough', role: 'worker' };
+      const staff = {
+        fullName: 'Lina',
+        email: 'new@lab.sy',
+        password: 'long enough',
+        role: 'worker',
+        department: 'quality',
+      };
       expect((await t.call('POST', '/users', staff, worker)).status).toBe(403);
       expect((await t.call('POST', '/users', staff, client)).status).toBe(403);
       expect((await t.call('POST', '/users', staff)).status).toBe(401);
       expect((await t.call('POST', '/users', { ...staff, role: 'customer' }, manager)).status).toBe(
         400,
       );
-      const made = await t.call('POST', '/users', { ...staff, role: 'manager' }, manager);
+      const managerInput = { fullName: 'Lina', email: 'new@lab.sy', password: 'long enough' };
+      const made = await t.call('POST', '/users', { ...managerInput, role: 'manager' }, manager);
       expect(made.status).toBe(201);
       expect((await t.call('POST', '/users', staff, manager)).status).toBe(409);
     });
@@ -219,6 +241,143 @@ describe('auth over HTTP (in-memory users)', () => {
       const boss = [...t.store.rows.values()].find((u) => u.email === TEST_ENV.MANAGER_EMAIL);
       expect(row?.createdById).toBe(boss?.id);
     });
+  });
+});
+
+describe('staff accounts (owner, step 9)', () => {
+  let t: TestApp;
+  let manager: string;
+
+  beforeAll(async () => {
+    t = await startTestApp();
+    manager = await t.login(TEST_ENV.MANAGER_EMAIL, TEST_ENV.MANAGER_PASSWORD);
+  });
+
+  afterAll(async () => {
+    await t.close();
+  });
+
+  const worker = {
+    fullName: 'Sami Khoury',
+    email: 'sami@lab.sy',
+    password: 'temporary-1',
+    role: 'worker',
+    department: 'maintenance',
+  };
+
+  it('a new worker must change the temporary password before using the app', async () => {
+    const created = await t.call('POST', '/users', worker, manager);
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({
+      fullName: 'Sami Khoury',
+      role: 'worker',
+      department: 'maintenance',
+      mustChangePassword: true,
+    });
+
+    const cookie = await t.login('sami@lab.sy', 'temporary-1');
+    // Allowed: who am I, change my password, log out.
+    expect((await t.call('GET', '/auth/me', undefined, cookie)).status).toBe(200);
+    // Everything else: 403 with a code the frontend can act on.
+    const blocked = await t.call('GET', '/machine', undefined, cookie);
+    expect(blocked.status).toBe(403);
+    expect(blocked.body).toMatchObject({ code: 'PASSWORD_CHANGE_REQUIRED' });
+    expect((await t.call('PATCH', '/auth/me', { locale: 'ar' }, cookie)).status).toBe(403);
+
+    const changed = await t.call(
+      'POST',
+      '/auth/change-password',
+      { currentPassword: 'temporary-1', newPassword: 'sami-own-pass' },
+      cookie,
+    );
+    expect(changed.status).toBe(200);
+    expect(changed.body).toMatchObject({ mustChangePassword: false });
+    expect((await t.call('GET', '/machine', undefined, cookie)).status).toBe(200);
+
+    // The temporary password no longer works; the new one does.
+    expect(
+      (await t.call('POST', '/auth/login', { email: 'sami@lab.sy', password: 'temporary-1' }))
+        .status,
+    ).toBe(401);
+    await t.login('sami@lab.sy', 'sami-own-pass');
+  });
+
+  it('refuses a wrong current password and an unchanged new one', async () => {
+    const cookie = await t.login('sami@lab.sy', 'sami-own-pass');
+    const wrong = await t.call(
+      'POST',
+      '/auth/change-password',
+      { currentPassword: 'not-mine', newPassword: 'another-pass' },
+      cookie,
+    );
+    expect(wrong.status).toBe(400);
+    expect(wrong.body).toMatchObject({
+      issues: [{ path: 'currentPassword', message: 'wrong password' }],
+    });
+    const same = await t.call(
+      'POST',
+      '/auth/change-password',
+      { currentPassword: 'sami-own-pass', newPassword: 'sami-own-pass' },
+      cookie,
+    );
+    expect(same.status).toBe(400);
+  });
+
+  it('a worker needs a known department; a manager has none; a full name is required', async () => {
+    const issue = async (input: object) =>
+      (
+        (await t.call('POST', '/users', input, manager)).body as {
+          issues?: { path: string; message: string }[];
+        }
+      ).issues?.[0];
+    expect(await issue({ ...worker, email: 'a@lab.sy', department: undefined })).toEqual({
+      path: 'department',
+      message: 'required for a worker',
+    });
+    expect(await issue({ ...worker, email: 'b@lab.sy', department: 'catering' })).toEqual({
+      path: 'department',
+      message: 'unknown department',
+    });
+    expect(
+      await issue({
+        fullName: 'Lina',
+        email: 'c@lab.sy',
+        password: 'long enough',
+        role: 'manager',
+        department: 'quality',
+      }),
+    ).toEqual({ path: 'department', message: 'only for workers' });
+    expect(
+      (await issue({ email: 'd@lab.sy', password: 'long enough', role: 'manager' }))?.path,
+    ).toBe('fullName');
+  });
+
+  it('a new manager account also starts with a temporary password', async () => {
+    const r = await t.call(
+      'POST',
+      '/users',
+      {
+        fullName: 'Lina',
+        email: 'lina@lab.sy',
+        password: 'temporary-2',
+        role: 'manager',
+        locale: 'ar',
+      },
+      manager,
+    );
+    expect(r.status).toBe(201);
+    expect(r.body).toMatchObject({
+      role: 'manager',
+      locale: 'ar',
+      department: null,
+      mustChangePassword: true,
+    });
+  });
+
+  it('customers who sign up choose their own password: no forced change', async () => {
+    const r = await t.call('POST', '/auth/signup', { ...customer, email: 'own@example.com' });
+    expect(r.body).toMatchObject({ mustChangePassword: false });
+    expect((await t.call('PATCH', '/auth/me', { locale: 'ar' }, r.cookie)).status).toBe(200);
   });
 });
 

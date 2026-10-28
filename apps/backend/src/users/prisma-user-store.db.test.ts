@@ -70,6 +70,8 @@ describe('PrismaUserStore on the real database', () => {
       ...base,
       email: 'sami@lab.sy',
       role: 'worker',
+      department: 'production',
+      mustChangePassword: true,
       createdById: boss.id,
     });
     expect(await store.countByRole('manager')).toBe(1);
@@ -77,6 +79,22 @@ describe('PrismaUserStore on the real database', () => {
     const [row] = await prisma.$queryRaw<{ created_by: string }[]>`
       SELECT created_by::text FROM users WHERE id = ${worker.id}::uuid`;
     expect(row?.created_by).toBe(boss.id);
+  });
+
+  it('stores the department and the temporary-password flag; setPassword clears it', async () => {
+    const sami = await store.findByEmail('sami@lab.sy');
+    expect(sami).toMatchObject({ department: 'production', mustChangePassword: true });
+    const changed = await store.setPassword(sami?.id ?? '', 'new-hash');
+    expect(changed).toMatchObject({ passwordHash: 'new-hash', mustChangePassword: false });
+  });
+
+  it('the database itself refuses a worker without a department, and a manager with one', async () => {
+    await expect(store.create({ ...base, email: 'w2@lab.sy', role: 'worker' })).rejects.toThrow(
+      /users_department_only_for_workers/,
+    );
+    await expect(
+      store.create({ ...base, email: 'm2@lab.sy', role: 'manager', department: 'quality' }),
+    ).rejects.toThrow(/users_department_only_for_workers/);
   });
 
   it('treats a malformed id as "no user" instead of a database error', async () => {

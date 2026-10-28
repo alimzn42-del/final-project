@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { createStaffSchema, dateInSyria, isAtLeast, loginSchema, signupSchema } from './auth.js';
+import {
+  changePasswordSchema,
+  createStaffSchema,
+  dateInSyria,
+  isAtLeast,
+  loginSchema,
+  signupSchema,
+} from './auth.js';
 
 const valid = {
   email: '  Rana.Haddad@Example.COM ',
@@ -102,9 +109,44 @@ describe('loginSchema and createStaffSchema', () => {
     );
   });
 
+  const staff = { fullName: 'Sami Khoury', email: 'w@lab.sy', password: 'long enough' };
+
   it('lets a manager create only managers and workers', () => {
-    const base = { email: 'w@lab.sy', password: 'long enough' };
-    expect(createStaffSchema.parse({ ...base, role: 'worker' }).role).toBe('worker');
-    expect(createStaffSchema.safeParse({ ...base, role: 'customer' }).success).toBe(false);
+    expect(
+      createStaffSchema.parse({ ...staff, role: 'worker', department: 'production' }).role,
+    ).toBe('worker');
+    expect(createStaffSchema.safeParse({ ...staff, role: 'customer' }).success).toBe(false);
+  });
+
+  it('requires a full name and, for workers, a department (owner, step 9)', () => {
+    const issues = (input: object) => {
+      const r = createStaffSchema.safeParse(input);
+      return r.success ? [] : r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
+    };
+    expect(issues({ ...staff, role: 'worker' })).toEqual(['department: required for a worker']);
+    expect(issues({ ...staff, role: 'manager', department: 'quality' })).toEqual([
+      'department: only for workers',
+    ]);
+    expect(issues({ email: 'm@lab.sy', password: 'long enough', role: 'manager' })).toEqual([
+      'fullName: Invalid input: expected string, received undefined',
+    ]);
+    expect(createStaffSchema.parse({ ...staff, role: 'manager' }).locale).toBe('en');
+  });
+});
+
+describe('changePasswordSchema', () => {
+  it('needs a new password of 8+ characters that differs from the current one', () => {
+    expect(
+      changePasswordSchema.safeParse({ currentPassword: 'temp-pass-1', newPassword: 'mine-now-1' })
+        .success,
+    ).toBe(true);
+    expect(
+      changePasswordSchema.safeParse({ currentPassword: 'temp-pass-1', newPassword: 'temp-pass-1' })
+        .success,
+    ).toBe(false);
+    expect(
+      changePasswordSchema.safeParse({ currentPassword: 'temp-pass-1', newPassword: 'short' })
+        .success,
+    ).toBe(false);
   });
 });

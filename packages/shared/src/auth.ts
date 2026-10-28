@@ -125,13 +125,32 @@ export const loginSchema = z.strictObject({
 export type LoginInput = z.infer<typeof loginSchema>;
 
 /** A manager creates a manager or worker account. */
-export const createStaffSchema = z.strictObject({
-  email,
-  password: newPassword,
-  role: z.enum(STAFF_ROLES),
-  fullName: optionalText(100),
-  locale: z.enum(LANGUAGES).default('en'),
-});
+/**
+ * A manager creates a manager or worker account (owner, step 9): full name,
+ * email, role and a temporary password are required; language is optional.
+ * Workers also need a department; whether it is one of the departments in
+ * config/departments.json is checked by the backend, which has the file.
+ * The new user must change the password at first login.
+ */
+export const createStaffSchema = z
+  .strictObject({
+    fullName: text(100),
+    email,
+    role: z.enum(STAFF_ROLES),
+    /** Temporary: the user must change it at first login. */
+    password: newPassword,
+    locale: z.enum(LANGUAGES).default('en'),
+    /** Required for workers, not allowed for managers. */
+    department: optionalText(50),
+  })
+  .superRefine((s, ctx) => {
+    if (s.role === 'worker' && !s.department) {
+      ctx.addIssue({ code: 'custom', path: ['department'], message: 'required for a worker' });
+    }
+    if (s.role === 'manager' && s.department) {
+      ctx.addIssue({ code: 'custom', path: ['department'], message: 'only for workers' });
+    }
+  });
 export type CreateStaffInput = z.infer<typeof createStaffSchema>;
 
 /** What a logged-in user may change about their own account. */
@@ -145,4 +164,20 @@ export interface PublicUser {
   role: Role;
   locale: (typeof LANGUAGES)[number];
   fullName: string | null;
+  /** Workers only: an id from config/departments.json. */
+  department: string | null;
+  /** True until a manager-created account has replaced its temporary password. */
+  mustChangePassword: boolean;
 }
+
+/** Change my password: the current one, then the new one (same rules as sign-up). */
+export const changePasswordSchema = z
+  .strictObject({
+    currentPassword: z.string().min(1, 'required').max(PASSWORD_MAX_LENGTH),
+    newPassword: newPassword,
+  })
+  .refine((s) => s.newPassword !== s.currentPassword, {
+    path: ['newPassword'],
+    message: 'must differ from the current password',
+  });
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

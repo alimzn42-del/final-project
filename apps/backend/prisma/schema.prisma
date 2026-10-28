@@ -62,6 +62,14 @@ model User {
   created      User[]    @relation("CreatedBy")
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
+  // Staff (owner, step 9).
+  /// Workers only: an id from config/departments.json (checked by the backend,
+  /// not an enum, so the list can change). A database check enforces
+  /// "department if and only if worker".
+  department         String?
+  /// True for accounts a manager creates, until the temporary password is changed.
+  mustChangePassword Boolean @default(false) @map("must_change_password")
+
   // Sign-up profile (customers).
   fullName     String?   @map("full_name")
   /// E.164, e.g. +963912345678.
