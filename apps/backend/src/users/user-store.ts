@@ -22,6 +22,10 @@ export interface NewUser {
   cityArea?: string | undefined;
   occupation?: string | undefined;
   paintPurpose?: string | undefined;
+  /** Workers only (database check). */
+  department?: string | undefined;
+  /** True for accounts a manager creates (temporary password). */
+  mustChangePassword?: boolean | undefined;
 }
 
 export interface StoredUser extends PublicUser {
@@ -42,6 +46,8 @@ export interface UserStore {
   create(user: NewUser): Promise<StoredUser>;
   countByRole(role: Role): Promise<number>;
   setLocale(id: string, locale: Language): Promise<StoredUser>;
+  /** Replaces the password hash and clears mustChangePassword. */
+  setPassword(id: string, passwordHash: string): Promise<StoredUser>;
 }
 
 export function toPublic(user: StoredUser): PublicUser {
@@ -51,5 +57,7 @@ export function toPublic(user: StoredUser): PublicUser {
     role: user.role,
     locale: user.locale,
     fullName: user.fullName,
+    department: user.department,
+    mustChangePassword: user.mustChangePassword,
   };
 }

@@ -36,6 +36,8 @@ export class PrismaUserStore implements UserStore {
           cityArea: input.cityArea ?? null,
           occupation: input.occupation ?? null,
           paintPurpose: input.paintPurpose ?? null,
+          department: input.department ?? null,
+          mustChangePassword: input.mustChangePassword ?? false,
         },
       });
       return toStored(user);
@@ -55,6 +57,15 @@ export class PrismaUserStore implements UserStore {
   async setLocale(id: string, locale: Language): Promise<StoredUser> {
     return toStored(await this.prisma.user.update({ where: { id }, data: { locale } }));
   }
+
+  async setPassword(id: string, passwordHash: string): Promise<StoredUser> {
+    return toStored(
+      await this.prisma.user.update({
+        where: { id },
+        data: { passwordHash, mustChangePassword: false },
+      }),
+    );
+  }
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -67,5 +78,7 @@ function toStored(u: User): StoredUser {
     role: u.role,
     locale: u.locale,
     fullName: u.fullName,
+    department: u.department,
+    mustChangePassword: u.mustChangePassword,
   };
 }

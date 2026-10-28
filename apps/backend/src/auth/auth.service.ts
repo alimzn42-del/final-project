@@ -1,13 +1,30 @@
-import type { CreateStaffInput, LoginInput, PublicUser, SignupInput } from '@mixline/shared';
+import type {
+  ChangePasswordInput,
+  CreateStaffInput,
+  DepartmentsFile,
+  LoginInput,
+  PublicUser,
+  SignupInput,
+} from '@mixline/shared';
 import { Inject, Injectable } from '@nestjs/common';
 
+import { DEPARTMENTS } from '../machine/machine.tokens.js';
 import { type StoredUser, USER_STORE, type UserStore } from '../users/user-store.js';
 import { dummyPasswordHash, hashPassword, verifyPassword } from './password.js';
 
-/** Account logic: sign-up, login, staff creation, the first manager. */
+/** The department is not one of config/departments.json. */
+export class UnknownDepartmentError extends Error {}
+
+/** The current password given for a password change is wrong. */
+export class WrongPasswordError extends Error {}
+
+/** Account logic: sign-up, login, staff creation, password change, the first manager. */
 @Injectable()
 export class AuthService {
-  constructor(@Inject(USER_STORE) private readonly users: UserStore) {}
+  constructor(
+    @Inject(USER_STORE) private readonly users: UserStore,
+    @Inject(DEPARTMENTS) private readonly departments: DepartmentsFile,
+  ) {}
 
   /** Always creates a customer, whatever the request contained (doc 03). */
   async signup(input: SignupInput): Promise<StoredUser> {
@@ -43,14 +60,29 @@ export class AuthService {
 
   /** A manager creates a manager or worker account. */
   async createStaff(creator: PublicUser, input: CreateStaffInput): Promise<StoredUser> {
+    if (input.department && !this.departments.departments.some((d) => d.id === input.department)) {
+      throw new UnknownDepartmentError(input.department);
+    }
     return this.users.create({
       email: input.email,
       passwordHash: await hashPassword(input.password),
       role: input.role,
       locale: input.locale,
       fullName: input.fullName,
+      department: input.department,
       createdById: creator.id,
+      // The password was chosen by the manager: the user must replace it (owner, step 9).
+      mustChangePassword: true,
     });
+  }
+
+  /** Replaces the user's password after checking the current one; clears mustChangePassword. */
+  async changePassword(userId: string, input: ChangePasswordInput): Promise<StoredUser> {
+    const user = await this.users.findById(userId);
+    if (!user || !(await verifyPassword(user.passwordHash, input.currentPassword))) {
+      throw new WrongPasswordError();
+    }
+    return this.users.setPassword(user.id, await hashPassword(input.newPassword));
   }
 
   /**
