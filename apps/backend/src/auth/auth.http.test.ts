@@ -38,6 +38,7 @@ describe('auth over HTTP (in-memory users)', () => {
         email: 'rana.haddad@example.com',
         role: 'customer',
         locale: 'en',
+        theme: null,
         fullName: 'Rana Haddad',
         departmentId: null,
         mustChangePassword: false,
@@ -176,6 +177,24 @@ describe('auth over HTTP (in-memory users)', () => {
         ((await t.call('GET', '/auth/me', undefined, cookie)).body as { locale: string }).locale,
       ).toBe('ar');
       expect((await t.call('PATCH', '/auth/me', { locale: 'fr' }, cookie)).status).toBe(400);
+    });
+
+    it('remembers the theme per user; none until picked (owner, step 11)', async () => {
+      const cookie = await t.login('rana.haddad@example.com', customer.password);
+      const theme = async () =>
+        ((await t.call('GET', '/auth/me', undefined, cookie)).body as { theme: unknown }).theme;
+      expect(await theme()).toBeNull(); // follows the browser until picked
+
+      expect((await t.call('PATCH', '/auth/me', { theme: 'light' }, cookie)).status).toBe(200);
+      expect(await theme()).toBe('light');
+      const both = await t.call('PATCH', '/auth/me', { theme: 'dark', locale: 'en' }, cookie);
+      expect(both.body).toMatchObject({ theme: 'dark', locale: 'en' });
+      expect((await t.call('PATCH', '/auth/me', { theme: null }, cookie)).status).toBe(200);
+      expect(await theme()).toBeNull();
+
+      for (const bad of [{ theme: 'blue' }, {}, { theme: 'dark', role: 'manager' }]) {
+        expect((await t.call('PATCH', '/auth/me', bad, cookie)).status).toBe(400);
+      }
     });
   });
 

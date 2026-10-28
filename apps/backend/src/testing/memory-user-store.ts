@@ -5,7 +5,7 @@
  */
 import { randomUUID } from 'node:crypto';
 
-import type { Language, Role } from '@mixline/shared';
+import type { Language, Role, Theme } from '@mixline/shared';
 
 import {
   EmailTakenError,
@@ -57,6 +57,7 @@ export class MemoryUserStore implements UserStore {
       fullName: input.fullName ?? null,
       departmentId: input.departmentId ?? null,
       mustChangePassword: input.mustChangePassword ?? false,
+      theme: null,
     };
     this.rows.set(row.id, row);
     return Promise.resolve({ ...row });
@@ -66,10 +67,14 @@ export class MemoryUserStore implements UserStore {
     return Promise.resolve([...this.rows.values()].filter((u) => u.role === role).length);
   }
 
-  setLocale(id: string, locale: Language): Promise<StoredUser> {
+  setPreferences(
+    id: string,
+    preferences: { locale?: Language; theme?: Theme | null },
+  ): Promise<StoredUser> {
     const row = this.rows.get(id);
     if (!row) return Promise.reject(new Error(`no user ${id}`));
-    row.locale = locale;
+    if (preferences.locale !== undefined) row.locale = preferences.locale;
+    if (preferences.theme !== undefined) row.theme = preferences.theme;
     return Promise.resolve({ ...row });
   }
 

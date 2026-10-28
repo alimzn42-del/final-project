@@ -1,4 +1,4 @@
-import type { Language, Role } from '@mixline/shared';
+import type { Language, Role, Theme } from '@mixline/shared';
 
 import { Prisma, type PrismaClient, type User } from '../generated/prisma/client.js';
 import { DepartmentNotFoundError } from '../departments/department-store.js';
@@ -59,8 +59,11 @@ export class PrismaUserStore implements UserStore {
     return this.prisma.user.count({ where: { role } });
   }
 
-  async setLocale(id: string, locale: Language): Promise<StoredUser> {
-    return toStored(await this.prisma.user.update({ where: { id }, data: { locale } }));
+  async setPreferences(
+    id: string,
+    preferences: { locale?: Language; theme?: Theme | null },
+  ): Promise<StoredUser> {
+    return toStored(await this.prisma.user.update({ where: { id }, data: preferences }));
   }
 
   async setPassword(id: string, passwordHash: string): Promise<StoredUser> {
@@ -82,6 +85,7 @@ function toStored(u: User): StoredUser {
     passwordHash: u.passwordHash,
     role: u.role,
     locale: u.locale,
+    theme: u.theme,
     fullName: u.fullName,
     departmentId: u.departmentId,
     mustChangePassword: u.mustChangePassword,

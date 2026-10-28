@@ -153,8 +153,21 @@ export const createStaffSchema = z
   });
 export type CreateStaffInput = z.infer<typeof createStaffSchema>;
 
-/** What a logged-in user may change about their own account. */
-export const updateMeSchema = z.strictObject({ locale: z.enum(LANGUAGES) });
+/**
+ * Colour themes (docs/06-brand.md). Saved with the account, like the language
+ * (owner, step 11); a user without one follows the browser's setting.
+ */
+export const THEMES = ['dark', 'light'] as const;
+export type Theme = (typeof THEMES)[number];
+
+/** What a logged-in user may change about their own account: language and theme. */
+export const updateMeSchema = z
+  .strictObject({
+    locale: z.enum(LANGUAGES).optional(),
+    /** null: follow the browser's setting again. */
+    theme: z.enum(THEMES).nullable().optional(),
+  })
+  .refine((s) => s.locale !== undefined || s.theme !== undefined, 'nothing to change');
 export type UpdateMeInput = z.infer<typeof updateMeSchema>;
 
 /** The user as the API returns it: never the password hash. */
@@ -163,6 +176,8 @@ export interface PublicUser {
   email: string;
   role: Role;
   locale: (typeof LANGUAGES)[number];
+  /** null: follow the browser's setting. */
+  theme: Theme | null;
   fullName: string | null;
   /** Workers only: the id of their department (GET /api/departments for the names). */
   departmentId: string | null;

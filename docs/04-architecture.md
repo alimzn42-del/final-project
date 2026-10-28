@@ -93,7 +93,7 @@ Modules:
   - **Default deny:** a global guard requires a login on every route unless it is marked
     `@Public()` (health, locales, login, sign-up, logout); `@Roles(...)` narrows further.
   - Endpoints: `POST /api/auth/signup` (always `customer`, logs in), `POST /api/auth/login`,
-    `POST /api/auth/logout`, `GET /api/auth/me`, `PATCH /api/auth/me` (language),
+    `POST /api/auth/logout`, `GET /api/auth/me`, `PATCH /api/auth/me` (language, theme),
     `POST /api/users` (managers create `manager` or `worker`).
   - Passwords: **argon2id** (`@node-rs/argon2`, OWASP settings: 19 MiB, 2 passes, 1 lane;
     prebuilt for Windows and Alpine x64/arm64, no install script). An unknown email still costs
@@ -211,7 +211,8 @@ Modules:
 Database:
 - `users` (one table for all roles):
   - Account: id, email (unique, stored lowercase), password_hash, role `manager|worker|customer`,
-    locale `en|ar`, created_by (null for self-signup and the seeded manager), created_at.
+    locale `en|ar`, theme `dark|light` or null (null: follow the browser; owner, step 11),
+    created_by (null for self-signup and the seeded manager), created_at.
   - Staff (owner, step 9): department_id (required for workers, null otherwise; foreign key to
     `departments`, ON DELETE RESTRICT), must_change_password (true for accounts a manager creates
     and for the first manager, until the first password change). full_name is required for staff

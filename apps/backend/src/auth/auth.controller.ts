@@ -136,13 +136,13 @@ export class AuthController {
     }
   }
 
-  /** Remembers the user's language (doc 03: remembered per user). */
+  /** Remembers the user's language and theme (doc 03: remembered per user). */
   @Patch('me')
   async updateMe(
     @CurrentUser() user: PublicUser,
     @Body(new ZodPipe(updateMeSchema)) input: UpdateMeInput,
   ): Promise<PublicUser> {
-    return toPublic(await this.users.setLocale(user.id, input.locale));
+    return toPublic(await this.users.setPreferences(user.id, input));
   }
 
   private async startSession(res: Response, user: StoredUser): Promise<void> {
