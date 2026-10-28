@@ -39,12 +39,12 @@ function message(issue: RuleIssue, field: string, value: unknown, t: TFunction):
   switch (issue.code) {
     case 'too_small':
       return PASSWORDS.has(field)
-        ? t('error.passwordShort', { min: Number(issue.minimum) })
+        ? t('error.passwordShort', { count: Number(issue.minimum) })
         : t('error.required');
     case 'too_big':
       return PASSWORDS.has(field)
-        ? t('error.passwordLong', { max: Number(issue.maximum) })
-        : t('error.tooLong', { max: Number(issue.maximum) });
+        ? t('error.passwordLong', { count: Number(issue.maximum) })
+        : t('error.tooLong', { count: Number(issue.maximum) });
     case 'invalid_format':
       if (issue.format === 'email') return t('error.email');
       if (field === 'mobile') return t('error.mobile');
@@ -54,7 +54,7 @@ function message(issue: RuleIssue, field: string, value: unknown, t: TFunction):
       if (field === 'dateOfBirth') {
         return typeof value === 'string' && value < '1900-01-01'
           ? t('error.tooOld')
-          : t('error.tooYoung', { age: MINIMUM_CUSTOMER_AGE });
+          : t('error.tooYoung', { count: MINIMUM_CUSTOMER_AGE });
       }
       if (field === 'newPassword') return t('error.samePassword');
       if (field === 'country') return t('error.required');
