@@ -116,6 +116,7 @@ Run from the repo root:
 | `pnpm db:check` | Run every migration on a temporary empty database and check the result |
 | `pnpm --filter @mixline/backend db:migrate:dev` | After changing `schema.prisma`: create a new migration |
 | `pnpm sim:check` | Listen 12 s and verify a running simulator (topics, payloads, intervals) |
+| `pnpm telemetry:check` | Verify simulator -> MQTT -> backend -> database -> API on the running stack |
 | `pnpm stack:down` / `pnpm infra:down` | Stop the Docker stack; data volumes are kept |
 | `pnpm dev` | Runs each app's `dev` script with live reload, using `.env` (backend on :3000, simulator) |
 
