@@ -60,8 +60,26 @@ const optionalText = (max: number) =>
     .optional()
     .transform((v) => (v === '' ? undefined : v));
 
-/** Today's date as YYYY-MM-DD (UTC). */
-const today = () => new Date().toISOString().slice(0, 10);
+/** Customers must be at least this old on the sign-up date (owner, step 9). */
+export const MINIMUM_CUSTOMER_AGE = 18;
+
+/**
+ * A date as YYYY-MM-DD in Syria (Asia/Damascus), where the line is, so the
+ * answer does not depend on the server's or the browser's time zone.
+ */
+export function dateInSyria(at: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Damascus' }).format(at);
+}
+
+/**
+ * True if someone born on `dateOfBirth` (YYYY-MM-DD) is at least `years` old
+ * on `onDate` (YYYY-MM-DD). The birthday is compared as text: born on 29
+ * February, the birthday in a non-leap year counts from 1 March.
+ */
+export function isAtLeast(years: number, dateOfBirth: string, onDate: string): boolean {
+  const birthYear = Number(dateOfBirth.slice(0, 4));
+  return `${String(birthYear + years).padStart(4, '0')}${dateOfBirth.slice(4)}` <= onDate;
+}
 
 /**
  * Customer sign-up (doc 03). Unknown fields, such as `role`, are dropped:
@@ -73,10 +91,14 @@ export const signupSchema = z
     password: newPassword,
     fullName: text(100),
     mobile: z.string().trim().regex(E164, 'expected an international number like +963912345678'),
-    /** YYYY-MM-DD, in the past. */
+    /** YYYY-MM-DD; at least 18 years before the sign-up date (in Syria). */
     dateOfBirth: z.iso
       .date('expected a date like 1990-05-17')
-      .refine((d) => d >= '1900-01-01' && d < today(), 'must be a past date'),
+      .refine((d) => d >= '1900-01-01', 'must be after 1900')
+      .refine(
+        (d) => isAtLeast(MINIMUM_CUSTOMER_AGE, d, dateInSyria()),
+        `must be at least ${String(MINIMUM_CUSTOMER_AGE)} years old`,
+      ),
     governorate: z.enum(GOVERNORATES),
     /** Only for governorate "outside". */
     country: optionalText(100),
