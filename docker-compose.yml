@@ -1,6 +1,6 @@
 # Local MixLine stack. Copy .env.example to .env first.
-# Services: db + mqtt (infrastructure), migrate (one-shot), backend, simulator.
-# The frontend is added in the plan step that builds it.
+# Services: db + mqtt (infrastructure), migrate (one-shot), backend, simulator,
+# frontend (the web app behind nginx; browsers use only this one).
 name: mixline
 
 services:
@@ -107,7 +107,11 @@ services:
       MQTT_USERNAME: ${MQTT_USERNAME:?set MQTT_USERNAME in .env}
       MQTT_PASSWORD: ${MQTT_PASSWORD:?set MQTT_PASSWORD in .env}
       CLOCK_TOLERANCE_MS: ${CLOCK_TOLERANCE_MS:-2000}
+      # nginx (frontend) is in front: the client's address comes from its X-Forwarded-For.
+      TRUST_PROXY: 1
     ports:
+      # This computer only (checks, tools). Browsers go through nginx: if this port were
+      # open to the network, a client could send a fake X-Forwarded-For.
       - '127.0.0.1:${PORT:-3000}:3000'
     volumes:
       # Read-only: the backend reads the line description, never changes it.
@@ -139,6 +143,26 @@ services:
     volumes:
       # Read-only: the simulator reads the line description, never changes it.
       - ./config:/config:ro
+
+  frontend:
+    # The web app (Vite build) served by nginx, which passes /api and the live
+    # WebSocket to the backend. The only service browsers on the lab network use.
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    image: mixline/frontend:local
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - '${WEB_PORT:-8080}:8080'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:8080/ > /dev/null']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
 
 volumes:
   db-data:

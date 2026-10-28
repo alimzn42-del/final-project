@@ -27,7 +27,8 @@
     "db:check": "node scripts/check-db.mjs",
     "test:db": "vitest run --config vitest.db.config.ts",
     "telemetry:check": "node scripts/check-telemetry.mjs",
-    "live:check": "node scripts/check-live.mjs"
+    "live:check": "node scripts/check-live.mjs",
+    "web:check": "node scripts/check-web.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
