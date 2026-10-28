@@ -30,3 +30,36 @@ Facts, not choices:
    real check (step 12's "frame rate on a phone").
 8. The manager account has the saved theme "dark" (set during your step 11 review, I think). I left
    it; it goes with the manager reset at the end of the night.
+
+## Step 13: navigation (branch `step-13-navigation`, built on step 12)
+
+Taken (easy to undo):
+
+9. **Phones (no hover)**: the first tap on a part lights it and shows its name with "Tap again to
+   open"; a second tap opens it. With a mouse, hover shows the name and one click opens.
+10. **A drag is not a click**: releasing the pointer more than 6 px from where it was pressed only
+    turns the view.
+11. **Section, sub-section and part pages draw only their subject** (doc 03: "shows only that
+    part"), plus the table as a faint ghost for orientation; on a part's page the box around it
+    (camera box, vessel...) is a faint ghost too. Ghosts never react to the pointer.
+12. **A part's page also shows the parts grouped under it** (the vessel with its lid, mixer and
+    float), each clickable to its own page.
+13. **"Pending" tags**: on the line and section pages only for what the pointer lights up (the four
+    dye tanks' tags overlapped); always from the sub-section level down. Replaces choice 3.
+14. **See-through boxes get thin edge lines**, so the dark camera box keeps its shape when its walls
+    are see-through.
+15. **A list beside the 3D view** (doc 06: "a slim side panel lists children"; state chips come in
+    step 14): it makes every page reachable without the 3D view (keyboard, screen readers). On a
+    part's page it shows the status, the box it belongs to, the parts inside, and its sensors.
+16. **Breadcrumbs in the header** (doc 06), the current page as the title; on phones they take
+    their own row. While the line data loads, the header shows "Line".
+17. **Camera**: every page is framed from the same direction as the line view (front, a little
+    above), so the line always looks the same way round; glide 0.7 s, none with reduced motion.
+18. **Arabic `L*`, `a*`, `b*`**: in right-to-left text the "*" jumped before the letter ("*L"). The
+    three Arabic texts now carry invisible direction marks around the term (U+2066 ... U+2069);
+    the visible text is unchanged. Checked in a zoomed screenshot.
+
+To look at (not changed, your text):
+
+19. `part.colorBox` is "Color box" in English but "صندوق الكاميرا" (camera box) in Arabic; doc 02
+    calls it "Color box (camera box)". Pick one name for both languages?
