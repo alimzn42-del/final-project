@@ -1,0 +1,44 @@
+/* Colours of the mark come from the theme (tokens.css). */
+.logo {
+  display: block;
+  flex: none;
+}
+
+.facet,
+.facetFill {
+  fill: var(--logo-facet);
+}
+
+.glowFill {
+  fill: var(--logo-glow);
+}
+
+.steelFill {
+  fill: var(--logo-steel);
+}
+
+.glowLine,
+.steelLine,
+.letters {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.glowLine {
+  stroke: var(--logo-glow);
+}
+
+.steelLine {
+  stroke: var(--logo-steel);
+}
+
+.chip {
+  fill: var(--logo-facet);
+  stroke: var(--logo-glow);
+}
+
+/* White on the solid blue chip reads on both themes. */
+.letters {
+  stroke: #fff;
+}
