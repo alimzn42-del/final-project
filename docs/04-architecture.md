@@ -106,7 +106,9 @@ Modules:
     address for many customers). Step 11 (nginx in front) must make Express trust the proxy, or
     every request would share nginx's address.
   - First manager: `MANAGER_EMAIL` / `MANAGER_PASSWORD`, created at startup only if no manager
-    exists; never changed afterwards.
+    exists; never changed afterwards. It starts with a temporary password that must be changed at
+    first login (owner, step 9). The flag is set only when the seed creates the account: once any
+    manager exists the seed does nothing, so a restart never resets the flag or the password.
   - Validation with the shared zod rules (`packages/shared/src/auth.ts`); a 400 answer lists
     every invalid field. Users are stored through a `UserStore` interface: Prisma 7 client in
     the app, in memory in the HTTP tests (`pnpm test` needs no Docker); `pnpm test:db` runs the
@@ -140,6 +142,25 @@ Modules:
     wrong unit, unknown code...): it drops the message and continues. This is robustness, not a
     line rule. There is no rejection log, no per-sensor rejection count and no rejections endpoint
     (removed by the owner in step 6); how faults and alarms reach the web app is an open item.
+  - Built in step 9:
+    - Intake: `MqttIntake` (client id `mixline-backend-<pid>`, QoS 0, reconnects every 2 s) feeds
+      `TelemetryIngest`, which accepts only sensor topics of this machine whose payload passes
+      `decodeReading()`. Without `MQTT_USERNAME`/`MQTT_PASSWORD` the backend runs without intake
+      (warning at startup).
+    - The clock rule is applied when reading (SQL `CASE` for history, `chartTime()` for latest),
+      so a changed tolerance also applies to stored data. A drifting clock is logged once per
+      station when it goes out of tolerance, and once when it is back.
+    - Writes: `BatchWriter`, one `INSERT ... SELECT FROM unnest(...)` every 500 ms (or at 1000
+      waiting readings). While the database is down, up to 20,000 readings wait in memory (~5 min
+      now) and are written when it is back; beyond that the oldest are dropped, with a warning.
+    - `GET /api/telemetry/latest`: every sensor heard so far, from memory (`ts` = chart time).
+    - `GET /api/telemetry/:sensorId?from&to`: default the last 5 minutes; up to 1 hour from raw
+      readings (`{ t, v }`), longer spans up to 7 days from the 1-minute summary
+      (`{ t, min, max, avg }`). The summary is real-time (`materialized_only = false`), so it
+      includes the newest minutes.
+    - Both endpoints: manager and worker only.
+    - `pnpm telemetry:check` verifies the live path, including broken messages and a clock
+      an hour off.
 - `state`: computes ok / warning / fault / offline per component and rolls up to sub-section,
   section, line (generic logic in `shared/state.ts`). The PLC owns all limits and alarms (design
   decision, `docs/01-overview.md`); until PLC alarms are defined, `machine.json` has no limits, so
@@ -149,12 +170,24 @@ Database:
 - `users` (one table for all roles):
   - Account: id, email (unique, stored lowercase), password_hash, role `manager|worker|customer`,
     locale `en|ar`, created_by (null for self-signup and the seeded manager), created_at.
+  - Staff (owner, step 9): department_id (required for workers, null otherwise; foreign key to
+    `departments`, ON DELETE RESTRICT), must_change_password (true for accounts a manager creates
+    and for the first manager, until the first password change). full_name is required for staff
+    too.
+- `departments` (id, name_en, name_ar, created_at), owner, step 9: names unique (the database
+  indexes exact names; the backend also refuses the same name in another letter case). The
+  migration that creates the table inserts Maintenance, Production and Quality, so they exist from
+  the first start and are never re-created. A department with workers cannot be deleted (foreign
+  key; the API answers 409 with the number of workers).
+  - API: `GET /api/departments` (manager and worker: id, names, number of workers);
+    `POST /api/departments`, `PATCH /api/departments/:id`, `DELETE /api/departments/:id`
+    (managers). A worker's department is set with `departmentId` when the account is created.
   - Sign-up profile. Required for `customer` (enforced by the signup validation); null for staff
-    accounts unless decided otherwise:
+    accounts (except full_name):
     - full_name
     - mobile: E.164 string, for example `+963912345678`. The form has a country picker that
       defaults to Syria (+963).
-    - date_of_birth (date)
+    - date_of_birth (date): at least 18 years before the sign-up date
     - governorate: one of the 14 codes below, or `outside`
     - country: free text, required only when governorate is `outside`
     - city_area: free text (city or area)
@@ -174,7 +207,12 @@ Database:
     for compression) after 1 day, segmented by `sensor_id`.
   - Continuous aggregate `telemetry_1m` (bucket, sensor_id, min, max, avg, samples), bucketed on
     `received_at`, refreshed every minute over the last 3 hours (well inside the 7 days of raw
-    data, so no summary loses its source), kept 1 year.
+    data, so no summary loses its source), kept 1 year, compressed after 7 days (owner, step 9;
+    segmented by `sensor_id`).
+  - Measured in step 9 with one synthetic day in the simulator's pattern: 40.8 readings/s =
+    3.5 million a day; raw 506 MB a day uncompressed, 27 MB compressed (19x); raw steady state
+    about 1.2 GB at most (7 days, the newest 1-2 uncompressed). The summary grows 14 MB a day
+    uncompressed (86,400 rows), hence its compression.
 - No `alarms` table in phase 1: its design depends on the PLC alarm list (open item in
   `docs/05-roadmap.md`, owner decision in step 7).
 - Migrations: **Prisma 7.10.1** (pinned: the CLI's `latest` npm tag points at an 8.0 release

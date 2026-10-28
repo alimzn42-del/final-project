@@ -107,3 +107,54 @@ export function parseJson(text: string): DecodeResult<unknown> {
     return { ok: false, error: 'payload is not valid JSON' };
   }
 }
+
+/** Default for CLOCK_TOLERANCE_MS (owner, step 6). */
+export const DEFAULT_CLOCK_TOLERANCE_MS = 2000;
+
+/**
+ * The time a chart shows for a reading (docs/04-architecture.md): the device's
+ * own `ts`, unless it differs from when the backend received the message by
+ * more than the tolerance; then the received time, because the device clock
+ * is off (no battery clock, no internet in the lab).
+ */
+export function chartTime(deviceTs: number, receivedAt: number, toleranceMs: number): number {
+  return Math.abs(deviceTs - receivedAt) > toleranceMs ? receivedAt : deviceTs;
+}
+
+/** Charts read raw readings up to this span, and the 1-minute summary beyond it. */
+export const RAW_HISTORY_MAX_MS = 60 * 60 * 1000;
+/** The longest history one request may ask for. */
+export const HISTORY_MAX_MS = 7 * 24 * 60 * 60 * 1000;
+/** Without from/to, a chart shows the last few minutes (doc 03). */
+export const HISTORY_DEFAULT_MS = 5 * 60 * 1000;
+
+export type HistoryResolution = 'raw' | '1m';
+
+export function historyResolution(fromMs: number, toMs: number): HistoryResolution {
+  return toMs - fromMs <= RAW_HISTORY_MAX_MS ? 'raw' : '1m';
+}
+
+/** GET /api/telemetry/:sensorId answer. Times are ISO 8601 UTC. */
+export type HistoryResponse =
+  | {
+      sensorId: string;
+      resolution: 'raw';
+      from: string;
+      to: string;
+      points: { t: string; v: number }[];
+    }
+  | {
+      sensorId: string;
+      resolution: '1m';
+      from: string;
+      to: string;
+      points: { t: string; min: number; max: number; avg: number }[];
+    };
+
+/** One entry of GET /api/telemetry/latest. `ts` is the chart time. */
+export interface LatestReading {
+  value: number;
+  ts: string;
+  receivedAt: string;
+  source: Source;
+}

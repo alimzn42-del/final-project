@@ -22,12 +22,22 @@ import { readCookie, SESSION_COOKIE, Sessions } from './session.js';
 
 const IS_PUBLIC = 'mixline:public';
 const ROLES = 'mixline:roles';
+const DURING_PASSWORD_CHANGE = 'mixline:duringPasswordChange';
 
 /** Anyone may call this route, logged in or not. */
 export const Public = () => SetMetadata(IS_PUBLIC, true);
 
 /** Only these roles may call this route. */
 export const Roles = (...roles: Role[]) => SetMetadata(ROLES, roles);
+
+/**
+ * Allowed while the user still has a temporary password (owner, step 9). Every
+ * other route answers 403 PASSWORD_CHANGE_REQUIRED until the password is changed.
+ */
+export const AllowDuringPasswordChange = () => SetMetadata(DURING_PASSWORD_CHANGE, true);
+
+/** The 403 answer while a temporary password is still in use; the frontend checks the code. */
+export const PASSWORD_CHANGE_REQUIRED = 'PASSWORD_CHANGE_REQUIRED';
 
 export type AuthedRequest = Request & { user?: PublicUser };
 
@@ -61,6 +71,16 @@ export class AccessGuard implements CanActivate {
 
     if (this.reflector.getAllAndOverride<boolean | undefined>(IS_PUBLIC, targets)) return true;
     if (!user) throw new UnauthorizedException('login required');
+
+    if (
+      user.mustChangePassword &&
+      !this.reflector.getAllAndOverride<boolean | undefined>(DURING_PASSWORD_CHANGE, targets)
+    ) {
+      throw new ForbiddenException({
+        message: 'password change required',
+        code: PASSWORD_CHANGE_REQUIRED,
+      });
+    }
 
     const roles = this.reflector.getAllAndOverride<Role[] | undefined>(ROLES, targets);
     if (roles && !roles.includes(user.role)) {

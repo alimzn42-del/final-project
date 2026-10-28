@@ -15,6 +15,8 @@
 
 - Customer sign-up fields:
   - Required: full name, email, mobile number, password, date of birth, location.
+  - Age: at least **18 years old on the sign-up date** (date in Syria, Asia/Damascus). Enforced in
+    the shared sign-up rules, which the backend applies to every sign-up (owner, step 9).
   - Optional: occupation, and what they need the paint for (free text).
   - Mobile: international E.164 format, with a country picker that defaults to Syria (+963).
     Stored as E.164.
@@ -22,9 +24,29 @@
     required free-text city / area field. "Outside Syria" adds a required free-text country field.
   - Storage: see `users` in `docs/04-architecture.md`.
 - Self-registration can never create `manager` or `worker`. Enforce in the backend, not only the UI.
+- A manager creates a worker or manager account with (owner, step 9):
+  - Required: full name, email, role, a **temporary password**. Optional: language.
+  - Workers also need a **department** (required).
+- Departments (owner, step 9) are kept in the database, not in a config file:
+  - Maintenance (الصيانة), Production (الإنتاج) and Quality (الجودة) are created once, on first
+    start; deleting them later never brings them back.
+  - Managers add, rename and delete departments (API now, the user-management page later). Each
+    department has an English and an Arabic name, both required, unique ignoring letter case.
+    They are data typed by a manager, so they are not in the locale files.
+  - A department that still has workers **cannot be deleted**: the answer gives the number of
+    workers, and the database enforces it too (foreign key).
+  - The new user **must change the password at first login**: until then the account can only see
+    who is logged in, change its password, or log out. The same applies to the first manager
+    created from `.env` (set once, at creation; a restart never resets it).
+  - Later, the department will decide which sections a worker can open; for now every worker can
+    open every section (open item in `docs/05-roadmap.md`).
 - Customers order from two places (later phase):
-  1. A kiosk screen next to the line (local network).
-  2. Their own phone from home (internet). See the open item in `docs/05-roadmap.md`.
+  1. A kiosk screen next to the line (local network). It is **one shared device**: an 8-hour session
+     there would let the next customer use the previous customer's account. On the kiosk, log out
+     automatically after each order and after a few minutes without activity (gap recorded by the
+     owner in step 9, to build in the customer phase).
+  2. Their own phone from home (internet). See the open item in `docs/05-roadmap.md`. Phones keep
+     the normal session.
 - A customer must never reach line monitoring, telemetry or control endpoints. Role guards on both
   backend and frontend.
 - Phase 1 builds the **manager** interface only. Worker and customer routes exist as protected
