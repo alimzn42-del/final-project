@@ -159,5 +159,8 @@
   "value.holding": "في وضع الإمساك",
   "value.releasing": "قيد التحرير",
   "brand.name": "ألماس",
-  "brand.tagline": "التحكم الآلي | الروبوتات | الذكاء الاصطناعي"
+  "brand.tagline": "التحكم الآلي | الروبوتات | الذكاء الاصطناعي",
+  "department.maintenance": "الصيانة",
+  "department.production": "الإنتاج",
+  "department.quality": "الجودة"
 }

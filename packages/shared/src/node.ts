@@ -6,6 +6,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { checkDepartments, type DepartmentsFile, departmentsFileSchema } from './departments.js';
+import { formatIssues, zodIssues } from './issues.js';
 import type { Locales } from './locales.js';
 import type { Machine } from './machine.schema.js';
 import { parseMachineOrThrow } from './validate.js';
@@ -38,4 +40,22 @@ export function loadConfigFiles(
   const machine = parseMachineOrThrow(readJsonFile(machinePath), { en, ar });
   // parseMachineOrThrow has checked both files against localeSchema.
   return { machine, locales: { en: en as Locales['en'], ar: ar as Locales['ar'] } };
+}
+
+/**
+ * Reads and validates config/departments.json against the locale files;
+ * throws one error listing every problem.
+ */
+export function loadDepartmentsFile(path: string, locales: Locales): DepartmentsFile {
+  const data = readJsonFile(path);
+  const parsed = departmentsFileSchema.safeParse(data);
+  const issues = parsed.success
+    ? checkDepartments(parsed.data, locales)
+    : zodIssues(parsed.error, data);
+  if (!parsed.success || issues.length) {
+    throw new Error(
+      `departments.json is invalid (${String(issues.length)} problem(s)):\n${formatIssues(issues)}`,
+    );
+  }
+  return parsed.data;
 }

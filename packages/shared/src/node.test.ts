@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { rawLocales, rawMachine, sensor } from './__fixtures__/config.js';
-import { loadConfigFiles, loadMachineFile, readJsonFile } from './node.js';
+import { loadConfigFiles, loadDepartmentsFile, loadMachineFile, readJsonFile } from './node.js';
 
 const configDir = fileURLToPath(new URL('../../../config/', import.meta.url));
 const machinePath = join(configDir, 'machine.json');
@@ -40,6 +40,31 @@ describe('node file loaders', () => {
 
     expect(() => loadConfigFiles(join(dir, 'machine.json'), dir)).toThrow(
       /problem\(s\)[\s\S]*dye_c\/sensors\/mass[\s\S]*part\.camera/,
+    );
+  });
+});
+
+describe('loadDepartmentsFile', () => {
+  it('loads the real file', () => {
+    const { locales } = loadConfigFiles(machinePath, localesDir);
+    const file = loadDepartmentsFile(join(configDir, 'departments.json'), locales);
+    expect(file.departments).toHaveLength(3);
+  });
+
+  it('lists every problem in one error', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'mixline-departments-'));
+    writeFileSync(
+      join(dir, 'departments.json'),
+      JSON.stringify({
+        departments: [
+          { id: 'quality', labelKey: 'department.nope' },
+          { id: 'quality', labelKey: 'department.quality' },
+        ],
+      }),
+    );
+    const { locales } = loadConfigFiles(machinePath, localesDir);
+    expect(() => loadDepartmentsFile(join(dir, 'departments.json'), locales)).toThrow(
+      /departments\.json is invalid \(3 problem\(s\)\)/,
     );
   });
 });
