@@ -38,6 +38,8 @@ html:lang(ar) .wordmark {
 }
 
 .main {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   padding: 1.5rem 1rem;
 }
