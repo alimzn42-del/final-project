@@ -33,6 +33,8 @@ export interface Session {
   savePreferences: (preferences: { locale?: Language; theme?: Theme | null }) => Promise<void>;
   /** Asks the backend again after it could not be reached. */
   retry: () => void;
+  /** Runs an API call that needs the session; a 401 ends it (the login page says so). Stable. */
+  call: <T>(request: () => Promise<T>) => Promise<T>;
 }
 
 const SessionContext = createContext<Session | undefined>(undefined);
@@ -95,6 +97,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       withSession(async () => {
         setState({ status: 'in', user: await api<PublicUser>('PATCH', '/auth/me', preferences) });
       }),
+    call: withSession,
     retry: () => {
       setState({ status: 'loading' });
       setAttempt((n) => n + 1);
