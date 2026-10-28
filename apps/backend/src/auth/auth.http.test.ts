@@ -38,7 +38,7 @@ describe('auth over HTTP (in-memory users)', () => {
         role: 'customer',
         locale: 'en',
         fullName: 'Rana Haddad',
-        department: null,
+        departmentId: null,
         mustChangePassword: false,
       });
       expect(JSON.stringify(r.body)).not.toMatch(/passwordHash|argon2/i);
@@ -193,7 +193,7 @@ describe('auth over HTTP (in-memory users)', () => {
           password: 'temporary-1',
           role: 'worker',
           fullName: 'Sami',
-          department: 'production',
+          departmentId: t.departments.idOf('Production'),
         },
         manager,
       );
@@ -222,7 +222,7 @@ describe('auth over HTTP (in-memory users)', () => {
         email: 'new@lab.sy',
         password: 'long enough',
         role: 'worker',
-        department: 'quality',
+        departmentId: t.departments.idOf('Quality'),
       };
       expect((await t.call('POST', '/users', staff, worker)).status).toBe(403);
       expect((await t.call('POST', '/users', staff, client)).status).toBe(403);
@@ -257,21 +257,22 @@ describe('staff accounts (owner, step 9)', () => {
     await t.close();
   });
 
-  const worker = {
+  // A function: the department id exists only once the app has started.
+  const worker = () => ({
     fullName: 'Sami Khoury',
     email: 'sami@lab.sy',
     password: 'temporary-1',
     role: 'worker',
-    department: 'maintenance',
-  };
+    departmentId: t.departments.idOf('Maintenance'),
+  });
 
   it('a new worker must change the temporary password before using the app', async () => {
-    const created = await t.call('POST', '/users', worker, manager);
+    const created = await t.call('POST', '/users', worker(), manager);
     expect(created.status).toBe(201);
     expect(created.body).toMatchObject({
       fullName: 'Sami Khoury',
       role: 'worker',
-      department: 'maintenance',
+      departmentId: t.departments.idOf('Maintenance'),
       mustChangePassword: true,
     });
 
@@ -330,12 +331,18 @@ describe('staff accounts (owner, step 9)', () => {
           issues?: { path: string; message: string }[];
         }
       ).issues?.[0];
-    expect(await issue({ ...worker, email: 'a@lab.sy', department: undefined })).toEqual({
-      path: 'department',
+    expect(await issue({ ...worker(), email: 'a@lab.sy', departmentId: undefined })).toEqual({
+      path: 'departmentId',
       message: 'required for a worker',
     });
-    expect(await issue({ ...worker, email: 'b@lab.sy', department: 'catering' })).toEqual({
-      path: 'department',
+    expect(
+      await issue({
+        ...worker(),
+        email: 'b@lab.sy',
+        departmentId: '0b5e2c1a-8f4d-4c3b-9a2e-7d6f5e4c3b2a',
+      }),
+    ).toEqual({
+      path: 'departmentId',
       message: 'unknown department',
     });
     expect(
@@ -344,9 +351,9 @@ describe('staff accounts (owner, step 9)', () => {
         email: 'c@lab.sy',
         password: 'long enough',
         role: 'manager',
-        department: 'quality',
+        departmentId: t.departments.idOf('Quality'),
       }),
-    ).toEqual({ path: 'department', message: 'only for workers' });
+    ).toEqual({ path: 'departmentId', message: 'only for workers' });
     expect(
       (await issue({ email: 'd@lab.sy', password: 'long enough', role: 'manager' }))?.path,
     ).toBe('fullName');
@@ -369,7 +376,7 @@ describe('staff accounts (owner, step 9)', () => {
     expect(r.body).toMatchObject({
       role: 'manager',
       locale: 'ar',
-      department: null,
+      departmentId: null,
       mustChangePassword: true,
     });
   });

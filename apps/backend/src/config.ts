@@ -22,7 +22,6 @@ const envSchema = z
     PORT: z.coerce.number().int().min(1).max(65535).default(3000),
     MACHINE_CONFIG: z.string().min(1).default(repoConfig('machine.json')),
     LOCALES_DIR: z.string().min(1).default(repoConfig('locales')),
-    DEPARTMENTS_CONFIG: z.string().min(1).default(repoConfig('departments.json')),
 
     // Database: DATABASE_URL, or built from the POSTGRES_* values (same rule as prisma.config.ts).
     DATABASE_URL: optional,
@@ -65,7 +64,6 @@ export interface BackendConfig {
   port: number;
   machineConfigPath: string;
   localesDir: string;
-  departmentsPath: string;
   /** Undefined when no database settings are given (tests with an in-memory store). */
   databaseUrl: string | undefined;
   session: { secret: string; hours: number; secureCookie: boolean };
@@ -86,7 +84,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     port: e.PORT,
     machineConfigPath: e.MACHINE_CONFIG,
     localesDir: e.LOCALES_DIR,
-    departmentsPath: e.DEPARTMENTS_CONFIG,
     databaseUrl: databaseUrl(e),
     session: { secret: e.JWT_SECRET, hours: e.SESSION_HOURS, secureCookie: e.COOKIE_SECURE },
     firstManager:

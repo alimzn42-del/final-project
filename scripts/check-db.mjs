@@ -85,12 +85,13 @@ const checks = [
     },
   ],
   [
-    'tables users and telemetry exist; no alarms table (owner, step 7)',
+    'tables users, departments and telemetry exist; no alarms table (owner, step 7)',
     () => {
       const tables = q(
         `SELECT string_agg(table_name, ',' ORDER BY table_name) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`,
       );
-      if (tables !== '_prisma_migrations,telemetry,users') throw new Error(`tables: ${tables}`);
+      if (tables !== '_prisma_migrations,departments,telemetry,users')
+        throw new Error(`tables: ${tables}`);
     },
   ],
   [
@@ -107,7 +108,7 @@ const checks = [
     },
   ],
   [
-    'policies: columnstore after 1 day, raw kept 7 days, summary refreshed and kept 1 year',
+    'policies: raw compressed after 1 day and kept 7 days; summary refreshed, compressed after 7 days, kept 1 year',
     () => {
       const jobs = q(jobsSql);
       const want = [
@@ -115,9 +116,43 @@ const checks = [
         /"drop_after": "7 days"/,
         /Refresh Continuous Aggregate/,
         /"drop_after": "1 year"/,
+        /Columnstore.*"compress_after": "7 days"/,
       ];
       const missing = want.filter((re) => !re.test(jobs));
       if (missing.length) throw new Error(`missing ${missing.join(', ')} in:\n${jobs}`);
+    },
+  ],
+  [
+    'running the summary job: a 25-day-old summary is compressed, a 2-day-old one is not',
+    () => {
+      // Readings 25 and 2 days ago. Summary chunks span 10 days, so a 25-day-old
+      // bucket is always in a chunk that ended over 7 days ago. (Raw retention
+      // would drop the old reading later; the summary keeps it.) Fill the summary
+      // for both, then run its compression job.
+      q(`INSERT INTO telemetry (received_at, device_ts, sensor_id, value, source) VALUES
+         (now() - INTERVAL '25 days', now() - INTERVAL '25 days', 'mixer.rpm', 180, 'sim'),
+         (now() - INTERVAL '2 days', now() - INTERVAL '2 days', 'mixer.rpm', 181, 'sim')`);
+      q(
+        `CALL refresh_continuous_aggregate('telemetry_1m', now() - INTERVAL '26 days', now() - INTERVAL '1 day')`,
+      );
+      const mat = q(
+        "SELECT materialization_hypertable_name FROM timescaledb_information.continuous_aggregates WHERE view_name = 'telemetry_1m'",
+      );
+      const job = q(
+        `SELECT job_id FROM timescaledb_information.jobs WHERE application_name LIKE 'Columnstore%' AND config->>'compress_after' = '7 days'`,
+      );
+      q(`CALL run_job(${job})`);
+      const chunks = q(
+        `SELECT string_agg(CASE WHEN is_compressed THEN 'old:yes' ELSE 'old:no' END, ',') FROM timescaledb_information.chunks WHERE hypertable_name = '${mat}' AND range_end < now() - INTERVAL '7 days'`,
+      );
+      const recent = q(
+        `SELECT bool_or(is_compressed) FROM timescaledb_information.chunks WHERE hypertable_name = '${mat}' AND range_start > now() - INTERVAL '7 days'`,
+      );
+      if (!chunks || chunks.includes('old:no'))
+        throw new Error(`old summary chunks: ${chunks || 'none'}`);
+      if (recent !== 'f') throw new Error('a recent summary chunk was compressed');
+      const kept = q("SELECT count(*) FROM telemetry_1m WHERE sensor_id = 'mixer.rpm'");
+      if (kept !== '2') throw new Error(`${kept} summary rows readable after compression`);
     },
   ],
   [
@@ -130,14 +165,33 @@ const checks = [
     },
   ],
   [
-    'only workers have a department (database check)',
+    'departments: the three starting ones exist; only workers have one; a department with workers cannot be deleted',
     () => {
-      try {
-        q("INSERT INTO users (email, password_hash, role) VALUES ('w@lab.sy', 'x', 'worker')");
-      } catch {
-        return;
+      const names = q("SELECT string_agg(name_en, ',' ORDER BY name_en) FROM departments");
+      if (names !== 'Maintenance,Production,Quality') throw new Error(`departments: ${names}`);
+      const refused = (sql) => {
+        try {
+          q(sql);
+        } catch {
+          return true;
+        }
+        return false;
+      };
+      if (
+        !refused(
+          "INSERT INTO users (email, password_hash, role) VALUES ('w@lab.sy', 'x', 'worker')",
+        )
+      ) {
+        throw new Error('a worker without a department was accepted');
       }
-      throw new Error('a worker without a department was accepted');
+      q(`INSERT INTO users (email, password_hash, role, department_id)
+         SELECT 'w@lab.sy', 'x', 'worker', id FROM departments WHERE name_en = 'Quality'`);
+      if (!refused("DELETE FROM departments WHERE name_en = 'Quality'")) {
+        throw new Error('a department with a worker was deleted');
+      }
+      if (refused("DELETE FROM departments WHERE name_en = 'Maintenance'")) {
+        throw new Error('an empty department could not be deleted');
+      }
     },
   ],
   [
@@ -170,7 +224,9 @@ const checks = [
         `SELECT min || '|' || max || '|' || avg || '|' || samples FROM telemetry_1m WHERE sensor_id = 'vessel.mass'`,
       );
       if (row !== '10|30|20|3') throw new Error(`vessel.mass summary = ${row || 'none'}`);
-      const sensors = q(`SELECT count(DISTINCT sensor_id) FROM telemetry_1m`);
+      const sensors = q(
+        `SELECT count(DISTINCT sensor_id) FROM telemetry_1m WHERE sensor_id IN ('vessel.mass', 'dyeC.mass')`,
+      );
       if (sensors !== '2') throw new Error(`${sensors} sensors in the summary`);
     },
   ],
@@ -184,13 +240,15 @@ const checks = [
         q(
           `SELECT job_id FROM timescaledb_information.jobs WHERE job_id >= 1000 AND (application_name || ' ' || config::text) ~ '${pattern}'`,
         );
-      q(`CALL run_job(${jobId('Columnstore')})`);
+      q(`CALL run_job(${jobId('"compress_after": "1 day"')})`);
       q(`CALL run_job(${jobId('"drop_after": "7 days"')})`);
       const left = q(
-        `SELECT count(*) FROM telemetry WHERE received_at < now() - INTERVAL '7 days'`,
+        `SELECT count(*) FROM telemetry WHERE sensor_id = 'vessel.mass' AND received_at < now() - INTERVAL '7 days'`,
       );
       if (left !== '0') throw new Error(`${left} reading(s) older than 7 days left`);
-      const kept = q(`SELECT count(*) FROM telemetry WHERE received_at < now() - INTERVAL '1 day'`);
+      const kept = q(
+        `SELECT count(*) FROM telemetry WHERE sensor_id = 'vessel.mass' AND received_at < now() - INTERVAL '1 day'`,
+      );
       if (kept !== '1') throw new Error(`2-day-old reading missing`);
       const compressed = q(
         `SELECT bool_and(is_compressed) FROM timescaledb_information.chunks WHERE hypertable_name = 'telemetry' AND range_end < now() - INTERVAL '1 day'`,

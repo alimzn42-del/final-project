@@ -7,6 +7,7 @@ import type { INestApplication } from '@nestjs/common';
 
 import { DEFAULT_RATE_LIMITS, type RateLimits } from '../app.module.js';
 import { createApp } from '../bootstrap.js';
+import { MemoryDepartmentStore } from './memory-department-store.js';
 import { MemoryTelemetryStore } from './memory-telemetry-store.js';
 import { MemoryUserStore } from './memory-user-store.js';
 
@@ -34,6 +35,7 @@ export interface Reply {
 export interface TestApp {
   app: INestApplication;
   store: MemoryUserStore;
+  departments: MemoryDepartmentStore;
   telemetry: MemoryTelemetryStore;
   call(method: string, path: string, body?: unknown, cookie?: string): Promise<Reply>;
   /** Logs in and returns the session cookie. */
@@ -53,10 +55,12 @@ export async function startTestApp(
     keepFirstManagerTemporary?: boolean;
   } = {},
 ): Promise<TestApp> {
-  const store = new MemoryUserStore();
+  const departments = new MemoryDepartmentStore();
+  const store = new MemoryUserStore(departments);
   const telemetry = new MemoryTelemetryStore();
   const { app } = await createApp(options.env ?? TEST_ENV, {
     userStore: store,
+    departmentStore: departments,
     telemetryStore: telemetry,
     rateLimits: options.rateLimits ?? GENEROUS_LIMITS,
     logs: false,
@@ -95,7 +99,7 @@ export async function startTestApp(
     return reply.cookie;
   };
 
-  return { app, store, telemetry, call, login, close: () => app.close() };
+  return { app, store, departments, telemetry, call, login, close: () => app.close() };
 }
 
 export { DEFAULT_RATE_LIMITS };

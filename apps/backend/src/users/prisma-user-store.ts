@@ -1,6 +1,7 @@
 import type { Language, Role } from '@mixline/shared';
 
 import { Prisma, type PrismaClient, type User } from '../generated/prisma/client.js';
+import { DepartmentNotFoundError } from '../departments/department-store.js';
 import { EmailTakenError, type NewUser, type StoredUser, type UserStore } from './user-store.js';
 
 /** UserStore on the `users` table (Prisma). */
@@ -36,7 +37,7 @@ export class PrismaUserStore implements UserStore {
           cityArea: input.cityArea ?? null,
           occupation: input.occupation ?? null,
           paintPurpose: input.paintPurpose ?? null,
-          department: input.department ?? null,
+          departmentId: input.departmentId ?? null,
           mustChangePassword: input.mustChangePassword ?? false,
         },
       });
@@ -45,6 +46,10 @@ export class PrismaUserStore implements UserStore {
       // P2002 = unique constraint violated (users_email_key).
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new EmailTakenError(input.email);
+      }
+      // P2003 = foreign key: the department does not exist (deleted meanwhile).
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw new DepartmentNotFoundError(input.departmentId ?? '');
       }
       throw error;
     }
@@ -78,7 +83,7 @@ function toStored(u: User): StoredUser {
     role: u.role,
     locale: u.locale,
     fullName: u.fullName,
-    department: u.department,
+    departmentId: u.departmentId,
     mustChangePassword: u.mustChangePassword,
   };
 }

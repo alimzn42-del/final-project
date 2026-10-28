@@ -1,7 +1,0 @@
-{
-  "departments": [
-    { "id": "maintenance", "labelKey": "department.maintenance" },
-    { "id": "production", "labelKey": "department.production" },
-    { "id": "quality", "labelKey": "department.quality" }
-  ]
-}

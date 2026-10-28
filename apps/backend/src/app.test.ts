@@ -49,14 +49,12 @@ describe('backend HTTP API: machine, locales, health', () => {
     expect(ar).toEqual(rawAr);
   });
 
-  it('GET /api/departments lists the configured departments to managers only', async () => {
+  it('GET /api/departments: the three starting departments, in English and Arabic', async () => {
     const r = await t.call('GET', '/departments', undefined, manager);
     expect(r.status).toBe(200);
-    expect((r.body as { id: string }[]).map((d) => d.id)).toEqual([
-      'maintenance',
-      'production',
-      'quality',
-    ]);
+    expect(
+      (r.body as { nameEn: string; nameAr: string }[]).map((d) => `${d.nameEn}/${d.nameAr}`),
+    ).toEqual(['Maintenance/الصيانة', 'Production/الإنتاج', 'Quality/الجودة']);
     expect((await t.call('GET', '/departments')).status).toBe(401);
   });
 
