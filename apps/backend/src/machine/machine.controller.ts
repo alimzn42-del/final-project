@@ -1,4 +1,6 @@
 import {
+  type Department,
+  type DepartmentsFile,
   LANGUAGES,
   type Language,
   type LocaleDict,
@@ -8,7 +10,7 @@ import {
 import { Controller, Get, Inject, NotFoundException, Param } from '@nestjs/common';
 
 import { Public, Roles } from '../auth/access.js';
-import { LOCALES, MACHINE } from './machine.tokens.js';
+import { DEPARTMENTS, LOCALES, MACHINE } from './machine.tokens.js';
 
 /**
  * Serves the line description and the label translations. Both were
@@ -19,6 +21,7 @@ export class MachineController {
   constructor(
     @Inject(MACHINE) private readonly machine: Machine,
     @Inject(LOCALES) private readonly locales: Locales,
+    @Inject(DEPARTMENTS) private readonly departments: DepartmentsFile,
   ) {}
 
   /**
@@ -29,6 +32,13 @@ export class MachineController {
   @Roles('manager', 'worker')
   getMachine(): Machine {
     return this.machine;
+  }
+
+  /** Worker departments (config/departments.json), for the user page. Managers only. */
+  @Get('departments')
+  @Roles('manager')
+  getDepartments(): Department[] {
+    return this.departments.departments;
   }
 
   /** One locale file: en or ar. Public: the login and sign-up pages need it. */

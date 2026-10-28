@@ -1,4 +1,5 @@
 export * from './auth.js';
+export * from './departments.js';
 export * from './issues.js';
 export * from './locales.js';
 export * from './machine.rules.js';

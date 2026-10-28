@@ -1,7 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 
 import { MachineController } from './machine.controller.js';
-import { type ConfigFiles, LOCALES, MACHINE } from './machine.tokens.js';
+import { type ConfigFiles, DEPARTMENTS, LOCALES, MACHINE } from './machine.tokens.js';
 
 /**
  * The line description (machine.json) and the locale files. They are loaded
@@ -17,8 +17,9 @@ export class MachineModule {
       providers: [
         { provide: MACHINE, useValue: files.machine },
         { provide: LOCALES, useValue: files.locales },
+        { provide: DEPARTMENTS, useValue: files.departments },
       ],
-      exports: [MACHINE, LOCALES],
+      exports: [MACHINE, LOCALES, DEPARTMENTS],
     };
   }
 }

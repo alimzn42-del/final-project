@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-import { loadConfigFiles } from '@mixline/shared/node';
+import { loadConfigFiles, loadDepartmentsFile } from '@mixline/shared/node';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
@@ -29,7 +29,9 @@ export async function createApp(
   options: CreateAppOptions = {},
 ): Promise<{ app: INestApplication; config: BackendConfig }> {
   const config = loadConfig(env);
-  const files = loadConfigFiles(config.machineConfigPath, config.localesDir);
+  const { machine, locales } = loadConfigFiles(config.machineConfigPath, config.localesDir);
+  const departments = loadDepartmentsFile(config.departmentsPath, locales);
+  const files = { machine, locales, departments };
   const app = await NestFactory.create(
     AppModule.register({
       files,
