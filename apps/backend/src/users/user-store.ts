@@ -3,7 +3,7 @@
  * the backend uses the database (PrismaUserStore); the HTTP tests use an
  * in-memory store, so they run without Docker.
  */
-import type { Governorate, Language, PublicUser, Role } from '@mixline/shared';
+import type { Governorate, Language, PublicUser, Role, Theme } from '@mixline/shared';
 
 export const USER_STORE = Symbol('USER_STORE');
 
@@ -45,7 +45,11 @@ export interface UserStore {
   /** Throws EmailTakenError if the email exists. */
   create(user: NewUser): Promise<StoredUser>;
   countByRole(role: Role): Promise<number>;
-  setLocale(id: string, locale: Language): Promise<StoredUser>;
+  /** Changes the language and/or the theme (null: follow the browser again). */
+  setPreferences(
+    id: string,
+    preferences: { locale?: Language; theme?: Theme | null },
+  ): Promise<StoredUser>;
   /** Replaces the password hash and clears mustChangePassword. */
   setPassword(id: string, passwordHash: string): Promise<StoredUser>;
 }
@@ -56,6 +60,7 @@ export function toPublic(user: StoredUser): PublicUser {
     email: user.email,
     role: user.role,
     locale: user.locale,
+    theme: user.theme,
     fullName: user.fullName,
     departmentId: user.departmentId,
     mustChangePassword: user.mustChangePassword,
