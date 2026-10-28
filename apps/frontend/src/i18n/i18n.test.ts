@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import ar from '../../../../config/locales/ar.json';
 import { createI18n, switchLanguage, textDirection } from './i18n';
 
 const dicts = {
@@ -27,6 +28,21 @@ describe('i18n', () => {
     expect(document.documentElement.dir).toBe('ltr');
     await switchLanguage(i18n, 'ar', load);
     expect(load).toHaveBeenCalledTimes(2); // each language is loaded once
+  });
+
+  it('picks the Arabic plural form from the number (owner, step 11)', async () => {
+    const i18n = await createI18n();
+    await switchLanguage(i18n, 'ar', () => Promise.resolve(ar));
+    const short = (count: number) => i18n.t('error.passwordShort', { count });
+    expect(short(1)).toBe('حرف واحد على الأقل');
+    expect(short(2)).toBe('حرفان على الأقل');
+    expect(short(8)).toBe('8 أحرف على الأقل');
+    expect(short(11)).toBe('11 حرفاً على الأقل');
+    expect(short(100)).toBe('100 حرف على الأقل');
+    expect(i18n.t('error.tooYoung', { count: 18 })).toBe('يجب ألّا يقل عمرك عن 18 عاماً');
+    expect(i18n.t('error.tooLong', { count: 500 })).toBe(
+      'النص أطول من المسموح: 500 حرف على الأكثر',
+    );
   });
 
   it('only Arabic is right-to-left', () => {

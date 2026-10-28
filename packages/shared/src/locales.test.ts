@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { component, type MachineJson, rawLocales, rawMachine } from './__fixtures__/config.js';
 import { formatIssues } from './issues.js';
-import { checkLocales, componentName, type Locales, translate } from './locales.js';
+import {
+  checkLocales,
+  componentName,
+  type Locales,
+  pluralForms,
+  translate,
+  unusedValueKeys,
+} from './locales.js';
 import { machineSchema } from './machine.schema.js';
 
 function localeIssues(m: MachineJson, locales: Locales = rawLocales()) {
@@ -86,6 +93,65 @@ describe('locale rules', () => {
       'locales["part.dyeTank"]',
       /placeholders differ: en \{color\}, ar \{\}/,
     );
+  });
+
+  describe('plural forms (owner, step 11)', () => {
+    it('each language needs its own forms: English one/other, Arabic all six', () => {
+      expect(pluralForms('en').sort()).toEqual(['one', 'other']);
+      expect(pluralForms('ar').sort()).toEqual(['few', 'many', 'one', 'other', 'two', 'zero']);
+    });
+
+    it('reports an Arabic plural that lacks a form', () => {
+      expectIssue(
+        (_m, locales) => {
+          delete locales.ar['error.passwordShort_two'];
+        },
+        'locales.ar["error.passwordShort"]',
+        /plural forms missing: two/,
+      );
+    });
+
+    it('reports a form the language does not use', () => {
+      expectIssue(
+        (_m, locales) => {
+          locales.en['error.passwordShort_few'] = '{{count}} characters';
+        },
+        'locales.en["error.passwordShort"]',
+        /plural forms en does not use: few/,
+      );
+    });
+
+    it('reports a message that is plural in one language only', () => {
+      expectIssue(
+        (_m, locales) => {
+          locales.ar = Object.fromEntries(
+            Object.entries(locales.ar).filter(([key]) => !key.startsWith('error.tooYoung_')),
+          );
+          locales.ar['error.tooYoung'] = 'يجب ألّا يقل عمرك عن {{count}} عاماً';
+        },
+        'locales.ar["error.tooYoung"]',
+        /plural in one language only/,
+      );
+    });
+
+    it('reports an "other" form without {{count}}', () => {
+      expectIssue(
+        (_m, locales) => {
+          locales.ar['error.passwordLong_other'] = 'حروف كثيرة';
+        },
+        'locales.ar["error.passwordLong_other"]',
+        /needs \{\{count\}\}/,
+      );
+    });
+  });
+
+  it('every value word in the locale files is used by a sensor (owner, step 11)', () => {
+    const m = machineSchema.parse(rawMachine());
+    expect(unusedValueKeys(m, rawLocales())).toEqual([]);
+    const locales = rawLocales();
+    locales.en['value.homed'] = 'Homed';
+    locales.ar['value.homed'] = 'مُهيّأ';
+    expect(unusedValueKeys(m, locales)).toEqual(['value.homed']);
   });
 
   it('reports a missing label param', () => {

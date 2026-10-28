@@ -127,7 +127,7 @@ export function SignupPage() {
           id="password"
           label={t('field.password')}
           error={errors.password}
-          hint={t('field.passwordHint', { min: PASSWORD_MIN_LENGTH })}
+          hint={t('field.passwordHint', { count: PASSWORD_MIN_LENGTH })}
         >
           {(a11y) => (
             <PasswordInput

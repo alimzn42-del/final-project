@@ -103,7 +103,7 @@ export function ChangePasswordPage() {
           id="newPassword"
           label={t('field.newPassword')}
           error={errors.newPassword}
-          hint={t('field.passwordHint', { min: PASSWORD_MIN_LENGTH })}
+          hint={t('field.passwordHint', { count: PASSWORD_MIN_LENGTH })}
         >
           {(a11y) => (
             <PasswordInput
