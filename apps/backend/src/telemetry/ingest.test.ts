@@ -76,6 +76,25 @@ describe('TelemetryIngest', () => {
     expect(ingest.handle(topic, payload, NOW)).toBe(false);
     expect(rows).toEqual([]);
     expect(ingest.latest()).toEqual({});
+    expect(ingest.latestValues().size).toBe(0);
+  });
+
+  it('latestValues: value and received time (ms) per sensor, for the state logic', () => {
+    const { ingest } = setup();
+    ingest.handle('lab/mixline/mixer/sensors/mass', reading({ value: 1 }), NOW);
+    ingest.handle('lab/mixline/mixer/sensors/mass', reading({ value: 2 }), NOW + 500);
+    // The device time is an hour off: the state logic still uses the received time.
+    ingest.handle(
+      'lab/mixline/mixer/sensors/mixer_rpm',
+      reading({ ts: new Date(NOW + 3_600_000).toISOString(), value: 180, unit: 'rpm' }),
+      NOW + 700,
+    );
+    expect(ingest.latestValues()).toEqual(
+      new Map([
+        ['vessel.mass', { value: 2, receivedAt: NOW + 500 }],
+        ['mixer.rpm', { value: 180, receivedAt: NOW + 700 }],
+      ]),
+    );
   });
 
   it('a device clock off by more than 2 s: charts get the received time, logged once per station', () => {

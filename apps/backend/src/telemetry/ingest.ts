@@ -14,6 +14,7 @@ import {
   chartTime,
   decodeReading,
   type LatestReading,
+  type LatestValue,
   type Machine,
   parseJson,
   parseTopic,
@@ -82,6 +83,15 @@ export class TelemetryIngest {
         receivedAt: row.receivedAt.toISOString(),
         source: row.source,
       };
+    }
+    return out;
+  }
+
+  /** The latest value of every sensor heard so far, as machineStates() needs it. */
+  latestValues(): Map<string, LatestValue> {
+    const out = new Map<string, LatestValue>();
+    for (const [id, row] of this.latestBySensor) {
+      out.set(id, { value: row.value, receivedAt: row.receivedAt.getTime() });
     }
     return out;
   }
