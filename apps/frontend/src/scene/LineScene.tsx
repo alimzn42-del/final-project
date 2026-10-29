@@ -9,7 +9,7 @@
  * - Click opens the page; a drag (turning the view) is not a click.
  * - The camera frames each page and glides to it (none with reduced motion).
  */
-import type { Machine, StateSnapshot } from '@mixline/shared';
+import type { LatestReading, Machine, StateSnapshot } from '@mixline/shared';
 import { Html, OrbitControls, useCursor } from '@react-three/drei';
 import { Canvas, type ThreeEvent, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -40,6 +40,8 @@ export interface SceneContentProps {
   outline?: string;
   /** Live states (step 14); undefined before the first data: the normal look. */
   states?: StateSnapshot | undefined;
+  /** Latest readings: tank levels and the mix colour follow them. */
+  readings?: Readonly<Record<string, LatestReading>>;
   stateColors?: StateColors;
   onNavigate: (path: string) => void;
 }
@@ -52,6 +54,7 @@ export function SceneContent({
   glow,
   outline,
   states,
+  readings,
   stateColors,
   onNavigate,
 }: SceneContentProps) {
@@ -91,6 +94,7 @@ export function SceneContent({
             machine={machine}
             glow={on ? glow : undefined}
             state={states?.components[part.id]}
+            readings={readings}
             stateColors={stateColors}
             seeThrough={page.seeThrough.has(part.id)}
             outline={outline}
@@ -279,6 +283,7 @@ export default function LineScene({
         outline={outline}
         glow={glow}
         states={live.states}
+        readings={live.readings}
         stateColors={stateColors}
         onNavigate={onNavigate}
       />

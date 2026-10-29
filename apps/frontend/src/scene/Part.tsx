@@ -10,7 +10,7 @@
  * - hover: the brand's light blue on surface and edges (never a state colour).
  * - a see-through box keeps thin edge lines.
  */
-import type { Machine, MachineComponent, State } from '@mixline/shared';
+import type { LatestReading, Machine, MachineComponent, State } from '@mixline/shared';
 import { Edges, Html } from '@react-three/drei';
 import { type ThreeEvent, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
@@ -27,13 +27,18 @@ import {
   type StateColors,
   stateLook,
 } from './looks';
+import { liveLevel, liveMixColour } from './liquid';
 import styles from './scene.module.css';
+
+const NO_READINGS: Readonly<Record<string, LatestReading>> = {};
 
 export interface PartProps {
   part: MachineComponent;
   machine: Machine;
   /** The glow colour when highlighted (hover); undefined when not. */
   glow?: string | undefined;
+  /** Latest readings: tank levels and the mix colour follow them (step 14). */
+  readings?: Readonly<Record<string, LatestReading>>;
   /** The part's live state; undefined before the first data (normal look). */
   state?: State | undefined;
   stateColors?: StateColors;
@@ -58,6 +63,7 @@ export function Part({
   part,
   machine,
   glow,
+  readings = NO_READINGS,
   state,
   stateColors = DEFAULT_STATE_COLORS,
   seeThrough = false,
@@ -77,6 +83,12 @@ export function Part({
   const edges = shown.outline ?? glow ?? (seeThrough ? outline : undefined);
   const g = part.geometry;
   const [, height] = frame.size;
+  const liquid = g.shape === 'cylinder' ? g.liquid : undefined;
+  const fill = liquid && liquidLook(machine, liquid);
+  const mix =
+    liquid && 'colorRef' in liquid && liquid.colorRef === 'mix'
+      ? liveMixColour(machine, readings)
+      : undefined;
 
   const materials = usePulse(state, stateColors, emissive, emissiveIntensity);
   const surface = (
@@ -112,13 +124,14 @@ export function Part({
             {(shown.outline ?? glow) && <Edges color={shown.outline ?? glow} threshold={20} />}
           </mesh>
         )}
-        {g.shape === 'cylinder' && g.liquid && (
+        {g.shape === 'cylinder' && liquid && fill && (
           <Liquid
             radius={(g.diameter / 2000) * 0.94}
             height={height}
-            level={g.liquid.level}
+            level={liveLevel(liquid, readings)}
             dim={state === 'offline'}
-            {...liquidLook(machine, g.liquid)}
+            color={mix ?? fill.color}
+            opacity={fill.opacity}
           />
         )}
         {pendingTag && part.status === 'pending' && (
