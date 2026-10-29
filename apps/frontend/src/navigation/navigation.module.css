@@ -57,8 +57,16 @@ html[dir='rtl'] .crumb + .crumb::before {
   overflow-y: auto;
 }
 
-.panelTitle {
+.panelHead {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
   margin: 0 0 0.75rem;
+}
+
+.panelTitle {
+  margin: 0;
   font-size: 1rem;
   font-weight: 600;
 }
@@ -82,7 +90,10 @@ html[dir='rtl'] .crumb + .crumb::before {
 }
 
 .links a {
-  display: block;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
   padding: 0.35rem 0.5rem;
   border-radius: 6px;
   color: var(--text);

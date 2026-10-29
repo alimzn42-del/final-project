@@ -1,42 +1,64 @@
 /**
  * The slim panel beside the 3D view (docs/06-brand.md "Layout"): what this
- * page leads to, so every page is also reachable without the 3D view. On a
- * part's page: its status, the box it belongs to, the parts inside it, and
- * its sensors (live values and charts arrive in step 14).
+ * page leads to, each with its live state chip (step 14), so every page is
+ * also reachable without the 3D view. On a part's page: its status, the box
+ * it belongs to, the parts inside it, and its sensors.
  */
-import type { Machine, MachineComponent } from '@mixline/shared';
+import type { Machine, MachineComponent, StateSnapshot } from '@mixline/shared';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
+import { useLive } from '../live/live';
+import { StateChip, stateOf } from '../live/StateChip';
 import styles from './navigation.module.css';
-import { pageLinks, partPlace, pathOf, type Place, type Target } from './places';
+import { pageLinks, partPlace, pathOf, type Place, placeFromPath, type Target } from './places';
 import { useLabel } from './useLabel';
 
 export function PlacePanel({ machine, place }: { machine: Machine; place: Place }) {
   const { t } = useTranslation();
+  const { states } = useLive();
   const links = pageLinks(machine, place);
-  if (place.level === 4) return <PartPanel machine={machine} part={place.part} inside={links} />;
+  if (place.level === 4) {
+    return <PartPanel machine={machine} part={place.part} inside={links} states={states} />;
+  }
   const heading =
     place.level === 1 ? 'nav.sections' : place.level === 2 ? 'nav.contents' : 'nav.parts';
   return (
     <aside className={styles.panel} aria-labelledby="place-panel">
-      <h2 id="place-panel" className={styles.panelTitle}>
-        {t(heading)}
-      </h2>
-      <LinkList links={links} />
+      <div className={styles.panelHead}>
+        <h2 id="place-panel" className={styles.panelTitle}>
+          {t(heading)}
+        </h2>
+        <StateChip state={stateOf(states, place)} />
+      </div>
+      <LinkList machine={machine} links={links} states={states} />
     </aside>
   );
 }
 
-function LinkList({ links }: { links: Target[] }) {
+function LinkList({
+  machine,
+  links,
+  states,
+}: {
+  machine: Machine;
+  links: Target[];
+  states: StateSnapshot | undefined;
+}) {
   const label = useLabel();
   return (
     <ul className={styles.links}>
-      {links.map((link) => (
-        <li key={link.path}>
-          <Link to={link.path}>{label(link)}</Link>
-        </li>
-      ))}
+      {links.map((link) => {
+        const place = placeFromPath(machine, link.path.replace(/^\/line\/?/, ''));
+        return (
+          <li key={link.path}>
+            <Link to={link.path}>
+              <span>{label(link)}</span>
+              {place && <StateChip state={stateOf(states, place)} />}
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -45,10 +67,12 @@ function PartPanel({
   machine,
   part,
   inside,
+  states,
 }: {
   machine: Machine;
   part: MachineComponent;
   inside: Target[];
+  states: StateSnapshot | undefined;
 }) {
   const { t } = useTranslation();
   const label = useLabel();
@@ -56,9 +80,12 @@ function PartPanel({
   const parentPlace = parent && partPlace(machine, parent);
   return (
     <aside className={styles.panel} aria-labelledby="place-panel">
-      <h2 id="place-panel" className={styles.panelTitle}>
-        {label(part)}
-      </h2>
+      <div className={styles.panelHead}>
+        <h2 id="place-panel" className={styles.panelTitle}>
+          {label(part)}
+        </h2>
+        <StateChip state={states?.components[part.id]} />
+      </div>
       <dl className={styles.facts}>
         <dt>{t('nav.status')}</dt>
         <dd>{t(`status.${part.status}`)}</dd>
@@ -74,7 +101,7 @@ function PartPanel({
       {inside.length > 0 && (
         <>
           <h3 className={styles.subTitle}>{t('nav.partsInside')}</h3>
-          <LinkList links={inside} />
+          <LinkList machine={machine} links={inside} states={states} />
         </>
       )}
       <h3 className={styles.subTitle}>{t('nav.sensors')}</h3>

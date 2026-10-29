@@ -1,0 +1,51 @@
+.chip {
+  --state: var(--offline);
+
+  display: inline-flex;
+  flex: none;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--state);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  animation: pulse 0.9s ease-out 1;
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--state);
+}
+
+.ok {
+  --state: var(--ok);
+}
+
+.warning {
+  --state: var(--warning);
+}
+
+.fault {
+  --state: var(--fault);
+}
+
+.offline {
+  --state: var(--offline);
+
+  color: var(--text-muted);
+}
+
+/* One pulse on a change (docs/06-brand.md "Motion"); global.css turns it off with reduced motion. */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--state) 70%, transparent);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0.6rem transparent;
+  }
+}
