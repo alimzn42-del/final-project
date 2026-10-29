@@ -9,7 +9,7 @@
  * - Click opens the page; a drag (turning the view) is not a click.
  * - The camera frames each page and glides to it (none with reduced motion).
  */
-import type { Machine } from '@mixline/shared';
+import type { Machine, StateSnapshot } from '@mixline/shared';
 import { Html, OrbitControls, useCursor } from '@react-three/drei';
 import { Canvas, type ThreeEvent, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -19,6 +19,8 @@ import { Vector3 } from 'three';
 import type { PageScene } from '../navigation/places';
 import { useLabel } from '../navigation/useLabel';
 import { boundsOf, MM, type Vec3 } from './frame';
+import { useLive } from '../live/live';
+import type { StateColors } from './looks';
 import { Part } from './Part';
 import { passesThrough } from './picking';
 import styles from './scene.module.css';
@@ -36,6 +38,9 @@ export interface SceneContentProps {
   glow: string;
   /** The edge colour of see-through boxes, so their shape stays readable. */
   outline?: string;
+  /** Live states (step 14); undefined before the first data: the normal look. */
+  states?: StateSnapshot | undefined;
+  stateColors?: StateColors;
   onNavigate: (path: string) => void;
 }
 
@@ -46,6 +51,8 @@ export function SceneContent({
   allTags,
   glow,
   outline,
+  states,
+  stateColors,
   onNavigate,
 }: SceneContentProps) {
   const { t } = useTranslation();
@@ -83,6 +90,8 @@ export function SceneContent({
             part={part}
             machine={machine}
             glow={on ? glow : undefined}
+            state={states?.components[part.id]}
+            stateColors={stateColors}
             seeThrough={page.seeThrough.has(part.id)}
             outline={outline}
             pendingTag={allTags || on ? t('status.pending') : undefined}
@@ -244,6 +253,15 @@ export default function LineScene({
   const glow = useCssColor('--brand-glow', '#5fd3ff');
   const floor = useCssColor('--surface', '#1c222c');
   const outline = useCssColor('--text-muted', '#9aa6b4');
+  const ok = useCssColor('--ok', '#3cc27a');
+  const warning = useCssColor('--warning', '#f2b533');
+  const fault = useCssColor('--fault', '#f0524f');
+  const offline = useCssColor('--offline', '#6b7684');
+  const stateColors = useMemo(
+    () => ({ ok, warning, fault, offline }),
+    [ok, warning, fault, offline],
+  );
+  const live = useLive();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   return (
     <Canvas
@@ -260,6 +278,8 @@ export default function LineScene({
         allTags={allTags}
         outline={outline}
         glow={glow}
+        states={live.states}
+        stateColors={stateColors}
         onNavigate={onNavigate}
       />
       <Floor machine={machine} color={floor} />

@@ -3,9 +3,9 @@
  * part is there, closed boxes have walls, pending parts are placeholders,
  * hovering lights up what a click would open, and clicks navigate (step 13).
  */
-import { type Machine, machineSchema } from '@mixline/shared';
+import { type Machine, machineSchema, type State, type StateSnapshot } from '@mixline/shared';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
-import type { Material, Mesh, MeshStandardMaterial } from 'three';
+import type { Color, Material, Mesh, MeshStandardMaterial } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../config/locales/en.json';
@@ -15,12 +15,18 @@ import { createI18n, switchLanguage } from '../i18n/i18n';
 import { pageScene, placeFromPath } from '../navigation/places';
 import { fakeApi } from '../test/app';
 import { SceneContent } from './LineScene';
-import { GHOST_OPACITY, PENDING_OPACITY, SEE_THROUGH_OPACITY } from './looks';
+import {
+  DEFAULT_STATE_COLORS,
+  GHOST_OPACITY,
+  PENDING_OPACITY,
+  pulseBoost,
+  SEE_THROUGH_OPACITY,
+} from './looks';
 
 const machine: Machine = machineSchema.parse(raw);
 const GLOW = '#5fd3ff';
 
-async function renderScene(path = '') {
+async function renderScene(path = '', states?: StateSnapshot) {
   fakeApi({ 'GET /api/auth/me': { status: 401 } });
   const i18n = await createI18n();
   await switchLanguage(i18n, 'en', () => Promise.resolve(en));
@@ -34,6 +40,7 @@ async function renderScene(path = '') {
         page={pageScene(machine, place)}
         allTags={place.level > 1}
         glow={GLOW}
+        states={states}
         onNavigate={onNavigate}
       />
     </AppProviders>,
@@ -183,5 +190,81 @@ describe('clicking in 3D (plan step 13)', () => {
     expect(meshesOf(renderer, 'colorBox').every((m) => surface(m).opacity <= GHOST_OPACITY)).toBe(
       true,
     );
+  });
+});
+
+/** Every part's state 'ok', except the given ones. */
+function statesWith(parts: Record<string, State>): StateSnapshot {
+  const components = Object.fromEntries(
+    machine.components.map((c) => [c.id, c.sensors.length ? 'ok' : 'none']),
+  ) as Record<string, State>;
+  return {
+    line: 'ok',
+    sections: {},
+    subsections: {},
+    sensors: {},
+    components: { ...components, ...parts },
+  };
+}
+
+const hex = (color: { getHexString: () => string }) => `#${color.getHexString()}`;
+
+/** The colours of a part's edge lines (drei Edges draws them as line segments). */
+function edgeColours(renderer: Renderer, id: string): string[] {
+  const group = renderer.scene.findByProps({ name: id });
+  // drei 10 draws Edges as three-stdlib's LineSegments2 (thick lines) with a LineMaterial.
+  return group
+    .findAll((n) => (n.instance as { isLineSegments2?: boolean }).isLineSegments2 === true)
+    .map((n) => hex((n.instance as unknown as { material: { color: Color } }).material.color));
+}
+const C = DEFAULT_STATE_COLORS;
+const emissiveOf = (mesh: Mesh | undefined) => mesh && hex(surface(mesh).emissive);
+
+describe('state colours in 3D (doc 03, plan step 14)', () => {
+  it('fault and warning glow and are outlined in their own colour, never the brand blue', async () => {
+    const { renderer } = await renderScene('', statesWith({ vessel: 'fault', cabinet: 'warning' }));
+    const [vessel] = meshesOf(renderer, 'vessel');
+    expect(emissiveOf(vessel)).toBe(C.fault);
+    expect(edgeColours(renderer, 'vessel')).toEqual([C.fault]);
+    expect(new Set(edgeColours(renderer, 'cabinet'))).toEqual(new Set([C.warning]));
+    expect(edgeColours(renderer, 'conveyorMotor')).toEqual([]); // ok: normal look
+  });
+
+  it('a fault stays visible under the pointer; the rest of the section lights up blue', async () => {
+    const { renderer } = await renderScene('', statesWith({ vessel: 'fault' }));
+    await renderer.fireEvent(
+      renderer.scene.findByProps({ name: 'pedestal' }),
+      'onPointerOver',
+      pointer(),
+    );
+    expect(emissiveOf(meshesOf(renderer, 'vessel')[0])).toBe(C.fault);
+    expect(edgeColours(renderer, 'vessel')).toEqual([C.fault]);
+    expect(emissiveOf(meshesOf(renderer, 'pedestal')[0])).toBe(GLOW);
+  });
+
+  it('offline is grey and dimmed, and so is the liquid in a tank', async () => {
+    const { renderer } = await renderScene('', statesWith({ dyeCTank: 'offline', dyeMTank: 'ok' }));
+    const [cTank, cLiquid] = meshesOf(renderer, 'dyeCTank');
+    const [, mLiquid] = meshesOf(renderer, 'dyeMTank');
+    expect(cTank && hex(surface(cTank).color)).toBe(C.offline);
+    expect(cLiquid && mLiquid && surface(cLiquid).opacity).toBeLessThan(
+      mLiquid ? surface(mLiquid).opacity : 0,
+    );
+  });
+
+  it('a pending part in fault stays a see-through placeholder and gets the fault outline', async () => {
+    const tank = machine.components.find((c) => c.id === 'dyeCTank');
+    expect(tank?.status).toBe('pending');
+    const { renderer } = await renderScene('', statesWith({ dyeCTank: 'fault' }));
+    const [outer] = meshesOf(renderer, 'dyeCTank');
+    expect(outer && surface(outer).opacity).toBeLessThanOrEqual(PENDING_OPACITY);
+    expect(edgeColours(renderer, 'dyeCTank')).toEqual([C.fault]);
+  });
+
+  it('a state change pulses once: brighter, then back (none at the start or the end)', () => {
+    expect(pulseBoost(0)).toBe(0);
+    expect(pulseBoost(0.5)).toBeGreaterThan(0.5);
+    expect(pulseBoost(1)).toBe(0);
+    expect(pulseBoost(1.5)).toBe(0);
   });
 });

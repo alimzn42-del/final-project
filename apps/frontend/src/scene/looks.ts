@@ -3,7 +3,7 @@
  * `material`), used when a part sets no `color` of its own. These are not brand
  * colours: blue stays for the brand and the hover glow (docs/06-brand.md).
  */
-import type { Machine, MachineComponent } from '@mixline/shared';
+import type { Machine, MachineComponent, State } from '@mixline/shared';
 
 type Material = MachineComponent['material'];
 
@@ -46,6 +46,44 @@ export function partLook(
   if (seeThrough) opacity = Math.min(opacity, SEE_THROUGH_OPACITY);
   if (ghost) opacity = Math.min(opacity, GHOST_OPACITY);
   return { ...base, color: c.color ?? base.color, opacity };
+}
+
+/** State colours from tokens.css (docs/06-brand.md); never the brand blue. */
+export interface StateColors {
+  ok: string;
+  warning: string;
+  fault: string;
+  offline: string;
+}
+
+/** The dark theme's values, until the page's tokens are read (and in tests). */
+export const DEFAULT_STATE_COLORS: StateColors = {
+  ok: '#3cc27a',
+  warning: '#f2b533',
+  fault: '#f0524f',
+  offline: '#6b7684',
+};
+
+/**
+ * How a state shows on a part (doc 03 "State colors"): fault and warning glow and are outlined
+ * in their colour; offline is grey and dimmed; ok and none keep the normal look. `glow` is the
+ * part's colour and strength from its state; undefined = no state glow.
+ */
+export function stateLook(
+  state: State | undefined,
+  colors: StateColors,
+): { glow?: string; outline?: string; grey?: string } {
+  if (state === 'fault' || state === 'warning')
+    return { glow: colors[state], outline: colors[state] };
+  if (state === 'offline') return { grey: colors.offline };
+  return {};
+}
+
+/** One pulse when a state changes (docs/06-brand.md "Motion"): extra glow over 0..1 of its time. */
+export const PULSE_MS = 900;
+export function pulseBoost(progress: number): number {
+  if (progress <= 0 || progress >= 1) return 0;
+  return 0.9 * Math.sin(Math.PI * progress);
 }
 
 /** The liquid inside a tank or the vessel (doc 02 "Liquids"); the mix colour turns live in step 14. */
