@@ -54,6 +54,23 @@ describe('where each user lands', () => {
   });
 });
 
+describe('the line page (plan step 12)', () => {
+  it('without WebGL the page says so instead of failing (jsdom has no WebGL)', async () => {
+    fakeApi(as(USERS.worker));
+    await renderApp('/line');
+    expect(await screen.findByText(/cannot show the 3D view/)).toBeInTheDocument();
+  });
+
+  it('when the line description cannot be loaded: try again', async () => {
+    const api = fakeApi({ ...as(USERS.manager), 'GET /api/machine': { status: 500 } });
+    const user = await renderApp('/line');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not reach the server');
+    api.on('GET /api/machine', () => ({ status: 200, body: { ok: 'not checked here' } }));
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText(/cannot show the 3D view/)).toBeInTheDocument();
+  });
+});
+
 describe('login', () => {
   it('a manager logs in and lands on the line page', async () => {
     const api = fakeApi({
