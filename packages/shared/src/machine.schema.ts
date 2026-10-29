@@ -109,6 +109,8 @@ const sensor = z
     kind: z.enum(SENSOR_KINDS),
     labelKey: i18nKey,
     valueLabels: z.record(integerCode, i18nKey).optional(),
+    /** Analog only: digits shown after the decimal point (owner, step 14), so numbers do not jump. */
+    decimals: z.number().int().min(0).max(6).optional(),
     measures: z.literal('netLiquid').optional(),
     sim: sim.optional(),
     limits: limits.optional(),
@@ -132,6 +134,12 @@ const sensor = z
     }
     if (s.measures !== undefined && s.unit !== 'g')
       fail('measures', 'only mass sensors use measures');
+
+    // Decimals are set per sensor (owner, step 14): two sensors with the same unit may differ.
+    if (analog && s.decimals === undefined) fail('decimals', 'an analog sensor needs decimals');
+    if (!analog && s.decimals !== undefined) {
+      fail('decimals', `a ${s.kind} sensor shows words, not decimals`);
+    }
 
     if (analog) {
       if (s.valueLabels) fail('valueLabels', 'analog sensors show numbers, not value labels');

@@ -488,6 +488,7 @@ section ever disagree, the file wins; update this section.
       "kind": "analog | digital | enum",
       "labelKey": "i18n key",
       "valueLabels": { "0": "i18n key", "1": "i18n key" },   // digital and enum only
+      "decimals": 0..6,                                     // analog only, required (owner, step 14): digits after the point
       "measures": "netLiquid",                              // mass sensors only
       "sim": { "min", "max", "nominal" },                 // optional
       "limits": {                     // optional, any subset; unused for now (PLC owns limits)
