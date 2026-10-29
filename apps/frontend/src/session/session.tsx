@@ -35,6 +35,11 @@ export interface Session {
   retry: () => void;
   /** Runs an API call that needs the session; a 401 ends it (the login page says so). Stable. */
   call: <T>(request: () => Promise<T>) => Promise<T>;
+  /**
+   * Asks the backend again who is logged in (after the live connection was closed by the server:
+   * a session that ended, a changed role or password). Stable.
+   */
+  refresh: () => void;
 }
 
 const SessionContext = createContext<Session | undefined>(undefined);
@@ -59,6 +64,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       current = false;
     };
   }, [attempt]);
+
+  const refresh = useCallback(() => {
+    api<PublicUser>('GET', '/auth/me').then(
+      (user) => {
+        setState({ status: 'in', user });
+      },
+      (error: unknown) => {
+        if (error instanceof ApiError && error.status === 401)
+          setState({ status: 'out', ended: true });
+      },
+    );
+  }, []);
 
   /** Runs a call that needs a session; a 401 means it ended elsewhere (logout, password change). */
   const withSession = useCallback(async <T,>(call: () => Promise<T>): Promise<T> => {
@@ -98,6 +115,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setState({ status: 'in', user: await api<PublicUser>('PATCH', '/auth/me', preferences) });
       }),
     call: withSession,
+    refresh,
     retry: () => {
       setState({ status: 'loading' });
       setAttempt((n) => n + 1);

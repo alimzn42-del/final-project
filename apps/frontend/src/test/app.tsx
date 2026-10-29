@@ -14,7 +14,9 @@ import machine from '../../../../config/machine.json';
 import { App } from '../app/App';
 import { AppProviders } from '../app/AppProviders';
 import { createI18n, switchLanguage } from '../i18n/i18n';
+import { LiveConnectContext } from '../live/live';
 import { visitorLanguage } from '../prefs/language';
+import { type FakeLive, fakeLive } from './fakeLive';
 
 /** The real line description, as GET /api/machine returns it. */
 export const MACHINE = machineSchema.parse(machine);
@@ -89,14 +91,17 @@ function Location() {
   return <output data-testid="location">{useLocation().pathname}</output>;
 }
 
-export async function renderApp(path: string) {
+/** The app at `path`; the live connection is a fake one (pass your own to send it events). */
+export async function renderApp(path: string, live: FakeLive = fakeLive()) {
   const i18n = await createI18n();
   await switchLanguage(i18n, visitorLanguage());
   render(
     <MemoryRouter initialEntries={[path]}>
       <AppProviders i18n={i18n}>
-        <App />
-        <Location />
+        <LiveConnectContext value={live.connect}>
+          <App />
+          <Location />
+        </LiveConnectContext>
       </AppProviders>
     </MemoryRouter>,
   );
