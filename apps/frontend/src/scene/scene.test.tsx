@@ -3,9 +3,15 @@
  * part is there, closed boxes have walls, pending parts are placeholders,
  * hovering lights up what a click would open, and clicks navigate (step 13).
  */
-import { type Machine, machineSchema, type State, type StateSnapshot } from '@mixline/shared';
+import {
+  type LatestReading,
+  type Machine,
+  machineSchema,
+  type State,
+  type StateSnapshot,
+} from '@mixline/shared';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
-import type { Color, Material, Mesh, MeshStandardMaterial } from 'three';
+import type { Color, CylinderGeometry, Material, Mesh, MeshStandardMaterial } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../config/locales/en.json';
@@ -26,7 +32,11 @@ import {
 const machine: Machine = machineSchema.parse(raw);
 const GLOW = '#5fd3ff';
 
-async function renderScene(path = '', states?: StateSnapshot) {
+async function renderScene(
+  path = '',
+  states?: StateSnapshot,
+  readings?: Record<string, LatestReading>,
+) {
   fakeApi({ 'GET /api/auth/me': { status: 401 } });
   const i18n = await createI18n();
   await switchLanguage(i18n, 'en', () => Promise.resolve(en));
@@ -41,6 +51,7 @@ async function renderScene(path = '', states?: StateSnapshot) {
         allTags={place.level > 1}
         glow={GLOW}
         states={states}
+        readings={readings}
         onNavigate={onNavigate}
       />
     </AppProviders>,
@@ -266,5 +277,38 @@ describe('state colours in 3D (doc 03, plan step 14)', () => {
     expect(pulseBoost(0.5)).toBeGreaterThan(0.5);
     expect(pulseBoost(1)).toBe(0);
     expect(pulseBoost(1.5)).toBe(0);
+  });
+});
+
+describe('live liquids in 3D (plan step 14)', () => {
+  const reading = (value: number): LatestReading => ({
+    value,
+    ts: '2026-10-29T10:00:00.000Z',
+    receivedAt: '2026-10-29T10:00:00.000Z',
+    source: 'sim',
+  });
+  const liquidHeight = (mesh: Mesh | undefined) =>
+    (mesh?.geometry as CylinderGeometry).parameters.height;
+
+  it('the vessel fills to its live mass, in the colour the camera reads', async () => {
+    const vessel = machine.components.find((c) => c.id === 'vessel');
+    const g = vessel?.geometry;
+    if (g?.shape !== 'cylinder' || !g.liquid?.levelSource) throw new Error('vessel liquid');
+    const { max } = g.liquid.levelSource;
+    const { renderer } = await renderScene('', undefined, {
+      'vessel.mass': reading(max / 2),
+      'color.L': reading(53.2408),
+      'color.a': reading(80.0925),
+      'color.b': reading(67.2032),
+    });
+    const [, liquid] = meshesOf(renderer, 'vessel');
+    expect(liquidHeight(liquid)).toBeCloseTo((g.height / 1000) * 0.96 * 0.5, 6);
+    expect(liquid && hex(surface(liquid).color)).toBe('#ff0000');
+  });
+
+  it('without readings, the level and colour from machine.json', async () => {
+    const { renderer } = await renderScene();
+    const [, liquid] = meshesOf(renderer, 'vessel');
+    expect(liquid && hex(surface(liquid).color)).toBe(machine.liquids.mix.hex.toLowerCase());
   });
 });
