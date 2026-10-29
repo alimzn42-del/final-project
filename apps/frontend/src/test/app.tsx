@@ -2,7 +2,7 @@
  * Test helpers: the real app (routes, session, labels from the real locale
  * files) against a fake backend, at a given address.
  */
-import type { PublicUser } from '@mixline/shared';
+import { machineSchema, type PublicUser } from '@mixline/shared';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
@@ -10,6 +10,7 @@ import { vi } from 'vitest';
 
 import ar from '../../../../config/locales/ar.json';
 import en from '../../../../config/locales/en.json';
+import machine from '../../../../config/machine.json';
 import { App } from '../app/App';
 import { AppProviders } from '../app/AppProviders';
 import { createI18n, switchLanguage } from '../i18n/i18n';
@@ -56,7 +57,7 @@ export interface FakeApi {
   on: (route: string, handler: Handler) => void;
 }
 
-/** Replaces fetch: answers `"METHOD /api/path"` routes; the locale files are always served. */
+/** Replaces fetch: answers `"METHOD /api/path"` routes; the locale files and machine.json are always served. */
 export function fakeApi(routes: Record<string, Handler | Reply> = {}): FakeApi {
   const table = new Map<string, Handler>();
   const on = (route: string, handler: Handler | Reply) => {
@@ -64,6 +65,7 @@ export function fakeApi(routes: Record<string, Handler | Reply> = {}): FakeApi {
   };
   on('GET /api/locales/en', { status: 200, body: en });
   on('GET /api/locales/ar', { status: 200, body: ar });
+  on('GET /api/machine', { status: 200, body: machineSchema.parse(machine) });
   for (const [route, handler] of Object.entries(routes)) on(route, handler);
 
   const calls: FakeApi['calls'] = [];

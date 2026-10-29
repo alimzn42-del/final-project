@@ -9,6 +9,23 @@
   color: var(--text-muted);
 }
 
+/* Scene pages: the 3D view fills the rest of the screen (docs/06-brand.md: the scene is the hero). */
+.scenePage {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.button {
+  padding: 0.45rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
 .narrow {
   width: min(100%, 28rem);
   margin-inline: auto;
