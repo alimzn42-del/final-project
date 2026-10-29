@@ -95,6 +95,51 @@ describe('the line page (plan step 12)', () => {
   });
 });
 
+describe('live states in the list beside the view (plan step 14)', () => {
+  const statesFromServer = {
+    line: 'fault',
+    sections: { supply: 'ok', mixingColor: 'fault', conveyor: 'ok', cabinet: 'offline' },
+    subsections: { 'mixingColor/mixing': 'ok', 'mixingColor/color': 'fault' },
+    components: { colorBox: 'none', camera: 'fault', sampleCell: 'none' },
+    sensors: {},
+  };
+
+  it('each section shows its rolled-up state; the page shows its own', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage();
+    act(() => {
+      live.send('snapshot', { readings: {}, states: statesFromServer });
+    });
+    const panel = within(screen.getByRole('complementary'));
+    expect(panel.getByRole('link', { name: /Mixing & Color/ })).toHaveTextContent('Fault');
+    expect(panel.getByRole('link', { name: /Control cabinet/ })).toHaveTextContent('Offline');
+    expect(panel.getByRole('link', { name: /Supply/ })).toHaveTextContent('OK');
+    // The line itself, rolled up from its sections.
+    expect(panel.getByRole('heading', { name: 'Sections' }).parentElement).toHaveTextContent(
+      'Fault',
+    );
+  });
+
+  it('parts without sensors show no chip; state changes update the chips', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line/mixingColor/color', live);
+    await linePage('Color');
+    act(() => {
+      live.send('snapshot', { readings: {}, states: statesFromServer });
+    });
+    const panel = within(screen.getByRole('complementary'));
+    expect(panel.getByRole('link', { name: /Camera box/ })).not.toHaveTextContent(/OK|Fault/);
+    expect(panel.getByRole('link', { name: /^Camera(?! box)/ })).toHaveTextContent('Fault');
+    act(() => {
+      live.send('states', { components: { camera: 'ok' } });
+    });
+    expect(panel.getByRole('link', { name: /^Camera(?! box)/ })).toHaveTextContent('OK');
+  });
+});
+
 describe('navigation between the levels (plan step 13)', () => {
   const crumbs = () =>
     within(screen.getByRole('navigation', { name: 'Where you are in the line' }));
