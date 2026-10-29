@@ -18,6 +18,27 @@
   color: var(--text-muted);
 }
 
+/* The name of what the pointer is over (doc 03: hover shows its name). */
+.name {
+  display: grid;
+  justify-items: center;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--brand-glow);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hint {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
 /* The "pending" tag on a placeholder part (doc 03). */
 .tag {
   padding: 0.1rem 0.45rem;

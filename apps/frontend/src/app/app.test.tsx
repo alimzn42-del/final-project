@@ -7,13 +7,19 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyTheme } from '../prefs/theme';
-import { fakeApi, location, renderApp, USERS } from '../test/app';
+import { fakeApi, location, MACHINE, renderApp, USERS } from '../test/app';
 
 afterEach(() => {
   localStorage.clear();
   applyTheme(null);
   document.documentElement.dir = 'ltr';
 });
+
+/** The line page once its data has loaded (the breadcrumbs then replace the loading title). */
+async function linePage(name = 'Line') {
+  await screen.findByRole('complementary');
+  return screen.getByRole('heading', { level: 1, name });
+}
 
 const loggedOut = { 'GET /api/auth/me': { status: 401 } };
 const as = (user: object) => ({ 'GET /api/auth/me': { status: 200, body: user } });
@@ -36,14 +42,14 @@ describe('where each user lands', () => {
   it('workers open the line pages (owner, step 11)', async () => {
     fakeApi(as(USERS.worker));
     await renderApp('/line/mixingColor');
-    expect(await screen.findByRole('heading', { name: 'Line' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Mixing & Color' })).toBeInTheDocument();
     expect(location()).toBe('/line/mixingColor');
   });
 
   it('a logged-in user opening /login goes to their own page', async () => {
     fakeApi(as(USERS.manager));
     await renderApp('/login');
-    await screen.findByRole('heading', { name: 'Line' });
+    await linePage();
     expect(location()).toBe('/line');
   });
 
@@ -65,10 +71,80 @@ describe('the line page (plan step 12)', () => {
     const api = fakeApi({ ...as(USERS.manager), 'GET /api/machine': { status: 500 } });
     const user = await renderApp('/line');
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not reach the server');
-    api.on('GET /api/machine', () => ({ status: 200, body: { ok: 'not checked here' } }));
+    api.on('GET /api/machine', () => ({ status: 200, body: MACHINE }));
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText(/cannot show the 3D view/)).toBeInTheDocument();
   });
+});
+
+describe('navigation between the levels (plan step 13)', () => {
+  const crumbs = () =>
+    within(screen.getByRole('navigation', { name: 'Where you are in the line' }));
+  const panel = () => within(screen.getByRole('complementary'));
+
+  it('breadcrumbs: Line › section › sub-section › part; the page itself is the title', async () => {
+    fakeApi(as(USERS.manager));
+    await renderApp('/line/mixingColor/color/camera');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Camera' })).toBeInTheDocument();
+    const links = crumbs().getAllByRole('link');
+    expect(links.map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
+      ['Line', '/line'],
+      ['Mixing & Color', '/line/mixingColor'],
+      ['Color', '/line/mixingColor/color'],
+    ]);
+  });
+
+  it('every level is reachable by clicking the list beside the view, down to a part', async () => {
+    fakeApi(as(USERS.worker));
+    const user = await renderApp('/line');
+    await user.click(await panelLink('Mixing & Color'));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Mixing & Color' })).toBeVisible();
+    await user.click(await panelLink('Color'));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Color' })).toBeVisible();
+    await user.click(await panelLink('Camera'));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Camera' })).toBeVisible();
+    expect(location()).toBe('/line/mixingColor/color/camera');
+
+    // And back up by the breadcrumbs.
+    await user.click(crumbs().getByRole('link', { name: 'Line' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Line' })).toBeVisible();
+  });
+
+  it('a section without sub-sections lists its parts directly (doc 03: level 3 skipped)', async () => {
+    fakeApi(as(USERS.manager));
+    const user = await renderApp('/line/cabinet');
+    await user.click(await panelLink('PLC'));
+    expect(location()).toBe('/line/cabinet/part/plc');
+  });
+
+  it("a part's page: its status, the box it belongs to, and its sensors", async () => {
+    fakeApi(as(USERS.manager));
+    await renderApp('/line/mixingColor/mixing/vessel');
+    await screen.findByRole('heading', { level: 1, name: 'Mixing vessel' });
+    expect(panel().getByText('Confirmed')).toBeInTheDocument();
+    expect(panel().getByText('Net mass')).toBeInTheDocument();
+    expect(panel().getByText('g')).toBeInTheDocument();
+    // The vessel holds the lid, the mixer and the overflow float.
+    expect(panel().getByRole('heading', { name: 'Parts inside' })).toBeInTheDocument();
+  });
+
+  it('a part inside a box links back to the box', async () => {
+    fakeApi(as(USERS.manager));
+    await renderApp('/line/mixingColor/color/camera');
+    const box = await panelLink('Camera box');
+    expect(box).toHaveAttribute('href', '/line/mixingColor/color/colorBox');
+  });
+
+  it('an unknown line address says so, with a way back to the line', async () => {
+    fakeApi(as(USERS.manager));
+    await renderApp('/line/mixingColor/nowhere');
+    expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Line' })).toHaveAttribute('href', '/line');
+  });
+
+  async function panelLink(name: string) {
+    return within(await screen.findByRole('complementary')).findByRole('link', { name });
+  }
 });
 
 describe('login', () => {
@@ -82,7 +158,7 @@ describe('login', () => {
     await user.type(screen.getByLabelText('Password'), 'manager-pass-1');
     await user.click(screen.getByRole('button', { name: 'Log in' }));
 
-    expect(await screen.findByRole('heading', { name: 'Line' })).toBeInTheDocument();
+    expect(await linePage()).toBeInTheDocument();
     expect(api.calls.find((c) => c.path === '/api/auth/login')?.body).toEqual({
       email: 'boss@lab.sy',
       password: 'manager-pass-1',
@@ -133,7 +209,7 @@ describe('a temporary password (owner, step 9)', () => {
     await user.clear(screen.getByLabelText('New password'));
     await user.type(screen.getByLabelText('New password'), 'my own long password');
     await user.click(screen.getByRole('button', { name: 'Save the new password' }));
-    expect(await screen.findByRole('heading', { name: 'Line' })).toBeInTheDocument();
+    expect(await linePage()).toBeInTheDocument();
     expect(api.calls.find((c) => c.path === '/api/auth/change-password')?.body).toEqual({
       currentPassword: 'temporary-1',
       newPassword: 'my own long password',
@@ -209,7 +285,7 @@ describe('language and theme', () => {
   it('a user who never picked a theme follows the browser (no data-theme)', async () => {
     fakeApi(as(USERS.manager));
     await renderApp('/line');
-    await screen.findByRole('heading', { name: 'Line' });
+    await linePage();
     expect(document.documentElement.dataset.theme).toBeUndefined();
   });
 });
@@ -240,7 +316,7 @@ describe('logout and ended sessions (owner, step 11)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not reach the server');
     api.on('GET /api/auth/me', () => ({ status: 200, body: USERS.manager }));
     await user.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByRole('heading', { name: 'Line' })).toBeInTheDocument();
+    expect(await linePage()).toBeInTheDocument();
   });
 });
 

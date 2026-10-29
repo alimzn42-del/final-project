@@ -13,7 +13,7 @@
  *   bottom face (anchor "bottom") or the centre (anchor "center").
  */
 import type { MachineComponent } from '@mixline/shared';
-import { Euler, MathUtils } from 'three';
+import { Box3, Euler, MathUtils, Matrix4, Quaternion, Vector3 } from 'three';
 
 export const MM = 0.001;
 
@@ -55,6 +55,26 @@ export function partFrame(c: MachineComponent): PartFrame {
     offset: [0, c.anchor === 'bottom' ? size[1] / 2 : 0, 0],
     size,
   };
+}
+
+/** The box around a part in the scene (turned parts included). */
+export function partBounds(c: MachineComponent): Box3 {
+  const f = partFrame(c);
+  const half = new Vector3(...f.size).multiplyScalar(0.5);
+  const center = new Vector3(...f.offset);
+  const placed = new Matrix4().compose(
+    new Vector3(...f.anchor),
+    new Quaternion().setFromEuler(f.rotation),
+    new Vector3(1, 1, 1),
+  );
+  return new Box3(center.clone().sub(half), center.clone().add(half)).applyMatrix4(placed);
+}
+
+/** The box around several parts (what a page frames). */
+export function boundsOf(parts: readonly MachineComponent[]): Box3 {
+  const box = new Box3();
+  for (const c of parts) box.union(partBounds(c));
+  return box;
 }
 
 export interface Wall {
