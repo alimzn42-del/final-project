@@ -30,6 +30,15 @@
   }
 }
 
+/* "Live data paused" while the connection is being restored: values may be old. */
+.notice {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--warning);
+  border-radius: 6px;
+  color: var(--text);
+}
+
 .headerTitle {
   margin: 0;
   font-size: 1rem;

@@ -263,5 +263,6 @@
   "nav.sensors": "Sensors",
   "nav.noSensors": "This part has no sensors.",
   "nav.liveLater": "Live values and charts come later.",
-  "nav.tapAgain": "Tap again to open"
+  "nav.tapAgain": "Tap again to open",
+  "live.reconnecting": "Live data paused: reconnecting… The values shown may be old."
 }

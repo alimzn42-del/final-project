@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { InHeader } from '../layout/headerSlot';
+import { LiveProvider, useLive } from '../live/live';
 import { MachineProvider, useMachine } from '../machine/machine';
 import { Breadcrumbs } from '../navigation/Breadcrumbs';
 import { PlacePanel } from '../navigation/PlacePanel';
@@ -33,7 +34,9 @@ function canShow3D(): boolean {
 export function LinePage() {
   return (
     <MachineProvider>
-      <LineLoader />
+      <LiveProvider>
+        <LineLoader />
+      </LiveProvider>
     </MachineProvider>
   );
 }
@@ -71,6 +74,7 @@ function LineView({ machine }: { machine: Machine }) {
   // One object per page, so the scene knows when the page changed (camera glide, hover reset).
   const page = useMemo(() => (place ? pageScene(machine, place) : undefined), [machine, place]);
   const show3D = useMemo(() => canShow3D(), []);
+  const live = useLive();
 
   if (!place || !page) {
     return (
@@ -86,6 +90,11 @@ function LineView({ machine }: { machine: Machine }) {
       <InHeader>
         <Breadcrumbs place={place} />
       </InHeader>
+      {live.status === 'reconnecting' && (
+        <p className={styles.notice} role="status">
+          {t('live.reconnecting')}
+        </p>
+      )}
       <div className={styles.sceneLayout}>
         <div className={sceneStyles.viewport}>
           {show3D ? (

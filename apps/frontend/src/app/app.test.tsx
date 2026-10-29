@@ -3,11 +3,12 @@
  * new customer lands on /customer, a customer typing /line is redirected,
  * Arabic is right-to-left) and the owner's step 11 rules.
  */
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyTheme } from '../prefs/theme';
 import { fakeApi, location, MACHINE, renderApp, USERS } from '../test/app';
+import { fakeLive } from '../test/fakeLive';
 
 afterEach(() => {
   localStorage.clear();
@@ -61,6 +62,23 @@ describe('where each user lands', () => {
 });
 
 describe('the line page (plan step 12)', () => {
+  it('says so while the live connection is lost, and not once it is back (step 14)', async () => {
+    fakeApi(as(USERS.worker));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage();
+    const states = { line: 'ok', sections: {}, subsections: {}, components: {}, sensors: {} };
+    act(() => {
+      live.send('snapshot', { readings: {}, states });
+      live.send('disconnect', 'transport close');
+    });
+    expect(screen.getByText(/Live data paused/)).toBeInTheDocument();
+    act(() => {
+      live.send('snapshot', { readings: {}, states });
+    });
+    expect(screen.queryByText(/Live data paused/)).not.toBeInTheDocument();
+  });
+
   it('without WebGL the page says so instead of failing (jsdom has no WebGL)', async () => {
     fakeApi(as(USERS.worker));
     await renderApp('/line');
