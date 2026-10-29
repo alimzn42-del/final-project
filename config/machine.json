@@ -233,6 +233,7 @@
           "variable": "level_mm",
           "unit": "mm",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 310,
@@ -246,6 +247,7 @@
           "variable": "volume_l",
           "unit": "L",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": 0,
             "max": 15,
@@ -363,6 +365,7 @@
           "variable": "magazine_count",
           "unit": "count",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 30,
@@ -612,6 +615,7 @@
           "variable": "mass",
           "unit": "g",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": 0,
             "max": 2500,
@@ -684,6 +688,7 @@
           "variable": "mixer_rpm",
           "unit": "rpm",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 300,
@@ -819,6 +824,7 @@
           "variable": "base_pump_current",
           "unit": "A",
           "kind": "analog",
+          "decimals": 2,
           "sim": {
             "min": 0,
             "max": 1.2,
@@ -880,6 +886,7 @@
           "variable": "drain_pump_current",
           "unit": "A",
           "kind": "analog",
+          "decimals": 2,
           "sim": {
             "min": 0,
             "max": 1.2,
@@ -1266,6 +1273,7 @@
           "variable": "mass",
           "unit": "g",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": 0,
             "max": 700,
@@ -1364,6 +1372,7 @@
           "variable": "pump_steps",
           "unit": "steps",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 200000,
@@ -1377,6 +1386,7 @@
           "variable": "pump_speed",
           "unit": "steps/s",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 2000,
@@ -1390,6 +1400,7 @@
           "variable": "driver_load",
           "unit": "raw",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 510,
@@ -1598,6 +1609,7 @@
           "variable": "mass",
           "unit": "g",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": 0,
             "max": 700,
@@ -1696,6 +1708,7 @@
           "variable": "pump_steps",
           "unit": "steps",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 200000,
@@ -1709,6 +1722,7 @@
           "variable": "pump_speed",
           "unit": "steps/s",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 2000,
@@ -1722,6 +1736,7 @@
           "variable": "driver_load",
           "unit": "raw",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 510,
@@ -1930,6 +1945,7 @@
           "variable": "mass",
           "unit": "g",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": 0,
             "max": 700,
@@ -2028,6 +2044,7 @@
           "variable": "pump_steps",
           "unit": "steps",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 200000,
@@ -2041,6 +2058,7 @@
           "variable": "pump_speed",
           "unit": "steps/s",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 2000,
@@ -2054,6 +2072,7 @@
           "variable": "driver_load",
           "unit": "raw",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 510,
@@ -2262,6 +2281,7 @@
           "variable": "mass",
           "unit": "g",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": 0,
             "max": 700,
@@ -2360,6 +2380,7 @@
           "variable": "pump_steps",
           "unit": "steps",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 200000,
@@ -2373,6 +2394,7 @@
           "variable": "pump_speed",
           "unit": "steps/s",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 2000,
@@ -2386,6 +2408,7 @@
           "variable": "driver_load",
           "unit": "raw",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 510,
@@ -2466,6 +2489,7 @@
           "variable": "L",
           "unit": "",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": 0,
             "max": 100,
@@ -2479,6 +2503,7 @@
           "variable": "a",
           "unit": "",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": -60,
             "max": 60,
@@ -2492,6 +2517,7 @@
           "variable": "b",
           "unit": "",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": -60,
             "max": 60,
@@ -2505,6 +2531,7 @@
           "variable": "delta_e",
           "unit": "",
           "kind": "analog",
+          "decimals": 2,
           "sim": {
             "min": 0,
             "max": 20,
@@ -2518,6 +2545,7 @@
           "variable": "white_ref",
           "unit": "",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 255,
@@ -2999,6 +3027,7 @@
           "variable": "speed_cmd",
           "unit": "mm/s",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 120,
@@ -3012,6 +3041,7 @@
           "variable": "speed_meas",
           "unit": "mm/s",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 120,
@@ -3025,6 +3055,7 @@
           "variable": "slip",
           "unit": "%",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": 0,
             "max": 20,
@@ -3258,6 +3289,7 @@
           "variable": "mass",
           "unit": "g",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": 0,
             "max": 400,
@@ -3452,6 +3484,7 @@
           "variable": "mass",
           "unit": "g",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": 0,
             "max": 400,
@@ -3600,6 +3633,7 @@
           "variable": "lid_count",
           "unit": "count",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 30,
@@ -3674,6 +3708,7 @@
           "variable": "reject_count",
           "unit": "count",
           "kind": "analog",
+          "decimals": 0,
           "sim": {
             "min": 0,
             "max": 10,
@@ -3768,6 +3803,7 @@
           "variable": "ambient_temp",
           "unit": "C",
           "kind": "analog",
+          "decimals": 1,
           "sim": {
             "min": 18,
             "max": 40,
