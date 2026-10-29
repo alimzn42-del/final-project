@@ -21,7 +21,7 @@ Every part of the physical line, where it sits, what it is made of, and its sens
   - `center`: `position` is the geometric center (used for rotated parts: rollers, door buttons).
 - Rotation is applied about the anchor point, in degrees, order X then Y then Z.
 - Cylinders have their axis along `y` before rotation.
-- `hollow: true` boxes are drawn as walls of `wallThickness` (color box, cabinet). Child parts sit
+- `hollow: true` boxes are drawn as walls of `wallThickness` (camera box, cabinet). Child parts sit
   inside the inner volume.
 - "Front" = committee / viewer side (low `z`). "Back" = wall side (high `z`).
 
@@ -184,7 +184,7 @@ Status: confirmed.
 Second R385, vessel to drain bucket, runs until the vessel reads empty weight (with timeout).
 Status: confirmed.
 
-### Color box (camera box)
+### Camera box
 Closed box, matte black inside, next to the vessel, touching the control cabinet's left wall.
 Inside, in a straight line:
 

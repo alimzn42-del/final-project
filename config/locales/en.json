@@ -32,7 +32,7 @@
   "part.dyeShelf": "Dye shelf",
   "part.dyeTank": "{{color}} dye tank",
   "part.dyePump": "{{color}} dye pump",
-  "part.colorBox": "Color box",
+  "part.colorBox": "Camera box",
   "part.camera": "Camera",
   "part.sampleCell": "Sample cell",
   "part.sampleCellHolder": "Sample cell holder",
@@ -252,5 +252,16 @@
   "error.samePassword": "Must differ from the current password",
   "error.server": "Something went wrong. Try again.",
   "error.network": "Cannot reach the server.",
-  "scene.noWebgl": "This browser cannot show the 3D view (WebGL is off or not supported)."
+  "scene.noWebgl": "This browser cannot show the 3D view (WebGL is off or not supported).",
+  "nav.breadcrumbs": "Where you are in the line",
+  "nav.sections": "Sections",
+  "nav.contents": "In this section",
+  "nav.parts": "Parts",
+  "nav.partsInside": "Parts inside",
+  "nav.partOf": "Part of",
+  "nav.status": "Status",
+  "nav.sensors": "Sensors",
+  "nav.noSensors": "This part has no sensors.",
+  "nav.liveLater": "Live values and charts come later.",
+  "nav.tapAgain": "Tap again to open"
 }
