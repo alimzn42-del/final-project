@@ -131,7 +131,7 @@ describe('navigation between the levels (plan step 13)', () => {
   it('a part inside a box links back to the box', async () => {
     fakeApi(as(USERS.manager));
     await renderApp('/line/mixingColor/color/camera');
-    const box = await panelLink('Color box');
+    const box = await panelLink('Camera box');
     expect(box).toHaveAttribute('href', '/line/mixingColor/color/colorBox');
   });
 
