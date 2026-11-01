@@ -402,7 +402,7 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
   Its build type-checks the app code only (`tsconfig.build.json`): the tests read `config/`, which
   is not in the Docker build context. `pnpm typecheck` still checks the tests.
 - App images: one multi-stage `docker/node-app.Dockerfile` for every Node app (build argument
-  `APP`: `backend`, `simulator`), build context = repo root, base image pinned
+  `APP`: `backend`, `simulator`), build context = `web-app/`, base image pinned
   (`node:24.22.0-alpine3.24`, multi-arch). The runtime stage holds only the app's `dist/` and
   production dependencies (`pnpm deploy`), runs as the unprivileged `node` user, and gets
   `config/` mounted read-only. `.dockerignore` keeps `.env`, `node_modules` and docs out.

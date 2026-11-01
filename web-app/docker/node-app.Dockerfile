@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # One image recipe for every Node app in apps/ (backend, simulator).
-# Build context: the repo root. Choose the app with the APP build argument:
+# Build context: web-app/. Choose the app with the APP build argument:
 #   docker build -f docker/node-app.Dockerfile --build-arg APP=backend .
 # Multi-arch base image: the same file builds for amd64 (laptop) and arm64
 # (Raspberry Pi 5).
