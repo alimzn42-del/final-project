@@ -7,7 +7,7 @@ A small automated liquid mixing-and-filling line, and a web app that shows it as
 
 | Folder | What is in it |
 |---|---|
-| [`web-app/`](web-app/) | The digital twin web app: 3D view, backend, database, simulator, and the project specs in `web-app/docs/` |
+| [`web-app/`](web-app/) | The digital twin web app: 3D view, backend, database, simulator, and the project specs in `web-app/docs/`. To install and run it, see [`web-app/README.md`](web-app/README.md) |
 | [`plc/`](plc/) | PLC programs and project files |
 | [`esp32/`](esp32/) | ESP32 firmware |
 
