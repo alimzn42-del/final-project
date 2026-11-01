@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # The web app: built with Vite, served by nginx, which also passes /api (and the
-# live WebSocket) to the backend. Build context: the repo root.
+# live WebSocket) to the backend. Build context: web-app/.
 # Multi-arch base images: the same file builds for amd64 (laptop) and arm64
 # (Raspberry Pi 5).
 

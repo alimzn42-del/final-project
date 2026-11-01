@@ -1,4 +1,4 @@
-# Docker build context = repo root. Keep it small and never send secrets.
+# Docker build context = web-app/. Keep it small and never send secrets.
 **/node_modules
 **/dist
 **/coverage
