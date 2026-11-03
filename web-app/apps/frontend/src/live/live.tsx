@@ -13,11 +13,26 @@ import {
   type LiveSnapshot,
   type LiveStates,
 } from '@mixline/shared';
-import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { io } from 'socket.io-client';
 
 import { useSession } from '../session/session';
-import { fromSnapshot, type LiveData, NO_DATA, withReadings, withStates } from './liveData';
+import {
+  clockOffset,
+  fromSnapshot,
+  type LiveData,
+  NO_DATA,
+  withReadings,
+  withStates,
+} from './liveData';
 
 /** Wait before trying again when the server could not check the login. */
 const RETRY_MS = 5000;
@@ -40,21 +55,46 @@ export const LiveConnectContext = createContext<Connect>(connectToServer);
 /** connecting: no data yet; live: up to date; reconnecting: values may be old. */
 export type LiveStatus = 'connecting' | 'live' | 'reconnecting';
 
+export type ReadingsListener = (batch: LiveReadings) => void;
+
 export interface Live extends LiveData {
   status: LiveStatus;
+  /** Server clock minus this browser's clock (ms), from the latest batch; 0 until one arrives. */
+  clockOffset: number;
+  /** Goes up each time the connection is back after a loss: charts then reload their history. */
+  reconnects: number;
+  /** Calls `listener` with every batch of new readings (charts keep them all); returns how to stop. */
+  subscribe: (listener: ReadingsListener) => () => void;
 }
 
-const LiveContext = createContext<Live>({ ...NO_DATA, status: 'connecting' });
+const LiveContext = createContext<Live>({
+  ...NO_DATA,
+  status: 'connecting',
+  clockOffset: 0,
+  reconnects: 0,
+  subscribe: () => () => undefined,
+});
 
 export function LiveProvider({ children }: { children: ReactNode }) {
   const connect = useContext(LiveConnectContext);
   const { refresh } = useSession();
   const [data, setData] = useState<LiveData>(NO_DATA);
   const [status, setStatus] = useState<LiveStatus>('connecting');
+  const [offset, setOffset] = useState(0);
+  const [reconnects, setReconnects] = useState(0);
+  const listeners = useRef(new Set<ReadingsListener>());
+  const subscribe = useCallback((listener: ReadingsListener) => {
+    listeners.current.add(listener);
+    return () => {
+      listeners.current.delete(listener);
+    };
+  }, []);
 
   useEffect(() => {
     const socket = connect();
     let retry: ReturnType<typeof setTimeout> | undefined;
+    // True from a connection loss until the next snapshot.
+    let lost = false;
     const tryAgainLater = () => {
       clearTimeout(retry);
       retry = setTimeout(() => socket.connect(), RETRY_MS);
@@ -63,14 +103,22 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     socket.on('snapshot', (snapshot: LiveSnapshot) => {
       setData(fromSnapshot(snapshot));
       setStatus('live');
+      if (lost) {
+        lost = false;
+        setReconnects((n) => n + 1);
+      }
     });
     socket.on('readings', (batch: LiveReadings) => {
       setData((d) => withReadings(d, batch));
+      const ahead = clockOffset(batch, Date.now());
+      if (ahead !== undefined) setOffset(ahead);
+      for (const listener of listeners.current) listener(batch);
     });
     socket.on('states', (changes: LiveStates) => {
       setData((d) => withStates(d, changes));
     });
     socket.on('disconnect', (reason: string) => {
+      lost = true;
       setStatus('reconnecting');
       // Closed by the server (the minute's re-check, a logout elsewhere): who is logged in now?
       if (reason === 'io server disconnect') {
@@ -79,6 +127,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       }
     });
     socket.on('connect_error', (error: Error) => {
+      lost = true;
       setStatus('reconnecting');
       // Any other error is a network problem: socket.io keeps trying by itself.
       if (!Object.values<string>(LIVE_REFUSALS).includes(error.message)) return;
@@ -94,7 +143,11 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     };
   }, [connect, refresh]);
 
-  return <LiveContext value={{ ...data, status }}>{children}</LiveContext>;
+  return (
+    <LiveContext value={{ ...data, status, clockOffset: offset, reconnects, subscribe }}>
+      {children}
+    </LiveContext>
+  );
 }
 
 export function useLive(): Live {

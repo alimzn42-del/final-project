@@ -58,5 +58,32 @@ describe('colour tokens', () => {
     it('--on-brand on --brand (button text)', () => {
       expect(contrast(t['--on-brand'], t['--brand'])).toBeGreaterThanOrEqual(4.5);
     });
+
+    it('timeline bands: each word reads on its band (4.5:1)', () => {
+      for (const n of [1, 2, 3, 4]) {
+        expect(
+          contrast(t[`--band-ink-${String(n)}`], t[`--band-${String(n)}`]),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    });
+
+    it('timeline bands: the faintest still stands out from the panel (2:1), and each step is darker or lighter in turn', () => {
+      expect(contrast(t['--band-1'], t['--surface'])).toBeGreaterThanOrEqual(2);
+      const away = [1, 2, 3, 4].map((n) => contrast(t[`--band-${String(n)}`], t['--surface']));
+      expect(away).toEqual([...away].sort((a, b) => a - b));
+    });
+
+    it('the line chart (brand blue) stands out from the panel (3:1)', () => {
+      expect(contrast(t['--brand'], t['--surface'])).toBeGreaterThanOrEqual(3);
+    });
+  });
+});
+
+describe('the charts never use state colours (owner, step 14)', () => {
+  it('chart.module.css has no --ok, --warning, --fault or --offline', () => {
+    const chartCss = readFileSync(new URL('../chart/chart.module.css', import.meta.url), 'utf8');
+    // Comments may name them (the file says why they are not used); rules may not.
+    const rules = chartCss.replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(rules).not.toMatch(/var\(--(ok|warning|fault|offline)\)/);
   });
 });

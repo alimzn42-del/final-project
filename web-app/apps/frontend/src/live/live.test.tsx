@@ -1,6 +1,7 @@
 /** The live connection against a fake server: data, reconnects, refusals (plan step 14). */
 import type { StateSnapshot } from '@mixline/shared';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import { type ReactNode, useEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../config/locales/en.json';
@@ -33,16 +34,14 @@ function Probe() {
   );
 }
 
-async function renderLive(live: FakeLive) {
+async function renderLive(live: FakeLive, probe: ReactNode = <Probe />) {
   const api = fakeApi({ 'GET /api/auth/me': { status: 200, body: USERS.manager } });
   const i18n = await createI18n();
   await switchLanguage(i18n, 'en', () => Promise.resolve(en));
   const view = render(
     <AppProviders i18n={i18n}>
       <LiveConnectContext value={live.connect}>
-        <LiveProvider>
-          <Probe />
-        </LiveProvider>
+        <LiveProvider>{probe}</LiveProvider>
       </LiveConnectContext>
     </AppProviders>,
   );
@@ -140,6 +139,52 @@ describe('the live connection', () => {
     });
     await act(() => vi.advanceTimersByTimeAsync(10_000));
     expect(live.socket.connect).not.toHaveBeenCalled();
+  });
+
+  it('charts get every batch; the reconnect count goes up when the connection is back', async () => {
+    const live = fakeLive();
+    const got: string[] = [];
+    function Chart() {
+      const { subscribe, reconnects } = useLive();
+      useEffect(
+        () =>
+          subscribe((batch) => {
+            got.push(...Object.keys(batch));
+          }),
+        [subscribe],
+      );
+      return <output data-testid="reconnects">{reconnects}</output>;
+    }
+    await renderLive(live, <Chart />);
+    const reconnects = () => screen.getByTestId('reconnects').textContent;
+    act(() => {
+      live.send('snapshot', { readings: {}, states });
+      live.send('readings', { 'vessel.mass': reading(1) });
+      live.send('readings', { 'vessel.mass': reading(2), 'color.L': reading(50) });
+    });
+    expect(got).toEqual(['vessel.mass', 'vessel.mass', 'color.L']);
+    expect(reconnects()).toBe('0');
+
+    act(() => {
+      live.send('disconnect', 'transport close');
+      live.send('snapshot', { readings: {}, states });
+    });
+    expect(reconnects()).toBe('1');
+  });
+
+  it('the server clock’s lead comes from each batch (charts use it for “now”)', async () => {
+    const live = fakeLive();
+    function Clock() {
+      return (
+        <output data-testid="offset">{useLive().clockOffset > 25_000 ? 'ahead' : 'same'}</output>
+      );
+    }
+    await renderLive(live, <Clock />);
+    const ahead = new Date(Date.now() + 30_000).toISOString();
+    act(() => {
+      live.send('readings', { 'vessel.mass': { ...reading(1), receivedAt: ahead } });
+    });
+    expect(screen.getByTestId('offset')).toHaveTextContent('ahead');
   });
 
   it('leaving the line pages closes the connection', async () => {

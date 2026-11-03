@@ -291,5 +291,19 @@
   "twin.predicted": "القيمة المتوقَّعة",
   "twin.residual": "الفرق عن المتوقَّع",
   "twin.health": "مؤشر الصحة",
-  "twin.rul": "العمر المفيد المتبقّي"
+  "twin.rul": "العمر المفيد المتبقّي",
+  "chart.window": "المدة المعروضة",
+  "chart.minutes_zero": "{{count}} دقيقة",
+  "chart.minutes_one": "دقيقة واحدة",
+  "chart.minutes_two": "دقيقتان",
+  "chart.minutes_few": "{{count}} دقائق",
+  "chart.minutes_many": "{{count}} دقيقة",
+  "chart.minutes_other": "{{count}} دقيقة",
+  "chart.failed": "تعذّر تحميل السجل.",
+  "chart.noData": "لا توجد بيانات في هذه المدة",
+  "chart.gap": "لا توجد بيانات",
+  "chart.share": "{{word}} {{percent}}%",
+  "chart.lineSummary": "{{name}}، آخر {{window}}: الأدنى {{min}}، الأعلى {{max}}",
+  "chart.timelineSummary": "{{name}}، آخر {{window}}: {{shares}}",
+  "chart.emptySummary": "{{name}}، آخر {{window}}: لا توجد بيانات"
 }

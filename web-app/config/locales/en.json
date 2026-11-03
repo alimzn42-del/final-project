@@ -271,5 +271,15 @@
   "twin.predicted": "Predicted value",
   "twin.residual": "Residual",
   "twin.health": "Health index",
-  "twin.rul": "Remaining useful life"
+  "twin.rul": "Remaining useful life",
+  "chart.window": "Time shown",
+  "chart.minutes_one": "{{count}} min",
+  "chart.minutes_other": "{{count}} min",
+  "chart.failed": "Could not load the history.",
+  "chart.noData": "No data in this time window",
+  "chart.gap": "No data",
+  "chart.share": "{{word}} {{percent}}%",
+  "chart.lineSummary": "{{name}}, last {{window}}: lowest {{min}}, highest {{max}}",
+  "chart.timelineSummary": "{{name}}, last {{window}}: {{shares}}",
+  "chart.emptySummary": "{{name}}, last {{window}}: no data"
 }

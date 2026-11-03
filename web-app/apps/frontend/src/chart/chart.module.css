@@ -1,0 +1,293 @@
+/*
+ * Trend charts (plan step 14). Quiet chrome: hairline grid, muted labels; the
+ * data is the only loud thing. No state colours here: --ok, --warning, --fault
+ * and --offline belong to the state chips (a test checks this file for them).
+ */
+
+/* Loading, and a history that could not be loaded. */
+.box {
+  min-height: 4rem;
+}
+
+.message {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.retry {
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* While the history reloads, the previous chart stays, dimmed (no flash, no layout jump). */
+.chart {
+  transition: opacity 0.2s;
+}
+
+.reloading {
+  opacity: 0.5;
+}
+
+/* ---------- line chart ---------- */
+
+.lineChart {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.4rem;
+}
+
+.valueAxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 4rem;
+  color: var(--text-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.75rem;
+  text-align: right;
+}
+
+.plotArea {
+  position: relative;
+}
+
+.lineChart .plotArea {
+  height: 4rem;
+}
+
+.plot {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  cursor: crosshair;
+  /* A finger dragging sideways moves the readout; up and down still scrolls the page. */
+  touch-action: pan-y;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.grid {
+  stroke: var(--line);
+  stroke-width: 1px;
+}
+
+.line {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dot {
+  stroke: var(--brand);
+  stroke-width: 8px;
+  stroke-linecap: round;
+}
+
+/* A ring in the panel's colour keeps the dot clear of the line under it. */
+.dotRing {
+  stroke: var(--surface);
+  stroke-width: 12px;
+  stroke-linecap: round;
+}
+
+.crosshair {
+  stroke: var(--text-muted);
+  stroke-width: 1px;
+}
+
+.empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+/* ---------- time axis and readout ---------- */
+
+.timeAxis {
+  position: relative;
+  height: 1rem;
+  color: var(--text-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lineChart .timeAxis {
+  grid-column: 2;
+}
+
+.timeAxis span {
+  position: absolute;
+  top: 0.15rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.readout {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.readout:empty {
+  display: none;
+}
+
+.readoutStart {
+  left: 0;
+}
+
+.readoutEnd {
+  right: 0;
+}
+
+/* ---------- state timeline ---------- */
+
+.timeline {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.bands {
+  position: relative;
+  height: 1.5rem;
+  border-radius: 4px;
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 0.25rem;
+  overflow: visible;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+/* Never cut a word: one that does not fit is not shown (the legend and the readout have it). */
+.bandWord[data-fits='false'] {
+  visibility: hidden;
+}
+
+.crosshairBar {
+  position: absolute;
+  top: -0.15rem;
+  bottom: -0.15rem;
+  width: 1px;
+  background: var(--text);
+  pointer-events: none;
+}
+
+.bands .empty {
+  font-size: 0.7rem;
+}
+
+/* Neutral greys, one per value (owner, step 14), with the text colour that reads on each. */
+.shade1 {
+  background: var(--band-1);
+  color: var(--band-ink-1);
+}
+
+.shade2 {
+  background: var(--band-2);
+  color: var(--band-ink-2);
+}
+
+.shade3 {
+  background: var(--band-3);
+  color: var(--band-ink-3);
+}
+
+.shade4 {
+  background: var(--band-4);
+  color: var(--band-ink-4);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  list-style: none;
+}
+
+.legend li {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.swatch {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 2px;
+}
+
+/* ---------- time window switch ---------- */
+
+.switch {
+  display: inline-flex;
+  margin: 0 0 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.switch button {
+  padding: 0.15rem 0.6rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.switch button + button {
+  border-inline-start: 1px solid var(--line);
+}
+
+.switch button[aria-pressed='true'] {
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 600;
+}

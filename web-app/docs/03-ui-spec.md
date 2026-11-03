@@ -149,6 +149,19 @@ Suggested routes:
 - Reserved, empty slots for later twin features: Predicted value, Residual, Health index, Remaining
   useful life. Show them as disabled with "coming later" so the layout does not change later.
 
+Trend charts (owner, step 14):
+- Analog sensors: a line chart. Digital and enum sensors: a **state timeline**, a horizontal band
+  over time, one colour per value, with the value words from the locale files (never numbers).
+- Timeline colours are **neutral greys**, never the state colours (green, yellow, red), so a pump
+  being off never looks like a fault. Code 0 (off, normal, empty…) is the faintest. Missing data
+  (no reading for 10 s, the offline rule) is empty space: the line breaks, the timeline has no band.
+- Time runs **left to right in both languages**: the page flips in Arabic, the chart axis does not,
+  so the latest value is always on the right.
+- One time window for every chart on the page: 5 minutes (default), 15 or 60. The choice is
+  remembered in the browser (local storage), across parts and visits, not in the account.
+- Each chart has a spoken summary (lowest and highest value, or each value's share of the window),
+  and the arrow keys read the value under a crosshair, like the mouse or a finger.
+
 ## Simulated data
 
 Phase 1 runs on the simulator (see `docs/04-architecture.md`). Show a clear "SIMULATION" badge in the

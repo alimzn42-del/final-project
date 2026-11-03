@@ -55,14 +55,19 @@ export const USERS = {
 } satisfies Record<string, PublicUser>;
 
 type Reply = { status: number; body?: unknown } | 'unreachable';
-type Handler = (body: unknown) => Reply;
+/** Gets the request body and the full address (with its query, e.g. a history's from/to). */
+type Handler = (body: unknown, url: string) => Reply;
 
 export interface FakeApi {
   calls: { method: string; path: string; body: unknown }[];
   on: (route: string, handler: Handler) => void;
 }
 
-/** Replaces fetch: answers `"METHOD /api/path"` routes; the locale files and machine.json are always served. */
+/**
+ * Replaces fetch: answers `"METHOD /api/path"` routes (a route without a query
+ * also answers that path with any query); the locale files and machine.json
+ * are always served.
+ */
 export function fakeApi(routes: Record<string, Handler | Reply> = {}): FakeApi {
   const table = new Map<string, Handler>();
   const on = (route: string, handler: Handler | Reply) => {
@@ -78,7 +83,9 @@ export function fakeApi(routes: Record<string, Handler | Reply> = {}): FakeApi {
     const method = init?.method ?? 'GET';
     const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
     calls.push({ method, path: url, body });
-    const reply = table.get(`${method} ${url}`)?.(body) ?? { status: 404 };
+    const handler =
+      table.get(`${method} ${url}`) ?? table.get(`${method} ${url.split('?')[0] ?? url}`);
+    const reply = handler?.(body, url) ?? { status: 404 };
     if (reply === 'unreachable') return Promise.reject(new TypeError('Failed to fetch'));
     const text = reply.body === undefined ? null : JSON.stringify(reply.body);
     return Promise.resolve(new Response(text, { status: reply.status }));

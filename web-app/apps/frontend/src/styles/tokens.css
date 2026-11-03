@@ -4,6 +4,8 @@
  * - data-theme="dark" | "light": the theme saved with the user's account.
  * The light values appear twice (browser setting and saved choice); tokens.test.ts keeps them equal
  * and checks the contrast of text colours.
+ * --band-1…4: the neutral greys of state timelines (owner, step 14), faintest first, each with the
+ * text colour that reads on it (--band-ink-*); never state colours, so "Off" never looks like a fault.
  */
 :root {
   color-scheme: dark;
@@ -22,6 +24,14 @@
   --warning: #f2b533;
   --fault: #f0524f;
   --offline: #6b7684;
+  --band-1: #4f5967;
+  --band-2: #7e8999;
+  --band-3: #9faab8;
+  --band-4: #c0c9d3;
+  --band-ink-1: #e8edf3;
+  --band-ink-2: #14181f;
+  --band-ink-3: #14181f;
+  --band-ink-4: #14181f;
 }
 
 @media (prefers-color-scheme: light) {
@@ -42,6 +52,14 @@
     --warning: #c98a00;
     --fault: #d13330;
     --offline: #9aa4b0;
+    --band-1: #a3adb8;
+    --band-2: #808b98;
+    --band-3: #5e6a78;
+    --band-4: #3f4955;
+    --band-ink-1: #141a22;
+    --band-ink-2: #141a22;
+    --band-ink-3: #ffffff;
+    --band-ink-4: #ffffff;
   }
 }
 
@@ -62,6 +80,14 @@
   --warning: #c98a00;
   --fault: #d13330;
   --offline: #9aa4b0;
+  --band-1: #a3adb8;
+  --band-2: #808b98;
+  --band-3: #5e6a78;
+  --band-4: #3f4955;
+  --band-ink-1: #141a22;
+  --band-ink-2: #141a22;
+  --band-ink-3: #ffffff;
+  --band-ink-4: #ffffff;
 }
 
 /* The logo's colours follow the theme. */

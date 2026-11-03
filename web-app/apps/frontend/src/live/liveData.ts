@@ -44,6 +44,20 @@ export function withStates(data: LiveData, changes: LiveStates): LiveData {
   };
 }
 
+/**
+ * How far the server's clock is ahead of this browser's, in ms, from a batch
+ * that just arrived: its newest receive time against the browser's clock now.
+ * Charts add it to their "now", so a computer with a wrong clock still shows
+ * the latest value at the right edge (the lab has no internet to set clocks).
+ * The batch left the server up to 0.5 s after that time, so the estimate is at
+ * most about half a second behind. Undefined for an empty batch.
+ */
+export function clockOffset(batch: LiveReadings, browserNow: number): number | undefined {
+  let newest = -Infinity;
+  for (const r of Object.values(batch)) newest = Math.max(newest, Date.parse(r.receivedAt));
+  return Number.isFinite(newest) ? newest - browserNow : undefined;
+}
+
 /** How many sensors' latest reading came from the simulator (owner, step 14: the badge counts them). */
 export function simulatedCount(readings: LiveData['readings']): number {
   return Object.values(readings).filter((r) => r.source === 'sim').length;

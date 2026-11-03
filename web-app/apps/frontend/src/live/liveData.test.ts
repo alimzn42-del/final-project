@@ -1,7 +1,14 @@
 import type { LatestReading, StateSnapshot } from '@mixline/shared';
 import { describe, expect, it } from 'vitest';
 
-import { fromSnapshot, NO_DATA, simulatedCount, withReadings, withStates } from './liveData';
+import {
+  clockOffset,
+  fromSnapshot,
+  NO_DATA,
+  simulatedCount,
+  withReadings,
+  withStates,
+} from './liveData';
 
 const reading = (value: number, source: 'sim' | 'hw' = 'sim'): LatestReading => ({
   value,
@@ -47,6 +54,20 @@ describe('live data', () => {
 
   it('state changes before the first snapshot are ignored (the snapshot follows)', () => {
     expect(withStates(NO_DATA, { line: 'fault' })).toBe(NO_DATA);
+  });
+
+  it('the server clock’s lead over the browser’s, from the newest reading in a batch', () => {
+    const browserNow = Date.parse('2026-10-29T10:00:00.000Z');
+    const at = (receivedAt: string) => ({ ...reading(1), receivedAt });
+    // The server is 30 s ahead of this computer.
+    expect(
+      clockOffset(
+        { a: at('2026-10-29T10:00:29.000Z'), b: at('2026-10-29T10:00:30.000Z') },
+        browserNow,
+      ),
+    ).toBe(30_000);
+    expect(clockOffset({ a: at('2026-10-29T09:59:58.000Z') }, browserNow)).toBe(-2000);
+    expect(clockOffset({}, browserNow)).toBeUndefined();
   });
 
   it('counts the sensors whose latest reading came from the simulator (owner, step 14)', () => {

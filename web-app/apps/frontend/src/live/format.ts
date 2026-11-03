@@ -51,24 +51,39 @@ export function shownValue(sensor: Sensor, value: number): ShownValue {
   return { kind: 'word', key: sensor.valueLabels?.[String(value)] };
 }
 
+/** A shown value as plain text, for summaries and readouts: "0.50 A", or the word. */
+export function valueText(shown: ShownValue, translate: (key: string) => string): string {
+  if (shown.kind === 'word') return shown.key ? translate(shown.key) : '';
+  return shown.unit ? `${shown.text} ${shown.unit}` : shown.text;
+}
+
 const timeFormats = new Map<string, Intl.DateTimeFormat>();
 
-/**
- * The time of a reading as HH:MM:SS (24-hour, Western digits), in the
- * browser's time zone unless one is given.
- */
-export function formatTime(iso: string, timeZone?: string): string {
-  const zone = timeZone ?? '';
-  let format = timeFormats.get(zone);
+function clock(at: string | number, seconds: boolean, timeZone: string | undefined): string {
+  const id = `${String(seconds)} ${timeZone ?? ''}`;
+  let format = timeFormats.get(id);
   if (!format) {
     format = new Intl.DateTimeFormat('en-GB', {
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
+      ...(seconds && { second: '2-digit' }),
       hourCycle: 'h23',
       ...(timeZone && { timeZone }),
     });
-    timeFormats.set(zone, format);
+    timeFormats.set(id, format);
   }
-  return format.format(new Date(iso));
+  return format.format(new Date(at));
+}
+
+/**
+ * The time of a reading (ISO text or ms) as HH:MM:SS (24-hour, Western
+ * digits), in the browser's time zone unless one is given.
+ */
+export function formatTime(at: string | number, timeZone?: string): string {
+  return clock(at, true, timeZone);
+}
+
+/** HH:MM, for the time axis of a chart. */
+export function formatClock(at: string | number, timeZone?: string): string {
+  return clock(at, false, timeZone);
 }
