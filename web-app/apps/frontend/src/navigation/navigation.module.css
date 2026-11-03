@@ -80,8 +80,7 @@ html[dir='rtl'] .crumb + .crumb::before {
   text-transform: uppercase;
 }
 
-.links,
-.sensors {
+.links {
   display: grid;
   gap: 0.15rem;
   margin: 0;
@@ -104,19 +103,6 @@ html[dir='rtl'] .crumb + .crumb::before {
 .links a:focus-visible {
   background: var(--bg);
   color: var(--link);
-}
-
-.sensors li {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.3rem 0.5rem;
-}
-
-.unit {
-  color: var(--text-muted);
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.85em;
 }
 
 .facts {

@@ -24,6 +24,11 @@
   gap: 1rem;
 }
 
+/* A part's page: wider, for its values (docs/06-brand.md: close-up and values side by side). */
+.partLayout {
+  grid-template-columns: minmax(0, 1fr) 24rem;
+}
+
 @media (width < 48rem) {
   .sceneLayout {
     grid-template-columns: minmax(0, 1fr);

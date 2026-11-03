@@ -140,6 +140,137 @@ describe('live states in the list beside the view (plan step 14)', () => {
   });
 });
 
+describe('the values panel on a part’s page (plan step 14)', () => {
+  const ts = '2026-10-29T10:00:05.000Z';
+  const reading = (value: number, source: 'sim' | 'hw' = 'sim') => ({
+    value,
+    ts,
+    receivedAt: ts,
+    source,
+  });
+  const withSensors = (sensors: Record<string, string>) => ({
+    line: 'ok',
+    sections: {},
+    subsections: {},
+    components: {},
+    sensors,
+  });
+  /** A sensor's row, by the sensor's name. */
+  const row = (name: string) => screen.getByRole('listitem', { name });
+  /** Each name-and-value pair inside an element (the twin places, the part's facts). */
+  const slots = (element: HTMLElement) =>
+    within(element)
+      .getAllByRole('term')
+      .map((dt) => [dt.textContent, dt.nextElementSibling?.textContent]);
+  const partSlots = [
+    ['Health index', 'Coming later'],
+    ['Remaining useful life', 'Coming later'],
+  ];
+
+  it('each value with its own decimals and unit, words for codes, its state and its time', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line/mixingColor/mixing/basePump', live);
+    await linePage('Base pump');
+    act(() => {
+      live.send('snapshot', {
+        readings: { 'basePump.on': reading(1), 'basePump.current': reading(0.5) },
+        states: withSensors({ 'basePump.on': 'ok', 'basePump.current': 'ok' }),
+      });
+    });
+    expect(row('Pump')).toHaveTextContent('On');
+    expect(row('Pump current')).toHaveTextContent('0.50 A');
+    expect(row('Pump current')).toHaveTextContent('OK');
+    expect(row('Pump current')).toHaveTextContent(/at \d\d:\d\d:\d\d/);
+    expect(row('Pump current').querySelector('time')).toHaveAttribute('datetime', ts);
+
+    act(() => {
+      live.send('readings', { 'basePump.current': reading(1.236), 'basePump.on': reading(0) });
+    });
+    expect(row('Pump current')).toHaveTextContent('1.24 A');
+    expect(row('Pump')).toHaveTextContent('Off');
+  });
+
+  it('marks each simulated value, and only those', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line/conveyor/checkCap/checkPlatform', live);
+    await linePage('Weighing platform');
+    act(() => {
+      live.send('snapshot', {
+        readings: { 'check.decision': reading(2, 'hw'), 'check.mass': reading(352.24) },
+        states: withSensors({ 'check.decision': 'ok', 'check.mass': 'ok' }),
+      });
+    });
+    expect(row('Check result')).toHaveTextContent('Reject');
+    expect(row('Check result')).not.toHaveTextContent('Simulated');
+    expect(row('Net mass')).toHaveTextContent('352.2 g');
+    expect(row('Net mass')).toHaveTextContent('Simulated');
+  });
+
+  it('"No data yet" before the first reading; an offline sensor keeps its last value', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line/cabinet/part/cabinet', live);
+    await linePage('Control cabinet');
+    expect(row('Cabinet temperature')).toHaveTextContent('No data yet');
+
+    act(() => {
+      live.send('snapshot', {
+        readings: { 'cabinet.temp': reading(31.26) },
+        states: withSensors({ 'cabinet.temp': 'ok' }),
+      });
+    });
+    expect(row('Cabinet temperature')).toHaveTextContent('31.3 °C');
+
+    act(() => {
+      live.send('states', { sensors: { 'cabinet.temp': 'offline' } });
+    });
+    expect(row('Cabinet temperature')).toHaveTextContent('Offline');
+    expect(row('Cabinet temperature')).toHaveTextContent('31.3 °C');
+  });
+
+  it('keeps the twin’s places, disabled: per sensor, and per part even without sensors', async () => {
+    fakeApi(as(USERS.manager));
+    await renderApp('/line/mixingColor/mixing/basePump');
+    await linePage('Base pump');
+    for (const name of ['Pump', 'Pump current']) {
+      expect(slots(row(name))).toEqual([
+        ['Predicted value', 'Coming later'],
+        ['Residual', 'Coming later'],
+      ]);
+    }
+    const panel = screen.getByRole('complementary');
+    expect(within(panel).getByRole('heading', { name: 'Digital twin' })).toBeInTheDocument();
+    expect(slots(panel)).toEqual(expect.arrayContaining(partSlots));
+  });
+
+  it('a part without sensors says so, and still keeps its twin places', async () => {
+    fakeApi(as(USERS.manager));
+    await renderApp('/line/cabinet/part/plc');
+    await linePage('PLC');
+    const panel = screen.getByRole('complementary');
+    expect(panel).toHaveTextContent('This part has no sensors.');
+    expect(slots(panel)).toEqual(expect.arrayContaining(partSlots));
+  });
+
+  it('in Arabic: Western digits, units in English, words in Arabic (doc 03)', async () => {
+    fakeApi(as({ ...USERS.manager, locale: 'ar' }));
+    const live = fakeLive();
+    await renderApp('/line/mixingColor/mixing/basePump', live);
+    await linePage('مضخة الأساس');
+    act(() => {
+      live.send('snapshot', {
+        readings: { 'basePump.on': reading(1), 'basePump.current': reading(0.5) },
+        states: withSensors({ 'basePump.on': 'ok', 'basePump.current': 'ok' }),
+      });
+    });
+    expect(row('المضخة')).toHaveTextContent('تشغيل');
+    expect(row('تيار المضخة')).toHaveTextContent('0.50 A');
+    expect(row('تيار المضخة')).toHaveTextContent('مُحاكاة');
+  });
+});
+
 describe('navigation between the levels (plan step 13)', () => {
   const crumbs = () =>
     within(screen.getByRole('navigation', { name: 'Where you are in the line' }));
@@ -186,7 +317,7 @@ describe('navigation between the levels (plan step 13)', () => {
     await screen.findByRole('heading', { level: 1, name: 'Mixing vessel' });
     expect(panel().getByText('Confirmed')).toBeInTheDocument();
     expect(panel().getByText('Net mass')).toBeInTheDocument();
-    expect(panel().getByText('g')).toBeInTheDocument();
+    expect(panel().getByText('No data yet')).toBeInTheDocument();
     // The vessel holds the lid, the mixer and the overflow float.
     expect(panel().getByRole('heading', { name: 'Parts inside' })).toBeInTheDocument();
   });

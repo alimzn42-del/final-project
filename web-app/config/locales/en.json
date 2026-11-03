@@ -262,7 +262,14 @@
   "nav.status": "Status",
   "nav.sensors": "Sensors",
   "nav.noSensors": "This part has no sensors.",
-  "nav.liveLater": "Live values and charts come later.",
   "nav.tapAgain": "Tap again to open",
-  "live.reconnecting": "Live data paused: reconnecting… The values shown may be old."
+  "live.reconnecting": "Live data paused: reconnecting… The values shown may be old.",
+  "live.simulated": "Simulated",
+  "live.noData": "No data yet",
+  "live.at": "at {{time}}",
+  "twin.title": "Digital twin",
+  "twin.predicted": "Predicted value",
+  "twin.residual": "Residual",
+  "twin.health": "Health index",
+  "twin.rul": "Remaining useful life"
 }

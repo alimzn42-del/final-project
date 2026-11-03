@@ -16,6 +16,7 @@ import { Breadcrumbs } from '../navigation/Breadcrumbs';
 import { PlacePanel } from '../navigation/PlacePanel';
 import { pageScene, placeFromPath } from '../navigation/places';
 import sceneStyles from '../scene/scene.module.css';
+import { cx } from '../ui/cx';
 import styles from './pages.module.css';
 
 const LineScene = lazy(() => import('../scene/LineScene'));
@@ -95,7 +96,7 @@ function LineView({ machine }: { machine: Machine }) {
           {t('live.reconnecting')}
         </p>
       )}
-      <div className={styles.sceneLayout}>
+      <div className={cx(styles.sceneLayout, place.level === 4 && styles.partLayout)}>
         <div className={sceneStyles.viewport}>
           {show3D ? (
             <Suspense fallback={<p className={sceneStyles.message}>{t('ui.loading')}</p>}>

@@ -2,14 +2,17 @@
  * The slim panel beside the 3D view (docs/06-brand.md "Layout"): what this
  * page leads to, each with its live state chip (step 14), so every page is
  * also reachable without the 3D view. On a part's page: its status, the box
- * it belongs to, the parts inside it, and its sensors.
+ * it belongs to, the parts inside it, its sensors' live values, and the
+ * places kept for the digital twin.
  */
 import type { Machine, MachineComponent, StateSnapshot } from '@mixline/shared';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { useLive } from '../live/live';
+import { SensorValues } from '../live/SensorValues';
 import { StateChip, stateOf } from '../live/StateChip';
+import { PartTwin } from '../twin/TwinSlots';
 import styles from './navigation.module.css';
 import { pageLinks, partPlace, pathOf, type Place, placeFromPath, type Target } from './places';
 import { useLabel } from './useLabel';
@@ -108,22 +111,10 @@ function PartPanel({
       {part.sensors.length === 0 ? (
         <p className={styles.muted}>{t('nav.noSensors')}</p>
       ) : (
-        <>
-          <ul className={styles.sensors}>
-            {part.sensors.map((s) => (
-              <li key={s.id}>
-                <span>{t(s.labelKey)}</span>
-                {s.unit && s.unit !== 'bool' && (
-                  <span className={styles.unit} dir="ltr">
-                    {s.unit}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-          <p className={styles.muted}>{t('nav.liveLater')}</p>
-        </>
+        <SensorValues part={part} />
       )}
+      <h3 className={styles.subTitle}>{t('twin.title')}</h3>
+      <PartTwin />
     </aside>
   );
 }
