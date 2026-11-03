@@ -1,0 +1,18 @@
+# Checks that need the manager login
+
+To do together with the owner (step 14). They need the local manager account: the owner sets its new
+password first (it was reset), then `MANAGER_PASSWORD` in `.env` must match it.
+
+Before them, without the login: start Docker Desktop, rebuild the images one at a time
+(`docker compose build simulator`, then `frontend`; the running simulator image still has the old
+schema and rejects `decimals`), then `pnpm stack:up`. The web app is at http://localhost:8080.
+
+| #   | Check                                                                                                                                                                                                                          | Step / task | How                                                                                                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| 1   | Values panel in the browser: values with their decimals and units, the "Simulated" tag, an offline sensor dimmed with its last value, the twin places, the wider panel. Dark and light theme, English and Arabic, phone width. | 14 / 6      | Log in, open Base pump, Weighing platform (check), Control cabinet, PLC.                                         |
+| 2   | Trend charts in the browser: line and timeline look, grey bands with words and legend, the window switch (remembered after a reload), the readout by mouse, finger and arrow keys, time left to right in Arabic.               | 14 / 7      | Same pages; also the camera (5 charts) and the 60-minute window.                                                 |
+| 3   | Missing data in the charts: the line breaks and the timeline leaves empty space; the history fills in after a reconnect.                                                                                                       | 14 / 7      | `docker compose stop simulator` for about 30 s, then `docker compose start simulator`; restart the backend once. |
+| 4   | `pnpm live:check`: the live push on the running stack (it stops the simulator about 15 s).                                                                                                                                     | 14 / 9      | Needs `MANAGER_PASSWORD`.                                                                                        |
+| 5   | `pnpm web:check`: the web app through nginx (page, API, login, WebSocket, logout).                                                                                                                                             | 14 / 9      | Needs `MANAGER_PASSWORD`.                                                                                        |
+| 6   | `pnpm telemetry:check`: simulator, MQTT, backend, database, API.                                                                                                                                                               | 14 / 9      | Needs `MANAGER_PASSWORD`.                                                                                        |
+| 7   | Screenshots of the line, a part's page and its charts, for the step summary.                                                                                                                                                   | 14 / 9      | After checks 1 to 3.                                                                                             |
