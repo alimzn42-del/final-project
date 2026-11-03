@@ -3,9 +3,11 @@
 To do together with the owner (step 14). They need the local manager account: the owner sets its new
 password first (it was reset), then `MANAGER_PASSWORD` in `.env` must match it.
 
-Before them, without the login: start Docker Desktop, rebuild the images one at a time
-(`docker compose build simulator`, then `frontend`; the running simulator image still has the old
-schema and rejects `decimals`), then `pnpm stack:up`. The web app is at http://localhost:8080.
+Before them: start Docker Desktop, then `pnpm stack:up`. The web app is at http://localhost:8080.
+The images were rebuilt on the `web-app/` layout on 2026-11-03 (task 9) and already checked without
+the login: `pnpm infra:check` and `pnpm sim:check` pass, nginx serves the page, its scripts, deep
+links and the locale files, and refuses the API without a login (401). Rebuild them again only if
+the code changed since.
 
 | #   | Check                                                                                                                                                                                                                          | Step / task | How                                                                                                              |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------- |
