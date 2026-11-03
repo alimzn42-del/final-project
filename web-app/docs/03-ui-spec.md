@@ -145,6 +145,10 @@ Suggested routes:
 
 - Close-up 3D view of the part.
 - Live values panel: each sensor with value, unit and timestamp, updating over WebSocket.
+  Since step 14 (owner): each analog sensor's own `decimals`, so numbers do not jump; `C` shown as
+  `°C`, no unit for counts, raw values and unitless values; the time as HH:MM:SS in the browser's
+  time zone; "No data yet" before the first reading; an offline sensor keeps its last value,
+  dimmed; the panel is wider on part pages.
 - A small live trend chart per sensor (last few minutes).
 - Reserved, empty slots for later twin features: Predicted value, Residual, Health index, Remaining
   useful life. Show them as disabled with "coming later" so the layout does not change later.
