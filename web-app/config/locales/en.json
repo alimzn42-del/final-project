@@ -281,5 +281,7 @@
   "chart.share": "{{word}} {{percent}}%",
   "chart.lineSummary": "{{name}}, last {{window}}: lowest {{min}}, highest {{max}}",
   "chart.timelineSummary": "{{name}}, last {{window}}: {{shares}}",
-  "chart.emptySummary": "{{name}}, last {{window}}: no data"
+  "chart.emptySummary": "{{name}}, last {{window}}: no data",
+  "live.simulatedCount_one": "{{simulated}} of {{count}} sensor",
+  "live.simulatedCount_other": "{{simulated}} of {{count}} sensors"
 }

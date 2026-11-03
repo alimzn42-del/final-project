@@ -305,5 +305,11 @@
   "chart.share": "{{word}} {{percent}}%",
   "chart.lineSummary": "{{name}}، آخر {{window}}: الأدنى {{min}}، الأعلى {{max}}",
   "chart.timelineSummary": "{{name}}، آخر {{window}}: {{shares}}",
-  "chart.emptySummary": "{{name}}، آخر {{window}}: لا توجد بيانات"
+  "chart.emptySummary": "{{name}}، آخر {{window}}: لا توجد بيانات",
+  "live.simulatedCount_zero": "{{simulated}} من {{count}} حساس",
+  "live.simulatedCount_one": "{{simulated}} من حساس واحد",
+  "live.simulatedCount_two": "{{simulated}} من حساسين",
+  "live.simulatedCount_few": "{{simulated}} من {{count}} حساسات",
+  "live.simulatedCount_many": "{{simulated}} من {{count}} حساساً",
+  "live.simulatedCount_other": "{{simulated}} من {{count}} حساس"
 }

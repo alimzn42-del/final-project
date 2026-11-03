@@ -140,6 +140,93 @@ describe('live states in the list beside the view (plan step 14)', () => {
   });
 });
 
+describe('the SIMULATION badge in the header (plan step 14)', () => {
+  const sensorIds = MACHINE.components.flatMap((c) => c.sensors.map((s) => s.id));
+  const states = { line: 'ok', sections: {}, subsections: {}, components: {}, sensors: {} };
+  const ts = new Date().toISOString();
+  /** Readings for the first `sim` sensors from the simulator, then `hw` from hardware. */
+  const readings = (sim: number, hw = 0, offset = 0) =>
+    Object.fromEntries(
+      sensorIds
+        .slice(offset, offset + sim + hw)
+        .map((id, i) => [id, { value: 0, ts, receivedAt: ts, source: i < sim ? 'sim' : 'hw' }]),
+    );
+  const header = () => screen.getByRole('banner');
+
+  it('hidden before data; then the simulated sensors out of every sensor of the line', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage();
+    expect(header()).not.toHaveTextContent('SIMULATION');
+    act(() => {
+      live.send('snapshot', { readings: readings(12, 48), states });
+    });
+    expect(header()).toHaveTextContent('SIMULATION');
+    expect(header()).toHaveTextContent('12 of 60 sensors');
+    // Phones show the short form; screen readers skip it (they get the full count).
+    expect(within(header()).getByText('12/60')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('sits between the breadcrumbs and the language switch', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage();
+    act(() => {
+      live.send('snapshot', { readings: readings(60), states });
+    });
+    const badge = within(header()).getByText('SIMULATION');
+    const crumbs = within(header()).getByRole('navigation', { name: 'Where you are in the line' });
+    const language = within(header()).getByRole('button', { name: 'العربية' });
+    expect(crumbs.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(badge.compareDocumentPosition(language) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('the count follows each batch; hidden once every latest reading is from hardware', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage();
+    act(() => {
+      live.send('snapshot', { readings: readings(12, 48), states });
+      live.send('readings', readings(3, 0, 12));
+    });
+    expect(header()).toHaveTextContent('15 of 60 sensors');
+    act(() => {
+      live.send('readings', readings(0, 15));
+    });
+    expect(header()).not.toHaveTextContent('SIMULATION');
+  });
+
+  it('stays when the simulator stops: the values on screen are still simulated', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line/mixingColor/mixing/basePump', live);
+    await linePage('Base pump');
+    act(() => {
+      live.send('snapshot', { readings: readings(60), states });
+      live.send('states', {
+        line: 'offline',
+        sensors: Object.fromEntries(sensorIds.map((id) => [id, 'offline'])),
+      });
+    });
+    expect(header()).toHaveTextContent('60 of 60 sensors');
+  });
+
+  it('in Arabic', async () => {
+    fakeApi(as({ ...USERS.manager, locale: 'ar' }));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage('خط الإنتاج');
+    act(() => {
+      live.send('snapshot', { readings: readings(12, 48), states });
+    });
+    expect(header()).toHaveTextContent('محاكاة');
+    expect(header()).toHaveTextContent('12 من 60 حساساً');
+  });
+});
+
 describe('the values panel on a part’s page (plan step 14)', () => {
   const ts = '2026-10-29T10:00:05.000Z';
   const reading = (value: number, source: 'sim' | 'hw' = 'sim') => ({

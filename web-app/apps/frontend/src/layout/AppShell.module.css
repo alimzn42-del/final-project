@@ -51,6 +51,15 @@ html:lang(ar) .wordmark {
   margin-inline-start: auto;
 }
 
+/* The SIMULATION badge's place (headerSlot.tsx); takes no room while empty. */
+.status {
+  display: flex;
+}
+
+.status:empty {
+  display: none;
+}
+
 .main {
   display: flex;
   flex: 1;

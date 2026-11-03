@@ -3,7 +3,7 @@
  * docs/06-brand.md: text colours meet WCAG AA (4.5:1) on `bg` and `surface` in
  * both themes, and the two copies of the light theme in tokens.css are equal.
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
@@ -76,6 +76,25 @@ describe('colour tokens', () => {
     it('the line chart (brand blue) stands out from the panel (3:1)', () => {
       expect(contrast(t['--brand'], t['--surface'])).toBeGreaterThanOrEqual(3);
     });
+
+    it('SIMULATION badge: violet text on its tint (4.5:1), its outline on the header (3:1)', () => {
+      expect(contrast(t['--simulation'], t['--simulation-tint'])).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(t['--simulation'], t['--surface'])).toBeGreaterThanOrEqual(3);
+    });
+  });
+});
+
+describe('violet is the SIMULATION badge’s alone (owner, step 14)', () => {
+  it('no other style or component uses --simulation or --simulation-tint', () => {
+    const src = new URL('../', import.meta.url);
+    const users = readdirSync(src, { recursive: true, encoding: 'utf8' })
+      .filter((file) => /\.(css|tsx?)$/.test(file) && !/\.test\.tsx?$/.test(file))
+      .filter((file) =>
+        readFileSync(new URL(file.replaceAll('\\', '/'), src), 'utf8').includes('--simulation'),
+      )
+      .map((file) => file.replaceAll('\\', '/'))
+      .sort();
+    expect(users).toEqual(['live/SimulationBadge.module.css', 'styles/tokens.css']);
   });
 });
 

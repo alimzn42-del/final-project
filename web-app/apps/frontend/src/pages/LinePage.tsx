@@ -11,6 +11,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 
 import { InHeader } from '../layout/headerSlot';
 import { LiveProvider, useLive } from '../live/live';
+import { SimulationBadge } from '../live/SimulationBadge';
 import { MachineProvider, useMachine } from '../machine/machine';
 import { Breadcrumbs } from '../navigation/Breadcrumbs';
 import { PlacePanel } from '../navigation/PlacePanel';
@@ -76,6 +77,10 @@ function LineView({ machine }: { machine: Machine }) {
   const page = useMemo(() => (place ? pageScene(machine, place) : undefined), [machine, place]);
   const show3D = useMemo(() => canShow3D(), []);
   const live = useLive();
+  const sensorCount = useMemo(
+    () => machine.components.reduce((n, c) => n + c.sensors.length, 0),
+    [machine],
+  );
 
   if (!place || !page) {
     return (
@@ -91,6 +96,7 @@ function LineView({ machine }: { machine: Machine }) {
       <InHeader>
         <Breadcrumbs place={place} />
       </InHeader>
+      <SimulationBadge total={sensorCount} />
       {live.status === 'reconnecting' && (
         <p className={styles.notice} role="status">
           {t('live.reconnecting')}

@@ -167,6 +167,17 @@ Trend charts (owner, step 14):
 Phase 1 runs on the simulator (see `docs/04-architecture.md`). Show a clear "SIMULATION" badge in the
 header while the data source is the simulator.
 
+The badge (owner, step 14):
+- Shown while at least one sensor's latest reading came from the simulator (`source: sim`), with
+  how many out of every sensor in `machine.json`: "SIMULATION 12 of 60 sensors" ("12/60" on phones;
+  screen readers always get the full count).
+- In the header, between the breadcrumbs and the language switch, on the line pages (where live
+  data is shown; customers never reach them). Hidden before the first data and when every latest
+  reading is from hardware. It stays when the simulator stops: the values on screen are still the
+  simulated ones.
+- Violet outline and text on a light violet tint, a colour used nowhere else (`docs/06-brand.md`).
+- On a part's page each simulated value also carries a "Simulated" tag (grey, beside the value).
+
 ## Languages
 
 - English and Arabic, switchable at runtime, remembered per user.

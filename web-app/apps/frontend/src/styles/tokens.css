@@ -6,6 +6,8 @@
  * and checks the contrast of text colours.
  * --band-1…4: the neutral greys of state timelines (owner, step 14), faintest first, each with the
  * text colour that reads on it (--band-ink-*); never state colours, so "Off" never looks like a fault.
+ * --simulation, --simulation-tint: the SIMULATION badge only (owner, step 14): violet outline and text
+ * on a light violet tint. Violet is used nowhere else in the app.
  */
 :root {
   color-scheme: dark;
@@ -32,6 +34,8 @@
   --band-ink-2: #14181f;
   --band-ink-3: #14181f;
   --band-ink-4: #14181f;
+  --simulation: #c09df6;
+  --simulation-tint: #2e2744;
 }
 
 @media (prefers-color-scheme: light) {
@@ -60,6 +64,8 @@
     --band-ink-2: #141a22;
     --band-ink-3: #ffffff;
     --band-ink-4: #ffffff;
+    --simulation: #7a3fd0;
+    --simulation-tint: #f5eefd;
   }
 }
 
@@ -88,6 +94,8 @@
   --band-ink-2: #141a22;
   --band-ink-3: #ffffff;
   --band-ink-4: #ffffff;
+  --simulation: #7a3fd0;
+  --simulation-tint: #f5eefd;
 }
 
 /* The logo's colours follow the theme. */
