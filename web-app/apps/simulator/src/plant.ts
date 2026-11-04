@@ -14,7 +14,7 @@ import { dyeRole, type Line, type Role } from './bindings.js';
 import { cellLab, CLEAR_WATER, NO_DYE, type PerDye } from './correction.js';
 import { concentration, dye, Ledger, water } from './ledger.js';
 import { jitter, type Random } from './random.js';
-import { DYES, type Dye, type SimConfig } from './simConfig.js';
+import { DYES, type Dye, type SimConfig, STACK_LIGHT_CODES } from './simConfig.js';
 
 /** Places in the mass record. */
 export const PLACE = {
@@ -343,9 +343,9 @@ export class Plant {
       cabinetTemp: this.cabinetC + jitter(random, 0.05),
       estop: 0,
       mode: 1,
-      // Placeholder until the PLC defines the lights (owner-approved plan): green while a batch
-      // runs, yellow while the line waits between batches.
-      stackLight: this.batchRunning ? 1 : 2,
+      // Placeholder until the PLC defines the lights: the colours come from the tuning file.
+      stackLight:
+        STACK_LIGHT_CODES[this.batchRunning ? config.stackLight.running : config.stackLight.idle],
     };
     for (const d of DYES) {
       const job = this.dyeSteps[d];

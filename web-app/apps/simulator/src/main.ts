@@ -8,6 +8,7 @@ import { connect } from 'mqtt';
 
 import { loadConfig } from './config.js';
 import { TICK_MS } from './schedule.js';
+import { skipMessage } from './recipes.js';
 import { loadSimConfig } from './simConfig.js';
 import { type Message, Simulation } from './simulation.js';
 
@@ -41,6 +42,7 @@ function main(): void {
   const sensorCount = machine.components.reduce((n, c) => n + c.sensors.length, 0);
   log(`loaded ${config.machineConfigPath}: ${String(sensorCount)} sensors`);
   log(`loaded ${config.simulatorConfigPath}: ${String(simConfig.recipes.list.length)} recipes`);
+  for (const skipped of simulation.skipped) log(skipMessage(skipped));
 
   const client = connect(config.mqttUrl, {
     clientId: 'mixline-simulator',

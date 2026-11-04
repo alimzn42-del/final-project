@@ -29,7 +29,8 @@ import { type Faults, Plant } from './plant.js';
 import type { Program } from './program.js';
 import { type Random, seededRandom } from './random.js';
 import { Schedule, TICK_MS } from './schedule.js';
-import type { Recipe, SimConfig } from './simConfig.js';
+import { activeRecipes, type Skipped, skipMessage } from './recipes.js';
+import type { Dye, Recipe, SimConfig } from './simConfig.js';
 
 export type Message =
   | { kind: 'reading'; topic: string; payload: Reading }
@@ -48,6 +49,8 @@ export interface SimulationOptions {
   faults?: Faults;
   /** Further behind than this (the computer slept), the simulation skips ahead instead. */
   maxLagMs?: number;
+  /** Dyes deferred in machine.json: recipes that need one are skipped (owner, step 15). */
+  deferredDyes?: ReadonlySet<Dye>;
 }
 
 interface RunningBatch {
@@ -60,6 +63,8 @@ interface RunningBatch {
 export class Simulation {
   readonly plant: Plant;
   readonly line: Line;
+  /** Recipes left out because they need a deferred dye; main.ts logs them. */
+  readonly skipped: readonly Skipped[];
   private readonly schedule: Schedule;
   private readonly program: Program;
   private readonly maxLagMs: number;
@@ -77,7 +82,17 @@ export class Simulation {
     this.line = bindLine(machine, config);
     this.plant = new Plant(this.line, config, random, options.faults);
     this.schedule = new Schedule(machine, random);
-    this.program = new BatchProgram(this.plant, this.line, config, random, this.outbox()).run();
+    const { active, skipped } = activeRecipes(
+      config.recipes.list,
+      options.deferredDyes ?? new Set(),
+    );
+    this.skipped = skipped;
+    if (active.length === 0) {
+      const lines = skipped.map((s) => `- ${skipMessage(s)}`);
+      throw new Error(['no recipe can run:', ...lines].join('\n'));
+    }
+    const program = new BatchProgram(this.plant, this.line, config, random, this.outbox());
+    this.program = program.run(active);
     this.maxLagMs = options.maxLagMs ?? Infinity;
     this.timeMs = options.startMs - TICK_MS;
   }

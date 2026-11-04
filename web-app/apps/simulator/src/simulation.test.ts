@@ -300,6 +300,22 @@ describe('the fault hook (doc 04: not used in phase 1)', () => {
   });
 });
 
+describe('placeholders from the tuning file (owner, step 15)', () => {
+  it('the stack light shows the colours config/simulator.json names', () => {
+    const changed = { ...config, stackLight: { running: 'red' as const, idle: 'off' as const } };
+    const sim = new Simulation(machine, changed, { startMs: T0, random: seededRandom(1) });
+    const light = byTopicId('cabinet.stackLight');
+    const seen: number[] = [];
+    for (let t = T0; t < T0 + 20_000; t += TICK_MS) {
+      for (const m of sim.advanceTo(t))
+        if (m.kind === 'reading' && m.topic === light) seen.push(m.payload.value);
+    }
+    // Waiting first (off = 0), then a batch runs (red = 3).
+    expect(seen[0]).toBe(0);
+    expect(seen.at(-1)).toBe(3);
+  });
+});
+
 describe('connection and clock', () => {
   it('sends every sensor and the state again after a reconnect', () => {
     const sim = new Simulation(machine, config, { startMs: T0, random: seededRandom(1) });
@@ -322,3 +338,9 @@ describe('connection and clock', () => {
     expect(sim.now).toBe(T0 + 3_600_000);
   });
 });
+
+function byTopicId(id: string): string {
+  const found = [...byTopic].find(([, sensor]) => sensor.id === id);
+  if (!found) throw new Error(`no sensor ${id}`);
+  return found[0];
+}

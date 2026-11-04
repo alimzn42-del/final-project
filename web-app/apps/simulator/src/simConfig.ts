@@ -10,6 +10,15 @@ import { z } from 'zod';
 export const DYES = ['cyan', 'magenta', 'yellow', 'black'] as const;
 export type Dye = (typeof DYES)[number];
 
+/** cabinet.stackLight's codes by value word (machine.json; checked by the sensor table). */
+export const STACK_LIGHT_CODES = { off: 0, green: 1, yellow: 2, red: 3 } as const;
+const STACK_LIGHTS = [
+  'off',
+  'green',
+  'yellow',
+  'red',
+] as const satisfies readonly (keyof typeof STACK_LIGHT_CODES)[];
+
 const perDye = <T extends z.ZodType>(value: T) =>
   z.strictObject({ cyan: value, magenta: value, yellow: value, black: value });
 
@@ -20,8 +29,10 @@ const notes = z.string().optional();
 
 const recipeSchema = z.strictObject({
   id: z.string().regex(/^[a-z][a-zA-Z0-9]*$/, 'a short id like "green"'),
-  /** Grams of each dye per kg of base. */
-  dyesGPerKg: perDye(atLeastZero),
+  /** Grams of each dye per kg of base; 0 = the recipe does not use that dye. */
+  dyesGPerKg: perDye(atLeastZero).refine((d) => DYES.some((dye) => d[dye] > 0), {
+    message: 'a recipe needs at least one dye',
+  }),
 });
 
 export const simConfigSchema = z.strictObject({
@@ -32,6 +43,9 @@ export const simConfigSchema = z.strictObject({
       .min(1)
       .refine((list) => new Set(list.map((r) => r.id)).size === list.length, {
         message: 'recipe ids must be unique',
+      })
+      .refine((list) => DYES.every((d) => list.filter((r) => r.dyesGPerKg[d] > 0).length >= 2), {
+        message: 'every dye pump must appear in at least two recipes (owner, step 15)',
       }),
     notes,
   }),
@@ -101,6 +115,12 @@ export const simConfigSchema = z.strictObject({
     notes,
   }),
   cabinet: z.strictObject({ idleC: z.number(), runningC: z.number(), minutes: positive, notes }),
+  /** Placeholder until the PLC defines the lights: the value words of cabinet.stackLight. */
+  stackLight: z.strictObject({
+    running: z.enum(STACK_LIGHTS),
+    idle: z.enum(STACK_LIGHTS),
+    notes,
+  }),
   noise: z.strictObject({
     scaleG: atLeastZero,
     levelMm: atLeastZero,

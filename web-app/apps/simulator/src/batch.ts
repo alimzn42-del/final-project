@@ -1,6 +1,7 @@
 /**
  * The batch sequence (plan step 15; doc 01 "Batch logic"), standing in for the PLC program that
- * does not exist yet. It loops forever through the recipes in config/simulator.json:
+ * does not exist yet. It loops forever through the recipes in config/simulator.json that can run
+ * (recipes.ts):
  *
  *   wait (idle) → service (between batches) → baseFill → dyeDose → mix → sample
  *   → [correct → mix → sample] up to maxCorrections times → complete → mix → finalCheck
@@ -52,8 +53,8 @@ export class BatchProgram {
     private readonly out: Outbox,
   ) {}
 
-  *run(): Program {
-    const recipes = this.config.recipes.list;
+  /** Runs the recipes in turn, forever (the ones with a deferred dye are already left out). */
+  *run(recipes: readonly Recipe[]): Program {
     for (let n = 0; ; n++) {
       yield* waitS(this.plant, this.config.batch.pauseS);
       const recipe = recipes[n % recipes.length];

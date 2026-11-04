@@ -2,13 +2,13 @@
   "notes": "Simulator v2 settings (plan step 15). Every number here is an estimate, to tune once the line runs. machine.json stays the source of truth for sensors, topics, positions and the container; this file only says how the simulated process behaves.",
   "recipes": {
     "list": [
-      { "id": "green", "dyesGPerKg": { "cyan": 2.0, "magenta": 0.3, "yellow": 2.5, "black": 0.3 } },
-      { "id": "orange", "dyesGPerKg": { "cyan": 0.2, "magenta": 1.2, "yellow": 3.0, "black": 0.2 } },
-      { "id": "violet", "dyesGPerKg": { "cyan": 1.0, "magenta": 2.0, "yellow": 0.3, "black": 0.3 } },
-      { "id": "brown", "dyesGPerKg": { "cyan": 0.6, "magenta": 1.5, "yellow": 3.0, "black": 0.8 } },
-      { "id": "grey", "dyesGPerKg": { "cyan": 0.4, "magenta": 0.4, "yellow": 0.4, "black": 1.5 } }
+      { "id": "green", "dyesGPerKg": { "cyan": 2.0, "magenta": 0, "yellow": 2.5, "black": 0 } },
+      { "id": "orange", "dyesGPerKg": { "cyan": 0, "magenta": 1.2, "yellow": 3.0, "black": 0 } },
+      { "id": "purple", "dyesGPerKg": { "cyan": 1.0, "magenta": 2.2, "yellow": 0, "black": 0 } },
+      { "id": "brown", "dyesGPerKg": { "cyan": 0, "magenta": 1.0, "yellow": 2.4, "black": 2.0 } },
+      { "id": "navy", "dyesGPerKg": { "cyan": 3.2, "magenta": 1.4, "yellow": 0, "black": 2.0 } }
     ],
-    "notes": "Owner, step 15: the simulator makes these 5 colours in turn, each with all four dyes. Grams of dye (food dye diluted 1:9) per kg of base. The target colour is what the colour model below predicts for the recipe."
+    "notes": "Owner, step 15: the simulator makes these 5 colours in turn, each with the minimum dyes it needs (green: cyan + yellow; orange: yellow + magenta; purple: cyan + magenta; brown: yellow + magenta + black; navy: cyan + magenta + black). Every dye pump appears in at least two recipes (checked at start-up). A recipe that needs a deferred dye is skipped, and the skip is logged. Grams of dye (food dye diluted 1:9) per kg of base; the amounts are estimates. The target colour is what the colour model below predicts for the recipe; corrections use only the recipe's own dyes."
   },
   "batch": {
     "firstPortionG": 800,
@@ -68,7 +68,7 @@
     "toleranceG": 5,
     "shortFillChance": 0.05,
     "shortFillG": [8, 15],
-    "notes": "Owner, step 15: about 1 cup in 20 is rejected. That cup's fill stops short by 8 to 15 g, so the check station reads it outside +/- toleranceG of fillTargetG and pushes it to the reject box."
+    "notes": "Owner, step 15: about 1 cup in 20 is rejected. That cup's fill stops short by 8 to 15 g, so the check station reads it outside +/- toleranceG of fillTargetG and pushes it to the reject box. toleranceG (5 g) is an estimate, used only by the simulator: the real accept/reject rule belongs to the PLC."
   },
   "supplies": {
     "bigTankFullG": 14000,
@@ -83,6 +83,11 @@
     "notes": "Owner, step 15: between batches the line is serviced as if by a worker: the full tray is removed, and whatever cannot cover the next batch is refilled to full or emptied (one batch/refill message lists it all). The simulator never lets a supply run out, so it never trips a float: alarms belong to the PLC."
   },
   "cabinet": { "idleC": 25, "runningC": 28, "minutes": 10 },
+  "stackLight": {
+    "running": "green",
+    "idle": "yellow",
+    "notes": "Placeholder (estimate) until the PLC program defines what the stack lights mean: the colour the simulator shows while a batch runs and while the line waits between batches. Used only by the simulator; the web app shows the value word from machine.json, never a state or an alarm."
+  },
   "noise": {
     "scaleG": 0.2,
     "levelMm": 1,

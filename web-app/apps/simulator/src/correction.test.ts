@@ -10,6 +10,7 @@ import {
   recipeConcentration,
   recipeTarget,
 } from './correction.js';
+import { dyesOf } from './recipes.js';
 import { DYES, type Recipe } from './simConfig.js';
 import { realSimConfig } from './testing.js';
 
@@ -26,22 +27,23 @@ const plus = (a: PerDye, b: PerDye): PerDye =>
 
 describe('the recipes make the colours they are named after', () => {
   const lab = (id: string) => recipeTarget(config, recipe(id));
-  it('green, orange, violet, brown, grey', () => {
+  it('green, orange, purple, brown, navy', () => {
     const [, ga, gb] = lab('green');
     expect(ga).toBeLessThan(-20);
     expect(gb).toBeGreaterThan(20);
     const [, oa, ob] = lab('orange');
     expect(oa).toBeGreaterThan(15);
     expect(ob).toBeGreaterThan(30);
-    const [, va, vb] = lab('violet');
-    expect(va).toBeGreaterThan(15);
-    expect(vb).toBeLessThan(-15);
+    const [, pa, pb] = lab('purple');
+    expect(pa).toBeGreaterThan(15);
+    expect(pb).toBeLessThan(-15);
     const [bl, ba, bb] = lab('brown');
     expect(bl).toBeLessThan(45);
     expect(ba).toBeGreaterThan(10);
     expect(bb).toBeGreaterThan(20);
-    const [, ya, yb] = lab('grey');
-    expect(Math.hypot(ya, yb)).toBeLessThan(5);
+    const [nl, , nb] = lab('navy');
+    expect(nl).toBeLessThan(30);
+    expect(nb).toBeLessThan(-25);
   });
 });
 
@@ -58,6 +60,8 @@ describe('correction', () => {
 
       const add = missingDye(config, r, seen, target);
       for (const d of DYES) expect(add[d]).toBeGreaterThanOrEqual(0);
+      // Only the recipe's own dyes (owner: the minimum dyes it needs).
+      for (const d of DYES) if (!dyesOf(r).includes(d)) expect(add[d], d).toBe(0);
       expect(deltaE(cellLab(config, plus(first, add)), target)).toBeLessThan(0.1);
     });
   }
@@ -77,7 +81,7 @@ describe('correction', () => {
   });
 
   it('adds nothing when the colour is already right, or too dark', () => {
-    const r = recipe('violet');
+    const r = recipe('purple');
     const target = recipeTarget(config, r);
     expect(Object.values(missingDye(config, r, target, target)).every((g) => g < 1e-9)).toBe(true);
     const dark = cellLab(config, share(recipeConcentration(r), 1.3));

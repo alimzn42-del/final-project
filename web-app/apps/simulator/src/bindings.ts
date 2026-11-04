@@ -10,7 +10,7 @@
  */
 import type { Machine, MachineComponent, Sensor } from '@mixline/shared';
 
-import { DYES, type Dye, type SimConfig } from './simConfig.js';
+import { DYES, type Dye, type SimConfig, STACK_LIGHT_CODES } from './simConfig.js';
 
 type Spec =
   | { id: string; kind: 'analog'; unit: string }
@@ -85,7 +85,10 @@ export const SENSOR_TABLE = {
   cabinetTemp: analog('cabinet.temp', 'C'),
   estop: digital('cabinet.estop', 'released', 'pressed'),
   mode: enumOf('cabinet.mode', { 0: 'manual', 1: 'auto' }),
-  stackLight: enumOf('cabinet.stackLight', { 0: 'off', 1: 'green', 2: 'yellow', 3: 'red' }),
+  stackLight: enumOf(
+    'cabinet.stackLight',
+    Object.fromEntries(Object.entries(STACK_LIGHT_CODES).map(([word, code]) => [code, word])),
+  ),
 } as const satisfies Record<string, Spec>;
 export type Role = keyof typeof SENSOR_TABLE;
 

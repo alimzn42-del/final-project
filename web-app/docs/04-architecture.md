@@ -90,7 +90,10 @@ Machine-wide messages (published from simulator v2, step 15):
 - `step` one of: `baseFill, dyeDose, mix, sample, correct, complete, finalCheck, filling, rinse`.
 - `started` carries the first step; `step` is sent at every step change and each time
   `containersDone` grows during `filling`; `finished` carries the last step.
-- Batch ids are made from the start time (UTC), so they stay unique across restarts.
+- Batch ids are made from the batch's start time in **UTC**, not the lab's local time
+  (Asia/Damascus): `B-YYYYMMDD-HHMMSS`, e.g. `B-20261104-044943` started at 04:49:43 UTC
+  (07:49:43 in Damascus). UTC is the same on every device and never shifts with a time zone or
+  daylight saving, so ids stay unique and sort in start order, also across simulator restarts.
 
 `lab/mixline/batch/refill` (QoS 1; owner, step 15): what a worker refilled or emptied **between
 batches**, so it is never a step of a batch. The simulator sends it now; later a real worker, or a
@@ -451,9 +454,15 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
   - **Tuning file** `config/simulator.json` (owner: apart from `machine.json`): the recipes, the
     dye strengths of the colour model, flow rates, timings, supply sizes. Every number is an
     estimate; a strict schema checks it at start-up (`simConfig.ts`).
-  - **Recipes** (owner): 5 colours in turn, green, orange, violet, brown, grey, each with all
-    four dyes, in grams of dye per kg of base. The target colour is what the colour model
-    predicts for the recipe.
+  - **Recipes** (owner, step 15): 5 colours in turn, each with the minimum dyes it needs:
+    green (cyan + yellow), orange (yellow + magenta), purple (cyan + magenta), brown (yellow +
+    magenta + black), navy (cyan + magenta + black). Every dye pump appears in at least two
+    recipes (checked at start-up). Amounts in grams of dye per kg of base (estimates). The
+    target colour is what the colour model predicts for the recipe.
+  - **Deferred dyes** (owner, step 15): a recipe that needs a deferred dye is skipped and the
+    skip is logged (`recipes.ts`); if no recipe is left, the simulator refuses to start. Open:
+    how `machine.json` marks a dye as deferred (it has no such marker yet), so for now no dye is
+    deferred.
   - **Sensor table** (owner: option a, `bindings.ts`): which `machine.json` sensor and part plays
     which role in the process ("the vessel scale is `vessel.mass`"). Checked against
     `machine.json` at start-up (kind, unit, value words, conveyor stations one equal pitch apart,
@@ -477,8 +486,8 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
     up to 6% weaker or stronger than the model, so the first sample is never exactly right.
   - **Correction** (`correction.ts`): in absorbance, where dyes add up: the missing absorbance is
     covered with more of the recipe in its own ratios, then any hue left with the least extra
-    dye (non-negative least squares); 95% of it is dosed, so the colour is approached from the
-    light side.
+    dye of the recipe's own dyes (non-negative least squares); 95% of it is dosed, so the colour
+    is approached from the light side.
   - **Between batches** (owner): as if by a worker, the full tray is removed, and any supply that
     cannot cover the next batch is refilled to full (big tank, dye tanks with a new lot, cups,
     lids) or emptied (drain bucket, reject box). One `batch/refill` message lists it all. The
@@ -486,8 +495,11 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
   - **Fault hook** (`Faults` in `plant.ts`): a worn dye pump (less per step), a weak dye, a
     drifting scale. Not used in phase 1; a test shows a worn pump needs more steps for the same
     colour while the vessel scale sees less than was commanded (the research idea, doc 01).
-  - Placeholders until the PLC defines them: stack light green while a batch runs and yellow
-    between batches; mode auto; e-stop released.
+  - Placeholders until the PLC defines them: the stack light's colours while a batch runs
+    (green) and between batches (yellow) are set in `config/simulator.json` (`stackLight`),
+    like the check station's ±5 g accept band (`check.toleranceG`). Both are estimates used only
+    by the simulator: the backend and the web app never read them (the page shows the value
+    word from `machine.json`). Mode auto and e-stop released are fixed.
 - Rates: analog 1 Hz, 5 Hz while dosing or filling (see the publishing rules above); digital and
   enum on change plus the 5 s heartbeat. The simulation steps every 200 ms, so short pulses (the
   tray sensor, the feeder fingers) are never missed. About 47 readings a second on average

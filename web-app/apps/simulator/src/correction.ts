@@ -5,8 +5,8 @@
  *
  * A correction works in absorbance, where dyes simply add up: the missing absorbance per channel
  * (target minus measured) is covered first with more dye in the recipe's own ratios, then any
- * hue left over with the least extra dye. Dye can only be added, never removed, so nothing
- * negative is ever dosed.
+ * hue left over with the least extra dye of the recipe's own dyes. Dye can only be added, never
+ * removed, so nothing negative is ever dosed.
  */
 import {
   absorbanceToLab,
@@ -17,6 +17,7 @@ import {
   type Rgb,
 } from '@mixline/shared';
 
+import { dyesOf } from './recipes.js';
 import { DYES, type Dye, type Recipe, type SimConfig } from './simConfig.js';
 
 export type PerDye = Record<Dye, number>;
@@ -65,10 +66,15 @@ export function missingDye(config: SimConfig, recipe: Recipe, measured: Lab, tar
   const share = Math.max(0, dot(recipeColumn, need) / dot(recipeColumn, recipeColumn));
   const topUp = perDye((d) => ratios[d] * share);
 
-  // 2. Whatever hue is left, with the least extra dye (non-negative least squares).
+  // 2. Whatever hue is left, with the least extra dye (non-negative least squares), using only
+  // the recipe's own dyes (owner, step 15: each recipe has the minimum dyes it needs).
   const left = subtract(need, scaledRgb(recipeColumn, share));
-  const fix = nonNegativeFit(columns, left);
-  return perDye((d, i) => topUp[d] + (fix[i] ?? 0));
+  const own = dyesOf(recipe);
+  const fix = nonNegativeFit(
+    own.map((d) => columns[DYES.indexOf(d)] ?? [0, 0, 0]),
+    left,
+  );
+  return perDye((d) => topUp[d] + (fix[own.indexOf(d)] ?? 0));
 }
 
 const pathCm = (config: SimConfig) => config.camera.pathMm / 10;
