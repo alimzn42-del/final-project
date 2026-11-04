@@ -1,5 +1,5 @@
 /** Login with email and password; links to the customer sign-up. */
-import { loginSchema } from '@mixline/shared';
+import { ACCOUNT_CODES, loginSchema } from '@mixline/shared';
 import type { TFunction } from 'i18next';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -96,6 +96,13 @@ export function LoginPage() {
 function loginProblem(error: unknown, t: TFunction): string {
   if (!(error instanceof ApiError)) return t('error.server');
   if (error.status === 401) return t('auth.login.wrong');
+  // Owner, step 16: only said after the password was right.
+  if (
+    error.status === 403 &&
+    (error.body as { code?: unknown } | undefined)?.code === ACCOUNT_CODES.disabled
+  ) {
+    return t('auth.login.disabled');
+  }
   if (error.status === 429) return t('auth.login.tooMany');
   if (error.status === 0) return t('error.network');
   return t('error.server');

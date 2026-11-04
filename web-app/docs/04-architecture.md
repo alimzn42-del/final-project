@@ -514,6 +514,14 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
   so a recreated backend container is followed); any other address gets `index.html` (deep
   links); `/assets/*` cached for a year (file names change with every build); `nosniff`,
   `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`.
+- The users page `/users` (owner, step 16), managers only, reached from the user menu (shown to
+  managers only): the staff list (move a worker, new temporary password, disable with a
+  confirmation on the page, re-enable; no "Disable" on yourself), a new account form, and the
+  departments (add, rename, delete with a confirmation; a refusal says how many workers are in
+  it). Account statuses are told by words and borders, never the line's state colours. Every
+  call goes through the session (a 401 ends it); the lists are loaded again after each change,
+  and a status line says what happened. The login page says "disabled, ask a manager" for
+  `ACCOUNT_DISABLED`.
 - Tests: the app against a fake backend and a fake live connection (Testing Library, jsdom), with
   the real locale files and machine.json; step 14 adds the values panel, the charts (history
   spans, the window switch, live additions, reload after a reconnect, failure and "Try again",

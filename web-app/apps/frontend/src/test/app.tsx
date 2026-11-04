@@ -60,7 +60,8 @@ type Handler = (body: unknown, url: string) => Reply;
 
 export interface FakeApi {
   calls: { method: string; path: string; body: unknown }[];
-  on: (route: string, handler: Handler) => void;
+  /** A handler, or a fixed reply. */
+  on: (route: string, handler: Handler | Reply) => void;
 }
 
 /**
