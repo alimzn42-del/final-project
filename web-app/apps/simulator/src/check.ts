@@ -50,6 +50,7 @@ const heard: Heard[] = [];
 let batches = 0;
 let cycleStarted: string | undefined;
 let cycleFinished = false;
+let lastStep: string | undefined;
 
 const client = connect(config.mqttUrl, {
   clientId: `mixline-sim-check-${String(process.pid)}`,
@@ -111,7 +112,8 @@ function follow(event: string, payload: { batchId: string | null; step?: string 
     cycleStarted = payload.batchId ?? '';
     console.log(`batch ${cycleStarted} started`);
   } else if (cycleStarted !== undefined && payload.batchId === cycleStarted && event === 'step') {
-    if (payload.step) process.stdout.write(`  ${payload.step}`);
+    if (payload.step && payload.step !== lastStep) process.stdout.write(`  ${payload.step}`);
+    lastStep = payload.step;
   } else if (event === 'finished' && payload.batchId === cycleStarted) {
     cycleFinished = true;
     console.log(`\nbatch ${cycleStarted} finished; waiting for the refill message...`);
@@ -154,7 +156,8 @@ function report(): void {
   reported = true;
   const results = cycle ? checkCycle(machine, simConfig, heard) : liveResults();
   results.push(['the machine state arrives (retained) in the doc 04 format', stateProblems()]);
-  results.push(['every batch message passes its format', badBatch.slice(0, 5)]);
+  // checkCycle checks the batch formats itself.
+  if (!cycle) results.push(['every batch message passes its format', badBatch.slice(0, 5)]);
 
   let failed = 0;
   console.log('');
