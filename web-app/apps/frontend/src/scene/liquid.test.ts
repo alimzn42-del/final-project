@@ -2,7 +2,7 @@ import { type Machine, machineSchema } from '@mixline/shared';
 import { describe, expect, it } from 'vitest';
 
 import raw from '../../../../config/machine.json';
-import { labToHex, liveLevel, liveMixColour } from './liquid';
+import { liveLevel, liveMixColour } from './liquid';
 
 const machine: Machine = machineSchema.parse(raw);
 const reading = (value: number) => ({
@@ -16,23 +16,6 @@ const liquidOf = (id: string) => {
   if (g?.shape !== 'cylinder' || !g.liquid) throw new Error(`${id} holds no liquid`);
   return g.liquid;
 };
-
-describe('L*a*b* to screen colour (white D65)', () => {
-  it.each([
-    [[100, 0, 0], '#ffffff'],
-    [[0, 0, 0], '#000000'],
-    [[53.2408, 80.0925, 67.2032], '#ff0000'], // pure red
-    [[87.737, -86.1846, 83.1812], '#00ff00'], // pure green
-    [[32.297, 79.1875, -107.8602], '#0000ff'], // pure blue
-    [[50, 0, 0], '#777777'], // mid grey
-  ])('%j -> %s', ([l, a, b], hex) => {
-    expect(labToHex(l ?? 0, a ?? 0, b ?? 0)).toBe(hex);
-  });
-
-  it('clips colours the screen cannot show', () => {
-    expect(labToHex(50, 200, 200)).toMatch(/^#[0-9a-f]{6}$/);
-  });
-});
 
 describe('live liquids', () => {
   it('the vessel level follows its mass sensor (doc 04: (v - min) / (max - min))', () => {

@@ -11,7 +11,11 @@
  */
 import type { Machine, Sensor } from './machine.schema.js';
 
-export const BATCH_EVENTS = ['started', 'step', 'finished', 'aborted'] as const;
+/**
+ * `refill` (owner, step 15) is not about one batch: a worker (the simulator now) refilled or
+ * emptied parts of the line between batches. Its payload has its own shape (telemetry.ts).
+ */
+export const BATCH_EVENTS = ['started', 'step', 'finished', 'aborted', 'refill'] as const;
 export type BatchEvent = (typeof BATCH_EVENTS)[number];
 
 /** The `<site>/<machine>` prefix every topic starts with. */

@@ -6,14 +6,17 @@ import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
 
-/** config/machine.json in the repo; this file runs from apps/simulator/src or /dist. */
-const defaultMachinePath = fileURLToPath(new URL('../../../config/machine.json', import.meta.url));
+/** config/ in the repo; this file runs from apps/simulator/src or /dist. */
+const inConfig = (name: string) =>
+  fileURLToPath(new URL(`../../../config/${name}`, import.meta.url));
 
 const envSchema = z.object({
   MQTT_URL: z.url().default('mqtt://localhost:1883'),
   MQTT_USERNAME: z.string().min(1),
   MQTT_PASSWORD: z.string().min(1),
-  MACHINE_CONFIG: z.string().min(1).default(defaultMachinePath),
+  MACHINE_CONFIG: z.string().min(1).default(inConfig('machine.json')),
+  /** The simulator's tuning file: recipes, rates, timings (plan step 15). */
+  SIMULATOR_CONFIG: z.string().min(1).default(inConfig('simulator.json')),
 });
 
 export interface SimulatorConfig {
@@ -21,6 +24,7 @@ export interface SimulatorConfig {
   mqttUsername: string;
   mqttPassword: string;
   machineConfigPath: string;
+  simulatorConfigPath: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): SimulatorConfig {
@@ -35,5 +39,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): SimulatorConfi
     mqttUsername: e.MQTT_USERNAME,
     mqttPassword: e.MQTT_PASSWORD,
     machineConfigPath: e.MACHINE_CONFIG,
+    simulatorConfigPath: e.SIMULATOR_CONFIG,
   };
 }

@@ -7,6 +7,7 @@ describe('loadConfig', () => {
     const config = loadConfig({ MQTT_USERNAME: 'mixline', MQTT_PASSWORD: 'secret' });
     expect(config.mqttUrl).toBe('mqtt://localhost:1883');
     expect(config.machineConfigPath.replaceAll('\\', '/')).toMatch(/\/config\/machine\.json$/);
+    expect(config.simulatorConfigPath.replaceAll('\\', '/')).toMatch(/\/config\/simulator\.json$/);
   });
 
   it('names every missing or bad setting', () => {

@@ -62,6 +62,11 @@ latest reading is `sim` (doc 03, "Simulated data").
 
 Publishing rules (simulator now, hardware later):
 - Analog sensors: on a fixed timer (1 Hz idle, up to 5 Hz while dosing or filling).
+  Simulator v2 (step 15): 5 Hz for the sensors the moving liquid changes, until 1 s after the
+  pump stops: the vessel scale and the running dye pump's tank scale, steps, speed and load
+  while dosing dye; the vessel scale, base pump current and big tank level while the base pump
+  runs; the vessel and filling scales while filling, and the check scale while its platform
+  is up. Everything else stays at 1 Hz (draining and sampling too).
 - Digital and enum sensors: on change, plus a heartbeat every 5 s.
 - A sensor with no message for 10 s is `offline`.
 - Scales publish **net liquid mass** in grams. The vessel and dye scales are tared with the empty
@@ -70,20 +75,52 @@ Publishing rules (simulator now, hardware later):
 
 Machine-wide messages (published from simulator v2, step 15):
 
-`lab/mixline/state` (retained):
+`lab/mixline/state` (retained, QoS 1):
 ```json
-{ "ts": "...", "mode": "auto", "status": "running", "batchId": "B-0012", "source": "sim" }
+{ "ts": "...", "mode": "auto", "status": "running", "batchId": "B-20261104-080005", "source": "sim" }
 ```
 - `mode`: `auto | manual`. `status`: `idle | running | paused | stopped | fault`.
+- Sent when it changes, and again after a reconnect.
 
-`lab/mixline/batch/<event>`, event one of `started | step | finished | aborted`:
+`lab/mixline/batch/<event>` (QoS 1), event one of `started | step | finished | aborted`:
 ```json
-{ "ts": "...", "batchId": "B-0012", "step": "dyeDose", "recipe": { "targetLab": [55, 10, -20] },
-  "containersDone": 3, "source": "sim" }
+{ "ts": "...", "batchId": "B-20261104-080005", "step": "dyeDose",
+  "recipe": { "targetLab": [53.9, -33.78, 35.72] }, "containersDone": 3, "source": "sim" }
 ```
 - `step` one of: `baseFill, dyeDose, mix, sample, correct, complete, finalCheck, filling, rinse`.
+- `started` carries the first step; `step` is sent at every step change and each time
+  `containersDone` grows during `filling`; `finished` carries the last step.
+- Batch ids are made from the batch's start time in **UTC**, not the lab's local time
+  (Asia/Damascus): `B-YYYYMMDD-HHMMSS`, e.g. `B-20261104-044943` started at 04:49:43 UTC
+  (07:49:43 in Damascus). UTC is the same on every device and never shifts with a time zone or
+  daylight saving, so ids stay unique and sort in start order, also across simulator restarts.
 
-Topic builders and the payload zod schema live in `packages/shared`.
+`lab/mixline/batch/refill` (QoS 1; owner, step 15): what a worker refilled or emptied **between
+batches**, so it is never a step of a batch. The simulator sends it now; later a real worker, or a
+robot that takes the full tray, sends the same message.
+```json
+{ "ts": "...", "batchId": null,
+  "items": [
+    { "component": "bigTank", "action": "refilled", "amount": 8367.7, "unit": "g" },
+    { "component": "containerMagazine", "action": "refilled", "amount": 24, "unit": "count" },
+    { "component": "drainBucket", "action": "emptied", "amount": 9850.4, "unit": "g" },
+    { "component": "batchTray", "action": "emptied", "amount": 6, "unit": "count" }
+  ],
+  "source": "sim" }
+```
+- `batchId` is always `null`.
+- `component`: the part's id in `machine.json`, checked against it (`decodeRefill()`), so another
+  machine needs no change to the format. The web app names parts through each one's `labelKey`.
+- `action`: `refilled | emptied`. `amount`: what was added or taken away, more than 0: grams
+  (`g`) for the tanks and the drain bucket, a whole `count` for cups, lids, the reject box and
+  the tray. The mass-balance check needs these amounts.
+- Each part appears once per message.
+
+Storing and showing the machine state and batch messages is a later manager feature (doc 05);
+for now they are published and checked (`pnpm sim:check`).
+
+Topic builders and the payload zod schemas live in `packages/shared` (`decodeBatchMessage()`
+checks any `batch/<event>` with its own schema).
 
 ## Backend (NestJS)
 
@@ -262,6 +299,8 @@ Database:
     3.5 million a day; raw 506 MB a day uncompressed, 27 MB compressed (19x); raw steady state
     about 1.2 GB at most (7 days, the newest 1-2 uncompressed). The summary grows 14 MB a day
     uncompressed (86,400 rows), hence its compression.
+  - Simulator v2 (step 15): about 47 readings/s stored on the running stack (5 Hz while dosing or
+    filling), about 15% more than the figures above.
 - No `alarms` table in phase 1: its design depends on the PLC alarm list (open item in
   `docs/05-roadmap.md`, owner decision in step 7).
 - Migrations: **Prisma 7.10.1** (pinned: the CLI's `latest` npm tag points at an 8.0 release
@@ -408,23 +447,82 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
 ## Simulator
 
 - Reads `machine.json`, publishes every sensor on its real topic.
-- Runs a simple looping batch so values move in a believable way: base fill, dye doses, mixing,
-  sample in and out, color reading, filling 6 containers, check, cap, container arrives in the tray,
-  optional rinse. One simulated batch takes about 3 minutes.
-- Masses must balance: dye scale drops by what the vessel gains; the vessel drops by what each
-  container gains.
-- Rates: about 1 Hz idle, up to 5 Hz during dosing / filling.
-- Uses each sensor's `sim` block (`min`, `max`, `nominal`) from `machine.json`.
-- Has a hook to inject faults later (worn pump, weak dye, scale drift). Not needed in phase 1.
 - v1 (step 5): every sensor at its `sim.nominal`; analog values get small noise (0.5% of the sim
   range) but never cross a limit, so the line shows ok. Units `count` and `steps` stay whole
-  numbers. The batch above is v2 (step 15).
+  numbers. Since v2, only sensors outside the sensor table still behave like this.
+- v2 (step 15): a looping batch, so values move the way the real parts will. Built in step 15:
+  - **Tuning file** `config/simulator.json` (owner: apart from `machine.json`): the recipes, the
+    dye strengths of the colour model, flow rates, timings, supply sizes. Every number is an
+    estimate; a strict schema checks it at start-up (`simConfig.ts`).
+  - **Recipes** (owner, step 15): 5 colours in turn, each with the minimum dyes it needs:
+    green (cyan + yellow), orange (yellow + magenta), purple (cyan + magenta), brown (yellow +
+    magenta + black), navy (cyan + magenta + black). Every dye pump appears in at least two
+    recipes (checked at start-up). Amounts in grams of dye per kg of base (estimates). The
+    target colour is what the colour model predicts for the recipe.
+  - **Deferred dyes** (owner, step 15): a recipe that needs a deferred dye is skipped and the
+    skip is logged (`recipes.ts`); if no recipe is left, the simulator refuses to start. Open:
+    how `machine.json` marks a dye as deferred (it has no such marker yet), so for now no dye is
+    deferred.
+  - **Sensor table** (owner: option a, `bindings.ts`): which `machine.json` sensor and part plays
+    which role in the process ("the vessel scale is `vessel.mass`"). Checked against
+    `machine.json` at start-up (kind, unit, value words, conveyor stations one equal pitch apart,
+    supplies inside the sim ranges); the simulator refuses to start and names every problem.
+    Topics, units and ranges still come from `machine.json`. A sensor not in the table keeps v1.
+  - **Mass record** (`ledger.ts`): where every gram is and what it is made of (water and each
+    dye): big tank, dye tanks, vessel, sample cell, each cup, tray, reject box, drain bucket.
+    Liquid only moves from place to place; refills and emptying go through "outside". The sum
+    over all places never changes, so the scales balance by construction.
+  - **The batch** (`batch.ts`, a stand-in for the PLC sequence, doc 01): 800 g of base with 85%
+    of the recipe's dye (light side first), mix, sample, up to 2 corrections, complete to
+    6 × 300 g + 200 g heel in the same ratios, mix, final check, fill 6 cups on the indexing belt
+    (feeder, filling by weight, check, lid or reject, tray), then drain and rinse twice until
+    the camera sees clear water. About 4 minutes (owner), plus a 5 s pause.
+  - **Rejects** (owner): about 1 cup in 20 is filled short by 8 to 15 g, so the check station
+    pushes it to the reject box. All random choices come from one seeded generator, so tests
+    are repeatable.
+  - **Colour model** (owner): Beer–Lambert per red, green and blue channel (`shared/color.ts`),
+    white-balanced on clear water, converted to L*a*b* with white D65; ΔE is CIEDE2000, checked
+    against its published test data; tolerance ΔE00 ≤ 2.0. Each dye lot (every dye refill) is
+    up to 6% weaker or stronger than the model, so the first sample is never exactly right.
+  - **Correction** (`correction.ts`): in absorbance, where dyes add up: the missing absorbance is
+    covered with more of the recipe in its own ratios, then any hue left with the least extra
+    dye of the recipe's own dyes (non-negative least squares); 95% of it is dosed, so the colour
+    is approached from the light side.
+  - **Between batches** (owner): as if by a worker, the full tray is removed, and any supply that
+    cannot cover the next batch is refilled to full (big tank, dye tanks with a new lot, cups,
+    lids) or emptied (drain bucket, reject box). One `batch/refill` message lists it all. The
+    simulator never lets a supply run out, so it never trips a float: alarms belong to the PLC.
+  - **Fault hook** (`Faults` in `plant.ts`): a worn dye pump (less per step), a weak dye, a
+    drifting scale. Not used in phase 1; a test shows a worn pump needs more steps for the same
+    colour while the vessel scale sees less than was commanded (the research idea, doc 01).
+  - Placeholders until the PLC defines them: the stack light's colours while a batch runs
+    (green) and between batches (yellow) are set in `config/simulator.json` (`stackLight`),
+    like the check station's ±5 g accept band (`check.toleranceG`). Both are estimates used only
+    by the simulator: the backend and the web app never read them (the page shows the value
+    word from `machine.json`). Mode auto and e-stop released are fixed.
+- Rates: analog 1 Hz, 5 Hz while dosing or filling (see the publishing rules above); digital and
+  enum on change plus the 5 s heartbeat. The simulation steps every 200 ms, so short pulses (the
+  tray sensor, the feeder fingers) are never missed. About 47 readings a second on average
+  (measured on the stack).
 - MQTT: client id `mixline-simulator`, QoS 0 for readings (only the latest value matters; a lost
-  reading is replaced a second later), automatic reconnect every 2 s, and every sensor is sent
-  again right after a (re)connect. Every message passes `decodeReading()` before it is sent.
-- Settings: `MQTT_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD`, `MACHINE_CONFIG` (default: the repo's
-  `config/machine.json`; in Docker `/config/machine.json`, mounted read-only from `./config`).
-- `pnpm sim:check` listens 12 s and verifies all topics, payloads, source `sim` and intervals.
+  reading is replaced a second later), QoS 1 for the state (retained) and batch messages,
+  automatic reconnect every 2 s, and every sensor and the state are sent again right after a
+  (re)connect. Every message passes the shared schemas before it is sent.
+- Settings: `MQTT_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD`, `MACHINE_CONFIG` and `SIMULATOR_CONFIG`
+  (defaults: the repo's `config/machine.json` and `config/simulator.json`; in Docker
+  `/config/...`, mounted read-only from `./config`).
+- `pnpm sim:check` listens 12 s and verifies all topics, payloads, source `sim`, intervals (at
+  most 5 Hz), the retained machine state and the batch message formats.
+- `pnpm sim:check --cycle` waits for the next batch and hears it from start to finish (about
+  5 minutes, at most 11), then checks from the published values only: steps in order,
+  6 containers, final ΔE, clear rinse water, and that masses balance across the scales (dye
+  tank drop = vessel gain = steps × g/step; vessel drop = filling scale = check scale; big tank
+  level drop = vessel gain), and that the refill after it takes the cups that passed. MQTT only,
+  no login (`cycle.ts`).
+- Tests: the tuning file, the sensor table against `machine.json`, the mass record, the colour
+  correction for every recipe, whole batches in fast time with a fixed seed (steps, 6 cups,
+  about 4 minutes, ΔE, formats, the mass balance at every step, refills and rejects over 20
+  batches, rates, the fault hook), and the cycle check on simulated batches and on tampered ones.
 
 ## Workspace packages and images
 
