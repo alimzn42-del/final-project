@@ -1,6 +1,6 @@
 // Live check of the push to the web app (plan step 10): socket.io at
 // /api/socket.io on the running stack. Run with `pnpm live:check` while
-// `pnpm stack:up` is running. Logs in as the first manager from .env.
+// `pnpm stack:up` is running. Logs in with the checks account from .env (CHECK_EMAIL, step 16).
 // Stops the simulator for about 15 s to show that offline is pushed with time
 // alone, then starts it again (also when a check fails).
 // Exits with code 1 if any check fails.
@@ -62,21 +62,18 @@ let snapshot;
 
 const checks = [
   [
-    'the first manager can log in',
+    'the checks account (CHECK_EMAIL in .env) can log in',
     async () => {
       const res = await fetch(`${api}/auth/login`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: env.MANAGER_EMAIL, password: env.MANAGER_PASSWORD }),
+        body: JSON.stringify({ email: env.CHECK_EMAIL, password: env.CHECK_PASSWORD }),
       });
       if (res.status !== 200) throw new Error(`login answered ${String(res.status)}`);
       cookie = (res.headers.get('set-cookie') ?? '').split(';')[0];
       const me = await (await fetch(`${api}/auth/me`, { headers: { cookie } })).json();
       if (me.mustChangePassword) {
-        throw new Error(
-          'the first manager still has its temporary password: log in once and change it, ' +
-            'then put the new password in MANAGER_PASSWORD for this check',
-        );
+        throw new Error('the checks account has a temporary password: restart the backend');
       }
     },
   ],
@@ -96,7 +93,7 @@ const checks = [
     },
   ],
   [
-    `the manager gets a snapshot on connect: ${String(SENSORS)} readings and every state`,
+    `the checks account gets a snapshot on connect: ${String(SENSORS)} readings and every state`,
     async () => {
       socket = connect(cookie);
       snapshot = await new Promise((resolve, reject) => {

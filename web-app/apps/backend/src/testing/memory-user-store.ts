@@ -26,7 +26,8 @@ import {
 import { MemoryAuditLog } from './memory-audit-log.js';
 import type { MemoryDepartmentStore } from './memory-department-store.js';
 
-type Row = StoredUser & Omit<NewUser, 'fullName' | 'departmentId' | 'mustChangePassword'>;
+type Row = StoredUser &
+  Omit<NewUser, 'fullName' | 'departmentId' | 'mustChangePassword' | 'createdById'>;
 
 export class MemoryUserStore implements UserStore {
   readonly rows = new Map<string, Row>();
@@ -72,6 +73,7 @@ export class MemoryUserStore implements UserStore {
       theme: null,
       disabledAt: null,
       createdAt: new Date(),
+      createdById: input.createdById ?? null,
     };
     this.rows.set(row.id, row);
     const actorId = audit.action === 'signedUp' ? row.id : audit.actorId;
@@ -94,14 +96,14 @@ export class MemoryUserStore implements UserStore {
     return Promise.resolve({ ...row });
   }
 
-  setPassword(id: string, passwordHash: string): Promise<StoredUser> {
+  setPassword(id: string, passwordHash: string, actorId: string | null = id): Promise<StoredUser> {
     const row = this.rows.get(id);
     if (!row) return Promise.reject(new Error(`no user ${id}`));
     const before = row.mustChangePassword;
     row.passwordHash = passwordHash;
     row.mustChangePassword = false;
     this.record(
-      id,
+      actorId,
       'passwordChanged',
       id,
       { mustChangePassword: before },

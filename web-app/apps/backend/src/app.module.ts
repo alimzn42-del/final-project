@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 
 import { AccessGuard } from './auth/access.js';
 import { AuthController } from './auth/auth.controller.js';
+import { CHECK_ACCOUNT, CheckAccountSeed } from './auth/check-account.js';
 import { AuthService } from './auth/auth.service.js';
 import { FIRST_MANAGER, FirstManagerSeed } from './auth/first-manager.js';
 import { PrismaSessionStore } from './auth/prisma-session-store.js';
@@ -96,6 +97,8 @@ export class AppModule {
         AuthService,
         { provide: FIRST_MANAGER, useValue: config.firstManager },
         FirstManagerSeed,
+        { provide: CHECK_ACCOUNT, useValue: config.checkAccount },
+        CheckAccountSeed,
         // Default deny: runs before every route (see auth/access.ts).
         { provide: APP_GUARD, useClass: AccessGuard },
       ],

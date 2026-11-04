@@ -60,6 +60,9 @@ const envSchema = z
     // The first manager account, created at startup if no manager exists.
     MANAGER_EMAIL: optional,
     MANAGER_PASSWORD: optional,
+    // The automated checks' own worker account (owner, step 16), never a person's account.
+    CHECK_EMAIL: optional,
+    CHECK_PASSWORD: optional,
   })
   .superRefine((e, ctx) => {
     if (Boolean(e.MANAGER_EMAIL) !== Boolean(e.MANAGER_PASSWORD)) {
@@ -67,6 +70,13 @@ const envSchema = z
         code: 'custom',
         path: ['MANAGER_PASSWORD'],
         message: 'set MANAGER_EMAIL and MANAGER_PASSWORD together',
+      });
+    }
+    if (Boolean(e.CHECK_EMAIL) !== Boolean(e.CHECK_PASSWORD)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['CHECK_PASSWORD'],
+        message: 'set CHECK_EMAIL and CHECK_PASSWORD together',
       });
     }
   });
@@ -79,6 +89,8 @@ export interface BackendConfig {
   databaseUrl: string | undefined;
   session: { secret: string; hours: number; secureCookie: boolean };
   firstManager: { email: string; password: string } | undefined;
+  /** The automated checks' worker account (owner, step 16). */
+  checkAccount: { email: string; password: string } | undefined;
   /** Undefined when MQTT_USERNAME / MQTT_PASSWORD are not set (no intake). */
   mqtt: { url: string; username: string; password: string } | undefined;
   clockToleranceMs: number;
@@ -102,6 +114,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     firstManager:
       e.MANAGER_EMAIL && e.MANAGER_PASSWORD
         ? { email: e.MANAGER_EMAIL.trim().toLowerCase(), password: e.MANAGER_PASSWORD }
+        : undefined,
+    checkAccount:
+      e.CHECK_EMAIL && e.CHECK_PASSWORD
+        ? { email: e.CHECK_EMAIL.trim().toLowerCase(), password: e.CHECK_PASSWORD }
         : undefined,
     mqtt:
       e.MQTT_USERNAME && e.MQTT_PASSWORD

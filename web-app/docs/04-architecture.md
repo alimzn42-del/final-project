@@ -189,6 +189,14 @@ Modules:
     exists; never changed afterwards. It starts with a temporary password that must be changed at
     first login (owner, step 9). The flag is set only when the seed creates the account: once any
     manager exists the seed does nothing, so a restart never resets the flag or the password.
+  - The checks account (owner, step 16): `CHECK_EMAIL` / `CHECK_PASSWORD`. `pnpm live:check`,
+    `telemetry:check` and `web:check` log in with it, never with a person's account (the first
+    manager's `.env` password is stale by design: it must be changed at first login). A worker,
+    never a manager: it can read the line, it never counts toward the lockout check. Created by
+    the system at startup in the first department (recorded, no actor), named "Automated checks"
+    on the users page. A changed `CHECK_PASSWORD` replaces its password at the next start
+    (recorded). It never touches an account it did not create, and stays disabled if a manager
+    disabled it (the checks then fail with that reason).
   - Validation with the shared zod rules (`packages/shared/src/auth.ts`); a 400 answer lists
     every invalid field. Users are stored through a `UserStore` interface: Prisma 7 client in
     the app, in memory in the HTTP tests (`pnpm test` needs no Docker); `pnpm test:db` runs the

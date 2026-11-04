@@ -15,6 +15,9 @@ import {
 import { type StoredUser, USER_STORE, type UserStore } from '../users/user-store.js';
 import { dummyPasswordHash, hashPassword, verifyPassword } from './password.js';
 
+/** The checks account's name on the users page. */
+export const CHECK_ACCOUNT_NAME = 'Automated checks';
+
 /** The current password given for a password change is wrong. */
 export class WrongPasswordError extends Error {}
 
@@ -97,6 +100,46 @@ export class AuthService {
       throw new WrongPasswordError();
     }
     return this.users.setPassword(user.id, await hashPassword(input.newPassword));
+  }
+
+  /**
+   * The automated checks' own account (owner, step 16: `pnpm live:check`, `telemetry:check` and
+   * `web:check` never log in as a person). A worker, never a manager: it may read the line, and
+   * it never counts toward the lockout check. Created once by the system, in the first
+   * department. Afterwards it is only kept in step with .env: a changed CHECK_PASSWORD replaces
+   * its password (recorded, with no actor). It never touches an account it did not create (same
+   * email, other role or made by a manager), and never re-enables it if a manager disabled it.
+   */
+  async seedCheckAccount(
+    check: { email: string; password: string } | undefined,
+  ): Promise<
+    'created' | 'updated' | 'ok' | 'disabled' | 'refused' | 'no department' | 'not configured'
+  > {
+    if (!check) return 'not configured';
+    const existing = await this.users.findByEmail(check.email);
+    if (!existing) {
+      const [department] = await this.departments.list();
+      if (!department) return 'no department';
+      await this.users.create(
+        {
+          email: check.email,
+          passwordHash: await hashPassword(check.password),
+          role: 'worker',
+          locale: 'en',
+          fullName: CHECK_ACCOUNT_NAME,
+          departmentId: department.id,
+        },
+        { action: 'accountCreated', actorId: null },
+      );
+      return 'created';
+    }
+    // Only the account the system made: a worker that no manager created.
+    if (existing.role !== 'worker' || existing.createdById !== null) return 'refused';
+    if (existing.disabledAt) return 'disabled';
+    const same = await verifyPassword(existing.passwordHash, check.password);
+    if (same && !existing.mustChangePassword) return 'ok';
+    await this.users.setPassword(existing.id, await hashPassword(check.password), null);
+    return 'updated';
   }
 
   /**

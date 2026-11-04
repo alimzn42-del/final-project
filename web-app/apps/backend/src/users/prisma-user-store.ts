@@ -83,7 +83,11 @@ export class PrismaUserStore implements UserStore {
     return toStored(await this.prisma.user.update({ where: { id }, data: preferences }));
   }
 
-  async setPassword(id: string, passwordHash: string): Promise<StoredUser> {
+  async setPassword(
+    id: string,
+    passwordHash: string,
+    actorId: string | null = id,
+  ): Promise<StoredUser> {
     return this.prisma.$transaction(async (tx) => {
       const before = await tx.user.findUniqueOrThrow({ where: { id } });
       const user = await tx.user.update({
@@ -92,7 +96,7 @@ export class PrismaUserStore implements UserStore {
       });
       await record(
         tx,
-        id,
+        actorId,
         'passwordChanged',
         id,
         { mustChangePassword: before.mustChangePassword },
@@ -251,5 +255,6 @@ function toStored(u: User): StoredUser {
     mustChangePassword: u.mustChangePassword,
     disabledAt: u.disabledAt,
     createdAt: u.createdAt,
+    createdById: u.createdById,
   };
 }

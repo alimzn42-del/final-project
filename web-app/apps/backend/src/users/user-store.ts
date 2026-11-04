@@ -52,6 +52,8 @@ export interface StoredUser extends PublicUser {
   passwordHash: string;
   disabledAt: Date | null;
   createdAt: Date;
+  /** The manager who created it; null for sign-ups and accounts the system created. */
+  createdById: string | null;
 }
 
 /** Thrown by create() when the email is already registered. */
@@ -91,8 +93,11 @@ export interface UserStore {
     id: string,
     preferences: { locale?: Language; theme?: Theme | null },
   ): Promise<StoredUser>;
-  /** The user's own password change: replaces the hash, clears mustChangePassword. Recorded. */
-  setPassword(id: string, passwordHash: string): Promise<StoredUser>;
+  /**
+   * Replaces the hash and clears mustChangePassword; recorded as passwordChanged. `actorId`: the
+   * user themselves (default), or null when the system does it (the checks account).
+   */
+  setPassword(id: string, passwordHash: string, actorId?: string | null): Promise<StoredUser>;
 
   // Manager actions on staff accounts (owner, step 16). Each one locks the managers' rows,
   // refuses if the acting manager is no longer active (ActorNotActiveError) or if the change
