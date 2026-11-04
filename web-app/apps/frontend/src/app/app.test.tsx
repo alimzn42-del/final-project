@@ -3,11 +3,12 @@
  * new customer lands on /customer, a customer typing /line is redirected,
  * Arabic is right-to-left) and the owner's step 11 rules.
  */
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyTheme } from '../prefs/theme';
 import { fakeApi, location, MACHINE, renderApp, USERS } from '../test/app';
+import { fakeLive } from '../test/fakeLive';
 
 afterEach(() => {
   localStorage.clear();
@@ -61,6 +62,23 @@ describe('where each user lands', () => {
 });
 
 describe('the line page (plan step 12)', () => {
+  it('says so while the live connection is lost, and not once it is back (step 14)', async () => {
+    fakeApi(as(USERS.worker));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage();
+    const states = { line: 'ok', sections: {}, subsections: {}, components: {}, sensors: {} };
+    act(() => {
+      live.send('snapshot', { readings: {}, states });
+      live.send('disconnect', 'transport close');
+    });
+    expect(screen.getByText(/Live data paused/)).toBeInTheDocument();
+    act(() => {
+      live.send('snapshot', { readings: {}, states });
+    });
+    expect(screen.queryByText(/Live data paused/)).not.toBeInTheDocument();
+  });
+
   it('without WebGL the page says so instead of failing (jsdom has no WebGL)', async () => {
     fakeApi(as(USERS.worker));
     await renderApp('/line');
@@ -74,6 +92,269 @@ describe('the line page (plan step 12)', () => {
     api.on('GET /api/machine', () => ({ status: 200, body: MACHINE }));
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText(/cannot show the 3D view/)).toBeInTheDocument();
+  });
+});
+
+describe('live states in the list beside the view (plan step 14)', () => {
+  const statesFromServer = {
+    line: 'fault',
+    sections: { supply: 'ok', mixingColor: 'fault', conveyor: 'ok', cabinet: 'offline' },
+    subsections: { 'mixingColor/mixing': 'ok', 'mixingColor/color': 'fault' },
+    components: { colorBox: 'none', camera: 'fault', sampleCell: 'none' },
+    sensors: {},
+  };
+
+  it('each section shows its rolled-up state; the page shows its own', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage();
+    act(() => {
+      live.send('snapshot', { readings: {}, states: statesFromServer });
+    });
+    const panel = within(screen.getByRole('complementary'));
+    expect(panel.getByRole('link', { name: /Mixing & Color/ })).toHaveTextContent('Fault');
+    expect(panel.getByRole('link', { name: /Control cabinet/ })).toHaveTextContent('Offline');
+    expect(panel.getByRole('link', { name: /Supply/ })).toHaveTextContent('OK');
+    // The line itself, rolled up from its sections.
+    expect(panel.getByRole('heading', { name: 'Sections' }).parentElement).toHaveTextContent(
+      'Fault',
+    );
+  });
+
+  it('parts without sensors show no chip; state changes update the chips', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line/mixingColor/color', live);
+    await linePage('Color');
+    act(() => {
+      live.send('snapshot', { readings: {}, states: statesFromServer });
+    });
+    const panel = within(screen.getByRole('complementary'));
+    expect(panel.getByRole('link', { name: /Camera box/ })).not.toHaveTextContent(/OK|Fault/);
+    expect(panel.getByRole('link', { name: /^Camera(?! box)/ })).toHaveTextContent('Fault');
+    act(() => {
+      live.send('states', { components: { camera: 'ok' } });
+    });
+    expect(panel.getByRole('link', { name: /^Camera(?! box)/ })).toHaveTextContent('OK');
+  });
+});
+
+describe('the SIMULATION badge in the header (plan step 14)', () => {
+  const sensorIds = MACHINE.components.flatMap((c) => c.sensors.map((s) => s.id));
+  const states = { line: 'ok', sections: {}, subsections: {}, components: {}, sensors: {} };
+  const ts = new Date().toISOString();
+  /** Readings for the first `sim` sensors from the simulator, then `hw` from hardware. */
+  const readings = (sim: number, hw = 0, offset = 0) =>
+    Object.fromEntries(
+      sensorIds
+        .slice(offset, offset + sim + hw)
+        .map((id, i) => [id, { value: 0, ts, receivedAt: ts, source: i < sim ? 'sim' : 'hw' }]),
+    );
+  const header = () => screen.getByRole('banner');
+
+  it('hidden before data; then the simulated sensors out of every sensor of the line', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage();
+    expect(header()).not.toHaveTextContent('SIMULATION');
+    act(() => {
+      live.send('snapshot', { readings: readings(12, 48), states });
+    });
+    expect(header()).toHaveTextContent('SIMULATION');
+    expect(header()).toHaveTextContent('12 of 60 sensors');
+    // Phones show the short form; screen readers skip it (they get the full count).
+    expect(within(header()).getByText('12/60')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('sits between the breadcrumbs and the language switch', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage();
+    act(() => {
+      live.send('snapshot', { readings: readings(60), states });
+    });
+    const badge = within(header()).getByText('SIMULATION');
+    const crumbs = within(header()).getByRole('navigation', { name: 'Where you are in the line' });
+    const language = within(header()).getByRole('button', { name: 'العربية' });
+    expect(crumbs.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(badge.compareDocumentPosition(language) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('the count follows each batch; hidden once every latest reading is from hardware', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage();
+    act(() => {
+      live.send('snapshot', { readings: readings(12, 48), states });
+      live.send('readings', readings(3, 0, 12));
+    });
+    expect(header()).toHaveTextContent('15 of 60 sensors');
+    act(() => {
+      live.send('readings', readings(0, 15));
+    });
+    expect(header()).not.toHaveTextContent('SIMULATION');
+  });
+
+  it('stays when the simulator stops: the values on screen are still simulated', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line/mixingColor/mixing/basePump', live);
+    await linePage('Base pump');
+    act(() => {
+      live.send('snapshot', { readings: readings(60), states });
+      live.send('states', {
+        line: 'offline',
+        sensors: Object.fromEntries(sensorIds.map((id) => [id, 'offline'])),
+      });
+    });
+    expect(header()).toHaveTextContent('60 of 60 sensors');
+  });
+
+  it('in Arabic', async () => {
+    fakeApi(as({ ...USERS.manager, locale: 'ar' }));
+    const live = fakeLive();
+    await renderApp('/line', live);
+    await linePage('خط الإنتاج');
+    act(() => {
+      live.send('snapshot', { readings: readings(12, 48), states });
+    });
+    expect(header()).toHaveTextContent('محاكاة');
+    expect(header()).toHaveTextContent('12 من 60 حساساً');
+  });
+});
+
+describe('the values panel on a part’s page (plan step 14)', () => {
+  const ts = '2026-10-29T10:00:05.000Z';
+  const reading = (value: number, source: 'sim' | 'hw' = 'sim') => ({
+    value,
+    ts,
+    receivedAt: ts,
+    source,
+  });
+  const withSensors = (sensors: Record<string, string>) => ({
+    line: 'ok',
+    sections: {},
+    subsections: {},
+    components: {},
+    sensors,
+  });
+  /** A sensor's row, by the sensor's name. */
+  const row = (name: string) => screen.getByRole('listitem', { name });
+  /** Each name-and-value pair inside an element (the twin places, the part's facts). */
+  const slots = (element: HTMLElement) =>
+    within(element)
+      .getAllByRole('term')
+      .map((dt) => [dt.textContent, dt.nextElementSibling?.textContent]);
+  const partSlots = [
+    ['Health index', 'Coming later'],
+    ['Remaining useful life', 'Coming later'],
+  ];
+
+  it('each value with its own decimals and unit, words for codes, its state and its time', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line/mixingColor/mixing/basePump', live);
+    await linePage('Base pump');
+    act(() => {
+      live.send('snapshot', {
+        readings: { 'basePump.on': reading(1), 'basePump.current': reading(0.5) },
+        states: withSensors({ 'basePump.on': 'ok', 'basePump.current': 'ok' }),
+      });
+    });
+    expect(row('Pump')).toHaveTextContent('On');
+    expect(row('Pump current')).toHaveTextContent('0.50 A');
+    expect(row('Pump current')).toHaveTextContent('OK');
+    expect(row('Pump current')).toHaveTextContent(/at \d\d:\d\d:\d\d/);
+    expect(row('Pump current').querySelector('time')).toHaveAttribute('datetime', ts);
+
+    act(() => {
+      live.send('readings', { 'basePump.current': reading(1.236), 'basePump.on': reading(0) });
+    });
+    expect(row('Pump current')).toHaveTextContent('1.24 A');
+    expect(row('Pump')).toHaveTextContent('Off');
+  });
+
+  it('marks each simulated value, and only those', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line/conveyor/checkCap/checkPlatform', live);
+    await linePage('Weighing platform');
+    act(() => {
+      live.send('snapshot', {
+        readings: { 'check.decision': reading(2, 'hw'), 'check.mass': reading(352.24) },
+        states: withSensors({ 'check.decision': 'ok', 'check.mass': 'ok' }),
+      });
+    });
+    expect(row('Check result')).toHaveTextContent('Reject');
+    expect(row('Check result')).not.toHaveTextContent('Simulated');
+    expect(row('Net mass')).toHaveTextContent('352.2 g');
+    expect(row('Net mass')).toHaveTextContent('Simulated');
+  });
+
+  it('"No data yet" before the first reading; an offline sensor keeps its last value', async () => {
+    fakeApi(as(USERS.manager));
+    const live = fakeLive();
+    await renderApp('/line/cabinet/part/cabinet', live);
+    await linePage('Control cabinet');
+    expect(row('Cabinet temperature')).toHaveTextContent('No data yet');
+
+    act(() => {
+      live.send('snapshot', {
+        readings: { 'cabinet.temp': reading(31.26) },
+        states: withSensors({ 'cabinet.temp': 'ok' }),
+      });
+    });
+    expect(row('Cabinet temperature')).toHaveTextContent('31.3 °C');
+
+    act(() => {
+      live.send('states', { sensors: { 'cabinet.temp': 'offline' } });
+    });
+    expect(row('Cabinet temperature')).toHaveTextContent('Offline');
+    expect(row('Cabinet temperature')).toHaveTextContent('31.3 °C');
+  });
+
+  it('keeps the twin’s places, disabled: per sensor, and per part even without sensors', async () => {
+    fakeApi(as(USERS.manager));
+    await renderApp('/line/mixingColor/mixing/basePump');
+    await linePage('Base pump');
+    for (const name of ['Pump', 'Pump current']) {
+      expect(slots(row(name))).toEqual([
+        ['Predicted value', 'Coming later'],
+        ['Residual', 'Coming later'],
+      ]);
+    }
+    const panel = screen.getByRole('complementary');
+    expect(within(panel).getByRole('heading', { name: 'Digital twin' })).toBeInTheDocument();
+    expect(slots(panel)).toEqual(expect.arrayContaining(partSlots));
+  });
+
+  it('a part without sensors says so, and still keeps its twin places', async () => {
+    fakeApi(as(USERS.manager));
+    await renderApp('/line/cabinet/part/plc');
+    await linePage('PLC');
+    const panel = screen.getByRole('complementary');
+    expect(panel).toHaveTextContent('This part has no sensors.');
+    expect(slots(panel)).toEqual(expect.arrayContaining(partSlots));
+  });
+
+  it('in Arabic: Western digits, units in English, words in Arabic (doc 03)', async () => {
+    fakeApi(as({ ...USERS.manager, locale: 'ar' }));
+    const live = fakeLive();
+    await renderApp('/line/mixingColor/mixing/basePump', live);
+    await linePage('مضخة الأساس');
+    act(() => {
+      live.send('snapshot', {
+        readings: { 'basePump.on': reading(1), 'basePump.current': reading(0.5) },
+        states: withSensors({ 'basePump.on': 'ok', 'basePump.current': 'ok' }),
+      });
+    });
+    expect(row('المضخة')).toHaveTextContent('تشغيل');
+    expect(row('تيار المضخة')).toHaveTextContent('0.50 A');
+    expect(row('تيار المضخة')).toHaveTextContent('مُحاكاة');
   });
 });
 
@@ -123,7 +404,7 @@ describe('navigation between the levels (plan step 13)', () => {
     await screen.findByRole('heading', { level: 1, name: 'Mixing vessel' });
     expect(panel().getByText('Confirmed')).toBeInTheDocument();
     expect(panel().getByText('Net mass')).toBeInTheDocument();
-    expect(panel().getByText('g')).toBeInTheDocument();
+    expect(panel().getByText('No data yet')).toBeInTheDocument();
     // The vessel holds the lid, the mixer and the overflow float.
     expect(panel().getByRole('heading', { name: 'Parts inside' })).toBeInTheDocument();
   });

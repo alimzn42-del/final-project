@@ -14,18 +14,20 @@ import { UserMenu } from './UserMenu';
 export function AppShell({ children }: { children: ReactNode }) {
   const user = useUser();
   const { t } = useTranslation();
-  // Pages put their title and breadcrumbs here (see headerSlot.tsx).
-  const [slot, setSlot] = useState<HTMLDivElement | null>(null);
+  // Pages put their title and breadcrumbs, and the SIMULATION badge, here (see headerSlot.tsx).
+  const [title, setTitle] = useState<HTMLDivElement | null>(null);
+  const [status, setStatus] = useState<HTMLDivElement | null>(null);
   return (
-    <HeaderSlotContext value={slot}>
+    <HeaderSlotContext value={{ title, status }}>
       <div className={styles.shell}>
         <header className={styles.header}>
           <Link to={landingPath(user)} className={styles.brand} title={t('ui.home')}>
             <Logo variant="simple" size={32} />
             <span className={styles.wordmark}>{t('brand.name')}</span>
           </Link>
-          <div ref={setSlot} className={styles.slot} />
+          <div ref={setTitle} className={styles.slot} />
           <div className={styles.tools}>
+            <div ref={setStatus} className={styles.status} />
             <LanguageSwitch />
             <UserMenu />
           </div>

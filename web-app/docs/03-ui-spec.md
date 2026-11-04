@@ -145,14 +145,42 @@ Suggested routes:
 
 - Close-up 3D view of the part.
 - Live values panel: each sensor with value, unit and timestamp, updating over WebSocket.
+  Since step 14 (owner): each analog sensor's own `decimals`, so numbers do not jump; `C` shown as
+  `°C`, no unit for counts, raw values and unitless values; the time as HH:MM:SS in the browser's
+  time zone; "No data yet" before the first reading; an offline sensor keeps its last value,
+  dimmed; the panel is wider on part pages.
 - A small live trend chart per sensor (last few minutes).
 - Reserved, empty slots for later twin features: Predicted value, Residual, Health index, Remaining
   useful life. Show them as disabled with "coming later" so the layout does not change later.
+
+Trend charts (owner, step 14):
+- Analog sensors: a line chart. Digital and enum sensors: a **state timeline**, a horizontal band
+  over time, one colour per value, with the value words from the locale files (never numbers).
+- Timeline colours are **neutral greys**, never the state colours (green, yellow, red), so a pump
+  being off never looks like a fault. Code 0 (off, normal, empty…) is the faintest. Missing data
+  (no reading for 10 s, the offline rule) is empty space: the line breaks, the timeline has no band.
+- Time runs **left to right in both languages**: the page flips in Arabic, the chart axis does not,
+  so the latest value is always on the right.
+- One time window for every chart on the page: 5 minutes (default), 15 or 60. The choice is
+  remembered in the browser (local storage), across parts and visits, not in the account.
+- Each chart has a spoken summary (lowest and highest value, or each value's share of the window),
+  and the arrow keys read the value under a crosshair, like the mouse or a finger.
 
 ## Simulated data
 
 Phase 1 runs on the simulator (see `docs/04-architecture.md`). Show a clear "SIMULATION" badge in the
 header while the data source is the simulator.
+
+The badge (owner, step 14):
+- Shown while at least one sensor's latest reading came from the simulator (`source: sim`), with
+  how many out of every sensor in `machine.json`: "SIMULATION 12 of 60 sensors" ("12/60" on phones;
+  screen readers always get the full count).
+- In the header, between the breadcrumbs and the language switch, on the line pages (where live
+  data is shown; customers never reach them). Hidden before the first data and when every latest
+  reading is from hardware. It stays when the simulator stops: the values on screen are still the
+  simulated ones.
+- Violet outline and text on a light violet tint, a colour used nowhere else (`docs/06-brand.md`).
+- On a part's page each simulated value also carries a "Simulated" tag (grey, beside the value).
 
 ## Languages
 

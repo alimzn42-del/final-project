@@ -10,11 +10,14 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { InHeader } from '../layout/headerSlot';
+import { LiveProvider, useLive } from '../live/live';
+import { SimulationBadge } from '../live/SimulationBadge';
 import { MachineProvider, useMachine } from '../machine/machine';
 import { Breadcrumbs } from '../navigation/Breadcrumbs';
 import { PlacePanel } from '../navigation/PlacePanel';
 import { pageScene, placeFromPath } from '../navigation/places';
 import sceneStyles from '../scene/scene.module.css';
+import { cx } from '../ui/cx';
 import styles from './pages.module.css';
 
 const LineScene = lazy(() => import('../scene/LineScene'));
@@ -33,7 +36,9 @@ function canShow3D(): boolean {
 export function LinePage() {
   return (
     <MachineProvider>
-      <LineLoader />
+      <LiveProvider>
+        <LineLoader />
+      </LiveProvider>
     </MachineProvider>
   );
 }
@@ -71,6 +76,11 @@ function LineView({ machine }: { machine: Machine }) {
   // One object per page, so the scene knows when the page changed (camera glide, hover reset).
   const page = useMemo(() => (place ? pageScene(machine, place) : undefined), [machine, place]);
   const show3D = useMemo(() => canShow3D(), []);
+  const live = useLive();
+  const sensorCount = useMemo(
+    () => machine.components.reduce((n, c) => n + c.sensors.length, 0),
+    [machine],
+  );
 
   if (!place || !page) {
     return (
@@ -86,7 +96,13 @@ function LineView({ machine }: { machine: Machine }) {
       <InHeader>
         <Breadcrumbs place={place} />
       </InHeader>
-      <div className={styles.sceneLayout}>
+      <SimulationBadge total={sensorCount} />
+      {live.status === 'reconnecting' && (
+        <p className={styles.notice} role="status">
+          {t('live.reconnecting')}
+        </p>
+      )}
+      <div className={cx(styles.sceneLayout, place.level === 4 && styles.partLayout)}>
         <div className={sceneStyles.viewport}>
           {show3D ? (
             <Suspense fallback={<p className={sceneStyles.message}>{t('ui.loading')}</p>}>

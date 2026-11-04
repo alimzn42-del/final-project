@@ -1,0 +1,50 @@
+/*
+ * Violet outline and text on a light violet tint, not a solid fill (owner, step 14). The only place
+ * --simulation and --simulation-tint are used (tokens.test.ts checks it).
+ */
+.badge {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: baseline;
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--simulation);
+  border-radius: 4px;
+  background: var(--simulation-tint);
+  color: var(--simulation);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.word {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+html:lang(ar) .word {
+  letter-spacing: 0;
+}
+
+.full,
+.short {
+  font-variant-numeric: tabular-nums;
+}
+
+.short {
+  display: none;
+}
+
+/* Phones: the short count, so the header keeps one row; the full one stays for screen readers. */
+@media (width < 48rem) {
+  .full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .short {
+    display: inline;
+  }
+}

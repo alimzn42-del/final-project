@@ -3,7 +3,7 @@
  * docs/06-brand.md: text colours meet WCAG AA (4.5:1) on `bg` and `surface` in
  * both themes, and the two copies of the light theme in tokens.css are equal.
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
@@ -58,5 +58,51 @@ describe('colour tokens', () => {
     it('--on-brand on --brand (button text)', () => {
       expect(contrast(t['--on-brand'], t['--brand'])).toBeGreaterThanOrEqual(4.5);
     });
+
+    it('timeline bands: each word reads on its band (4.5:1)', () => {
+      for (const n of [1, 2, 3, 4]) {
+        expect(
+          contrast(t[`--band-ink-${String(n)}`], t[`--band-${String(n)}`]),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    });
+
+    it('timeline bands: the faintest still stands out from the panel (2:1), and each step is darker or lighter in turn', () => {
+      expect(contrast(t['--band-1'], t['--surface'])).toBeGreaterThanOrEqual(2);
+      const away = [1, 2, 3, 4].map((n) => contrast(t[`--band-${String(n)}`], t['--surface']));
+      expect(away).toEqual([...away].sort((a, b) => a - b));
+    });
+
+    it('the line chart (brand blue) stands out from the panel (3:1)', () => {
+      expect(contrast(t['--brand'], t['--surface'])).toBeGreaterThanOrEqual(3);
+    });
+
+    it('SIMULATION badge: violet text on its tint (4.5:1), its outline on the header (3:1)', () => {
+      expect(contrast(t['--simulation'], t['--simulation-tint'])).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(t['--simulation'], t['--surface'])).toBeGreaterThanOrEqual(3);
+    });
+  });
+});
+
+describe('violet is the SIMULATION badge’s alone (owner, step 14)', () => {
+  it('no other style or component uses --simulation or --simulation-tint', () => {
+    const src = new URL('../', import.meta.url);
+    const users = readdirSync(src, { recursive: true, encoding: 'utf8' })
+      .filter((file) => /\.(css|tsx?)$/.test(file) && !/\.test\.tsx?$/.test(file))
+      .filter((file) =>
+        readFileSync(new URL(file.replaceAll('\\', '/'), src), 'utf8').includes('--simulation'),
+      )
+      .map((file) => file.replaceAll('\\', '/'))
+      .sort();
+    expect(users).toEqual(['live/SimulationBadge.module.css', 'styles/tokens.css']);
+  });
+});
+
+describe('the charts never use state colours (owner, step 14)', () => {
+  it('chart.module.css has no --ok, --warning, --fault or --offline', () => {
+    const chartCss = readFileSync(new URL('../chart/chart.module.css', import.meta.url), 'utf8');
+    // Comments may name them (the file says why they are not used); rules may not.
+    const rules = chartCss.replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(rules).not.toMatch(/var\(--(ok|warning|fault|offline)\)/);
   });
 });

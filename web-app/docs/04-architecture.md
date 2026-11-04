@@ -56,7 +56,8 @@ Payload (JSON):
 { "ts": "2026-10-27T12:00:00.000Z", "value": 1834.2, "unit": "g", "source": "sim" }
 ```
 
-`source` is `sim` or `hw`. The frontend shows the SIMULATION badge when data is `sim`.
+`source` is `sim` or `hw`. The frontend shows the SIMULATION badge while at least one sensor's
+latest reading is `sim` (doc 03, "Simulated data").
 `value` is always a number. Digital: 1/0. Enum: the integer code listed in the sensor's `valueLabels`.
 
 Publishing rules (simulator now, hardware later):
@@ -317,8 +318,8 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
     from the viewer) is left-handed and three.js is right-handed, so the scene flips z and a
     rotation about x or y turns the other way (`frame.ts`); otherwise the line appears mirrored.
   - Each part is a group at its anchor, turned about it (X, Y, Z); boxes, cylinders (axis along
-    y), hollow boxes as six walls of `wallThickness`; tanks show their liquid at `level` (live
-    levels and the live mix colour come in step 14). Pending parts are see-through placeholders
+    y), hollow boxes as six walls of `wallThickness`; tanks show their liquid at `level`, or live
+    from `levelSource` since step 14 (see "Live data"). Pending parts are see-through placeholders
     with a "Pending" tag. Material colours (`looks.ts`) apply when a part has no `color`.
   - Line page: a part leads to its section; hovering lights up the whole section in brand light
     blue (surfaces and edges), never a state colour. The table and the floor do not react.
@@ -350,11 +351,45 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
     on first show and with reduced motion).
   - Breadcrumbs in the header (doc 06), the current page as the title. A list beside the view
     (below it on phones) holds the same links, so every page is reachable without 3D; on a part's
-    page it shows status, the box it belongs to, the parts inside and the sensors.
+    page it shows status, the box it belongs to, the parts inside, the sensors' live values and
+    charts (step 14), and the places kept for the digital twin.
   - Tests: every section, sub-section and part has an address and is reachable by clicks from
     `/line`; targets per level; see-through rule; framing fits on wide screens and phones; clicks,
     drags, taps and the click-through in the scene graph; the pages in the app (breadcrumbs, list,
     unknown addresses).
+- **Live data** (step 14, `src/live/`): one socket.io connection while a line page is open
+  (`LiveProvider`): the snapshot, then batches of readings and state changes. Status connecting /
+  live / reconnecting (a "Live data paused" notice while values may be old).
+  - For the charts: `subscribe` hands every batch to whoever listens (charts keep all readings,
+    not only the latest); `reconnects` counts returns after a loss (charts then reload their
+    history); `clockOffset` is the server's clock minus the browser's, from each batch's newest
+    `receivedAt` (at most about 0.5 s behind, since a batch leaves up to 0.5 s later). Lab
+    computers may have a wrong clock (no internet), and charts use it for "now".
+  - In the scene: state colours on parts (`scene/looks.ts`, offline grey; one pulse on a change in
+    `scene/Part.tsx`);
+    liquid levels from `levelSource`, the mix colour from the camera's L\*a\*b\* with a D65 white
+    (`scene/liquid.ts`). State chips in the list beside the view (`live/StateChip.tsx`).
+  - Values on a part's page (`live/SensorValues.tsx`, rules in `live/format.ts`): Western digits,
+    each analog sensor's `decimals`, no thousands separator; words for digital and enum codes;
+    units as machine.json spells them, `C` shown as `°C`, none for `count`, `raw`, `bool` and
+    unitless values; the time as HH:MM:SS in the browser's time zone; a "Simulated" tag; an
+    offline sensor keeps its last value, dimmed. The twin's places are in `src/twin/`.
+  - The SIMULATION badge (`live/SimulationBadge.tsx`) fills the header's "status" place
+    (`layout/headerSlot.tsx`): sensors whose latest reading is `sim`, out of all in machine.json.
+- **Trend charts** (step 14, `src/chart/`): our own SVG, no chart library: testable in jsdom (a
+  canvas is not), coloured by the theme tokens, light for phones. Doc 03 has the owner's rules
+  (timelines, neutral greys, left to right, one remembered window).
+  - Data (`useSeries.ts`): `GET /api/telemetry/:sensorId` for the window plus 10 s (at most an
+    hour, so the backend sends raw readings), then every live batch added at the right. Loaded
+    again on a window change, after a reconnect and on "Try again"; the previous chart stays,
+    dimmed, meanwhile. Readings that arrive during a load are kept and added after it.
+  - Rules (`series.ts`, pure functions): a value holds until the next reading, at most 10 s (the
+    offline rule); a longer silence breaks the line and leaves the timeline empty. A line keeps at
+    most two points (lowest, highest) per column of 300, so an hour at 5 Hz stays light.
+  - Limit: the live push carries each sensor's latest value per 0.5 s, so the live end of a 5 Hz
+    line is coarser than its history (a reload has every reading).
+  - One 1 s timer for every chart (`clock.ts`); the window in `localStorage`
+    (`mixline.chartWindow`); timeline shades `--band-1…4` (`shades.ts`, code 0 the faintest).
 - **Brand** (docs/06-brand.md): colour tokens in `src/styles/tokens.css` with a WCAG AA test; IBM
   Plex Sans, Sans Arabic and Mono bundled (the lab is offline); the SVG mark in `src/brand/Logo.tsx`.
 - **nginx** (`docker/web.Dockerfile`, `docker/nginx/default.conf`; `nginx-unprivileged`, runs as a
@@ -362,7 +397,11 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
   so a recreated backend container is followed); any other address gets `index.html` (deep
   links); `/assets/*` cached for a year (file names change with every build); `nosniff`,
   `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`.
-- Tests: 21 app tests against a fake backend (Testing Library, jsdom), with the real locale files.
+- Tests: the app against a fake backend and a fake live connection (Testing Library, jsdom), with
+  the real locale files and machine.json; step 14 adds the values panel, the charts (history
+  spans, the window switch, live additions, reload after a reconnect, failure and "Try again",
+  gaps, timeline shades and words, the keyboard readout, Arabic left to right), the badge, and
+  token tests (band and badge contrast, no state colours in charts, violet only in the badge).
   `pnpm web:check` checks the running stack through nginx: page, deep links, caching, API, login,
   WebSocket, and that logout closes the session's live connection at once.
 
@@ -488,6 +527,7 @@ section ever disagree, the file wins; update this section.
       "kind": "analog | digital | enum",
       "labelKey": "i18n key",
       "valueLabels": { "0": "i18n key", "1": "i18n key" },   // digital and enum only
+      "decimals": 0..6,                                     // analog only, required (owner, step 14): digits after the point
       "measures": "netLiquid",                              // mass sensors only
       "sim": { "min", "max", "nominal" },                 // optional
       "limits": {                     // optional, any subset; unused for now (PLC owns limits)

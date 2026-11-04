@@ -116,6 +116,30 @@ describe('machine.json schema', () => {
     );
   });
 
+  it('needs decimals on every analog sensor, and none on digital or enum ones (owner, step 14)', () => {
+    expectIssue(
+      (m) => {
+        delete sensor(m, 'vessel.mass').decimals;
+      },
+      'components[vessel].sensors[vessel.mass].decimals',
+      /an analog sensor needs decimals/,
+    );
+    expectIssue(
+      (m) => {
+        sensor(m, 'basePump.on').decimals = 0;
+      },
+      'components[basePump].sensors[basePump.on].decimals',
+      /shows words, not decimals/,
+    );
+    expectIssue(
+      (m) => {
+        sensor(m, 'vessel.mass').decimals = 1.5;
+      },
+      'components[vessel].sensors[vessel.mass].decimals',
+      /expected int/,
+    );
+  });
+
   it('rejects a mass sensor that does not say it measures net liquid', () => {
     expectIssue(
       (m) => {

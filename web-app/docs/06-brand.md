@@ -58,10 +58,23 @@ Take the logo's world: a precise, faceted diamond made of light on a dark steel 
 | `warning` | `#F2B533` | `#C98A00` | state warning |
 | `fault` | `#F0524F` | `#D13330` | state fault (light: was `#D23431`, 4.497:1 on `bg`; step 11) |
 | `offline` | `#6B7684` | `#9AA4B0` | state offline |
+| `band1` … `band4` | `#4F5967` `#7E8999` `#9FAAB8` `#C0C9D3` | `#A3ADB8` `#808B98` `#5E6A78` `#3F4955` | state timeline greys, faintest first (owner, step 14) |
+| `bandInk1` … `bandInk4` | `#E8EDF3` `#14181F` `#14181F` `#14181F` | `#141A22` `#141A22` `#FFFFFF` `#FFFFFF` | the value word on each band |
+| `simulation` | `#C09DF6` | `#7A3FD0` | SIMULATION badge only: outline and text (owner, step 14) |
+| `simulationTint` | `#2E2744` | `#F5EEFD` | SIMULATION badge only: its light tinted background |
+
+- **Violet is the SIMULATION badge's alone** (owner, step 14): outline and text in violet on a light
+  violet tint, never a solid fill, and used nowhere else in the app, so it cannot be mistaken for a
+  state or the brand. Same hue (264°) in both themes, about 55° from brand blue.
+- **Timeline greys are not states** (owner, step 14): a pump that is off never looks like a fault.
 
 Check contrast (WCAG AA) for text on `bg` and `surface` in both themes. Since step 11 a test
 (`apps/frontend/src/styles/tokens.test.ts`) checks `text`, `textMuted`, `link` and `fault` on `bg`
-and `surface`, and `onBrand` on `brand`, at 4.5:1 or more.
+and `surface`, and `onBrand` on `brand`, at 4.5:1 or more. Since step 14 it also checks, in both
+themes: `simulation` text on `simulationTint` at 4.5:1 or more (5.4:1 light, 6.3:1 dark) and its
+outline on `surface` at 3:1 or more (6.1:1 light, 7.2:1 dark); each band word on its band at 4.5:1
+or more; the faintest band on `surface` at 2:1 or more; `brand` (the chart line) on `surface` at 3:1
+or more. Another test keeps `simulation` out of every file but the badge's.
 
 ## Type
 
