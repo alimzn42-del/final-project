@@ -5,7 +5,9 @@ import { machineSchema, type Sensor } from './machine.schema.js';
 import {
   batchEventSchema,
   chartTime,
+  decodeBatchMessage,
   decodeReading,
+  decodeRefill,
   historyResolution,
   machineStateSchema,
   parseJson,
@@ -139,6 +141,67 @@ describe('machine-wide messages', () => {
     expect(
       batchEventSchema.safeParse({ ...base, recipe: { targetLab: [120, 0, 0] } }).success,
     ).toBe(false);
+  });
+});
+
+describe('refill message (owner, step 15)', () => {
+  const refill = {
+    ts,
+    batchId: null,
+    items: [
+      { component: 'bigTank', action: 'refilled', amount: 11200, unit: 'g' },
+      { component: 'dyeCTank', action: 'refilled', amount: 42.5, unit: 'g' },
+      { component: 'containerMagazine', action: 'refilled', amount: 18, unit: 'count' },
+      { component: 'lidMagazine', action: 'refilled', amount: 19, unit: 'count' },
+      { component: 'drainBucket', action: 'emptied', amount: 8650, unit: 'g' },
+      { component: 'rejectBox', action: 'emptied', amount: 3, unit: 'count' },
+      { component: 'batchTray', action: 'emptied', amount: 6, unit: 'count' },
+    ],
+    source: 'sim',
+  };
+
+  it('accepts parts named by their machine.json id, with grams or a count', () => {
+    expect(decodeRefill(machine, refill)).toEqual({ ok: true, value: refill });
+    expect(decodeBatchMessage(machine, 'refill', refill)).toEqual({
+      ok: true,
+      value: { event: 'refill', payload: refill },
+    });
+  });
+
+  it('refuses a part machine.json does not have', () => {
+    const bad = { ...refill, items: [{ ...refill.items[0], component: 'fuelTank' }] };
+    expect(decodeRefill(machine, bad)).toEqual({
+      ok: false,
+      error: 'refill: no part "fuelTank" in machine.json',
+    });
+  });
+
+  it('is never inside a batch, lists each part once, counts in whole numbers', () => {
+    const fail = (data: unknown) => decodeRefill(machine, data).ok;
+    expect(fail({ ...refill, batchId: 'B-1' })).toBe(false);
+    expect(fail({ ...refill, items: [] })).toBe(false);
+    expect(fail({ ...refill, items: [refill.items[0], refill.items[0]] })).toBe(false);
+    const half = { component: 'rejectBox', action: 'emptied', amount: 2.5, unit: 'count' };
+    expect(decodeRefill(machine, { ...refill, items: [half] })).toEqual({
+      ok: false,
+      error: 'refill: items.0.amount: a count is a whole number',
+    });
+    const none = { component: 'bigTank', action: 'refilled', amount: 0, unit: 'g' };
+    expect(fail({ ...refill, items: [none] })).toBe(false);
+  });
+
+  it('checks the other batch events with the batch schema', () => {
+    const started = {
+      ts,
+      batchId: 'B-1',
+      step: 'baseFill',
+      recipe: { targetLab: [55, 10, -20] },
+      containersDone: 0,
+      source: 'sim',
+    };
+    expect(decodeBatchMessage(machine, 'started', started).ok).toBe(true);
+    expect(decodeBatchMessage(machine, 'started', refill)).toMatchObject({ ok: false });
+    expect(decodeBatchMessage(machine, 'refill', started)).toMatchObject({ ok: false });
   });
 });
 

@@ -5,7 +5,8 @@
  */
 import { z } from 'zod';
 
-import type { Sensor } from './machine.schema.js';
+import type { Machine, Sensor } from './machine.schema.js';
+import type { BatchEvent } from './topics.js';
 
 export const SOURCES = ['sim', 'hw'] as const;
 export type Source = (typeof SOURCES)[number];
@@ -23,6 +24,7 @@ export const BATCH_STEPS = [
   'filling',
   'rinse',
 ] as const;
+export type BatchStep = (typeof BATCH_STEPS)[number];
 
 /** UTC ISO 8601 with a "Z", e.g. 2026-10-27T12:00:00.000Z (no local offsets). */
 const utcTimestamp = z.iso.datetime({
@@ -56,7 +58,7 @@ export const machineStateSchema = z
   });
 export type MachineState = z.infer<typeof machineStateSchema>;
 
-/** `<site>/<machine>/batch/<event>`, event = started | step | finished | aborted. */
+/** `<site>/<machine>/batch/<event>`, event = started | step | finished | aborted (refill below). */
 export const batchEventSchema = z.strictObject({
   ts: utcTimestamp,
   batchId: z.string().min(1),
@@ -69,6 +71,43 @@ export const batchEventSchema = z.strictObject({
   source,
 });
 export type BatchEventPayload = z.infer<typeof batchEventSchema>;
+
+export const REFILL_ACTIONS = ['refilled', 'emptied'] as const;
+export const REFILL_UNITS = ['g', 'count'] as const;
+
+/**
+ * `<site>/<machine>/batch/refill` (owner, step 15): what a worker refilled or emptied between
+ * batches; the simulator sends it now, a real worker (or a robot taking the tray) later. Parts are
+ * named by their machine.json id, so another machine needs no change to the format; the web app
+ * names them through each part's labelKey. The amount is what was added or taken away: grams for
+ * tanks and the drain bucket, a count for cups, lids, the reject box and the tray.
+ */
+export const refillItemSchema = z
+  .strictObject({
+    component: z.string().min(1),
+    action: z.enum(REFILL_ACTIONS),
+    amount: z.number().positive(),
+    unit: z.enum(REFILL_UNITS),
+  })
+  .refine((i) => i.unit !== 'count' || Number.isInteger(i.amount), {
+    message: 'a count is a whole number',
+    path: ['amount'],
+  });
+export type RefillItem = z.infer<typeof refillItemSchema>;
+
+export const refillEventSchema = z.strictObject({
+  ts: utcTimestamp,
+  /** Always null: a refill happens between batches, never inside one. */
+  batchId: z.null(),
+  items: z
+    .array(refillItemSchema)
+    .min(1)
+    .refine((items) => new Set(items.map((i) => i.component)).size === items.length, {
+      message: 'each part appears once',
+    }),
+  source,
+});
+export type RefillEventPayload = z.infer<typeof refillEventSchema>;
 
 export type DecodeResult<T> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -97,6 +136,43 @@ export function decodeReading(sensor: Sensor, data: unknown): DecodeResult<Readi
     return fail(`enum value ${String(r.value)} is not a known code`);
   }
   return { ok: true, value: r };
+}
+
+/** Checks a refill message: the format first, then that every part exists in machine.json. */
+export function decodeRefill(machine: Machine, data: unknown): DecodeResult<RefillEventPayload> {
+  const parsed = refillEventSchema.safeParse(data);
+  if (!parsed.success) return { ok: false, error: `refill: ${firstIssue(parsed.error)}` };
+  const known = new Set(machine.components.map((c) => c.id));
+  const unknown = parsed.data.items.find((i) => !known.has(i.component));
+  if (unknown)
+    return { ok: false, error: `refill: no part "${unknown.component}" in machine.json` };
+  return { ok: true, value: parsed.data };
+}
+
+export type BatchMessage =
+  | { event: 'refill'; payload: RefillEventPayload }
+  | { event: Exclude<BatchEvent, 'refill'>; payload: BatchEventPayload };
+
+/** Checks any `batch/<event>` message with the schema of its event. */
+export function decodeBatchMessage(
+  machine: Machine,
+  event: BatchEvent,
+  data: unknown,
+): DecodeResult<BatchMessage> {
+  if (event === 'refill') {
+    const refill = decodeRefill(machine, data);
+    return refill.ok ? { ok: true, value: { event, payload: refill.value } } : refill;
+  }
+  const parsed = batchEventSchema.safeParse(data);
+  return parsed.success
+    ? { ok: true, value: { event, payload: parsed.data } }
+    : { ok: false, error: `${event}: ${firstIssue(parsed.error)}` };
+}
+
+function firstIssue(error: z.ZodError): string {
+  const first = error.issues[0];
+  const where = first?.path.length ? `${first.path.join('.')}: ` : '';
+  return `${where}${first?.message ?? 'invalid payload'}`;
 }
 
 /** Parses a JSON message body; MQTT payloads arrive as bytes/text. */

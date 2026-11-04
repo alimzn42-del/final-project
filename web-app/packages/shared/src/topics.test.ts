@@ -66,6 +66,12 @@ describe('parseTopic', () => {
       kind: 'batch',
       event: 'finished',
     });
+    // Owner, step 15: refills between batches have their own event.
+    expect(parseTopic(root, 'lab/mixline/batch/refill')).toEqual({
+      kind: 'batch',
+      event: 'refill',
+    });
+    expect(batchTopic(root, 'refill')).toBe('lab/mixline/batch/refill');
   });
 
   it('round-trips every sensor topic in machine.json', () => {

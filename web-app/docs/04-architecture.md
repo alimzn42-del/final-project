@@ -70,20 +70,49 @@ Publishing rules (simulator now, hardware later):
 
 Machine-wide messages (published from simulator v2, step 15):
 
-`lab/mixline/state` (retained):
+`lab/mixline/state` (retained, QoS 1):
 ```json
-{ "ts": "...", "mode": "auto", "status": "running", "batchId": "B-0012", "source": "sim" }
+{ "ts": "...", "mode": "auto", "status": "running", "batchId": "B-20261104-080005", "source": "sim" }
 ```
 - `mode`: `auto | manual`. `status`: `idle | running | paused | stopped | fault`.
+- Sent when it changes, and again after a reconnect.
 
-`lab/mixline/batch/<event>`, event one of `started | step | finished | aborted`:
+`lab/mixline/batch/<event>` (QoS 1), event one of `started | step | finished | aborted`:
 ```json
-{ "ts": "...", "batchId": "B-0012", "step": "dyeDose", "recipe": { "targetLab": [55, 10, -20] },
-  "containersDone": 3, "source": "sim" }
+{ "ts": "...", "batchId": "B-20261104-080005", "step": "dyeDose",
+  "recipe": { "targetLab": [53.9, -33.78, 35.72] }, "containersDone": 3, "source": "sim" }
 ```
 - `step` one of: `baseFill, dyeDose, mix, sample, correct, complete, finalCheck, filling, rinse`.
+- `started` carries the first step; `step` is sent at every step change and each time
+  `containersDone` grows during `filling`; `finished` carries the last step.
+- Batch ids are made from the start time (UTC), so they stay unique across restarts.
 
-Topic builders and the payload zod schema live in `packages/shared`.
+`lab/mixline/batch/refill` (QoS 1; owner, step 15): what a worker refilled or emptied **between
+batches**, so it is never a step of a batch. The simulator sends it now; later a real worker, or a
+robot that takes the full tray, sends the same message.
+```json
+{ "ts": "...", "batchId": null,
+  "items": [
+    { "component": "bigTank", "action": "refilled", "amount": 8367.7, "unit": "g" },
+    { "component": "containerMagazine", "action": "refilled", "amount": 24, "unit": "count" },
+    { "component": "drainBucket", "action": "emptied", "amount": 9850.4, "unit": "g" },
+    { "component": "batchTray", "action": "emptied", "amount": 6, "unit": "count" }
+  ],
+  "source": "sim" }
+```
+- `batchId` is always `null`.
+- `component`: the part's id in `machine.json`, checked against it (`decodeRefill()`), so another
+  machine needs no change to the format. The web app names parts through each one's `labelKey`.
+- `action`: `refilled | emptied`. `amount`: what was added or taken away, more than 0: grams
+  (`g`) for the tanks and the drain bucket, a whole `count` for cups, lids, the reject box and
+  the tray. The mass-balance check needs these amounts.
+- Each part appears once per message.
+
+Storing and showing the machine state and batch messages is a later manager feature (doc 05);
+for now they are published and checked (`pnpm sim:check`).
+
+Topic builders and the payload zod schemas live in `packages/shared` (`decodeBatchMessage()`
+checks any `batch/<event>` with its own schema).
 
 ## Backend (NestJS)
 

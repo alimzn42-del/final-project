@@ -57,6 +57,9 @@ repo already created). Commit and push after every finished task; see the git wo
 ## Later (do not build yet)
 
 - Manager actions: start/stop batch, recipes, color targets, orders.
+- Batch record for managers (owner, step 15): store the machine state and every batch message
+  (`state`, `batch/<event>`, refills included) in the backend, and show them. Until then they are
+  only published and checked (`pnpm sim:check`).
 - Worker interface.
 - Customer interface: order a color and quantity, from a kiosk next to the line and from a phone.
   The kiosk is one shared device: log out automatically after each order and after a few minutes

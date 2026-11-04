@@ -4,7 +4,7 @@ import { decodeReading, sensorsByTopic, valueState } from '@mixline/shared';
 import { loadMachineFile } from '@mixline/shared/node';
 import { describe, expect, it } from 'vitest';
 
-import { HEARTBEAT_MS, Schedule, TICK_MS } from './schedule.js';
+import { ANALOG_MS, FAST_MS, HEARTBEAT_MS, Schedule, TICK_MS } from './schedule.js';
 import { analogValue, okBand } from './values.js';
 
 const machine = loadMachineFile(
@@ -53,9 +53,9 @@ describe('Schedule: doc 04 publishing rules', () => {
 
   it('sends analog sensors every second and digital/enum only on the 5 s heartbeat', () => {
     const schedule = new Schedule(machine);
-    const counts = [0, 1, 2, 3, 4, 5].map((i) => schedule.tick(T0 + i * TICK_MS).length);
+    const counts = [0, 1, 2, 3, 4, 5].map((i) => schedule.tick(T0 + i * ANALOG_MS).length);
     expect(counts).toEqual([60, analogCount, analogCount, analogCount, analogCount, 60]);
-    expect(HEARTBEAT_MS).toBe(5 * TICK_MS);
+    expect(HEARTBEAT_MS).toBe(5 * ANALOG_MS);
     expect(otherCount).toBe(24);
   });
 
@@ -80,4 +80,41 @@ describe('Schedule: doc 04 publishing rules', () => {
       }
     }
   });
+
+  it('ticks 5 times a second: analog at 1 Hz, the fast ones at 5 Hz', () => {
+    expect(TICK_MS).toBe(FAST_MS);
+    const schedule = new Schedule(machine);
+    const fast = new Set(['vessel.mass']);
+    const sentAt = (id: string) =>
+      Array.from({ length: 10 }, (_, i) => schedule.tick(T0 + i * TICK_MS, new Map(), fast)).map(
+        (out) => out.some((m) => m.topic === topicOf(id)),
+      );
+    expect(sentAt('vessel.mass')).toEqual(Array(10).fill(true));
+    const slow = new Schedule(machine);
+    const dye = Array.from({ length: 10 }, (_, i) => slow.tick(T0 + i * TICK_MS)).map((out) =>
+      out.some((m) => m.topic === topicOf('dyeC.mass')),
+    );
+    expect(dye).toEqual([true, false, false, false, false, true, false, false, false, false]);
+  });
+
+  it("sends the process values with the sensor's own decimals, and a digital change at once", () => {
+    const schedule = new Schedule(machine);
+    const first = schedule.tick(
+      T0,
+      new Map([
+        ['vessel.mass', 803.4567],
+        ['basePump.on', 0],
+      ]),
+    );
+    expect(first.find((m) => m.topic === topicOf('vessel.mass'))?.payload.value).toBe(803.5);
+    const next = schedule.tick(T0 + TICK_MS, new Map([['basePump.on', 1]]));
+    expect(next.map((m) => m.topic)).toEqual([topicOf('basePump.on')]);
+    expect(next[0]?.payload.value).toBe(1);
+  });
 });
+
+function topicOf(id: string): string {
+  const entry = [...byTopic].find(([, s]) => s.id === id);
+  if (!entry) throw new Error(`no sensor ${id}`);
+  return entry[0];
+}
