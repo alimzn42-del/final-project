@@ -6,7 +6,8 @@
  *
  * A token counts only while its row exists: logout deletes the row, so a
  * copied token stops working at once; a password change deletes the user's
- * other rows. Listeners (the live push) hear which sessions ended, to close
+ * other rows; disabling an account or a new temporary password deletes all of
+ * them (step 16). Listeners (the live push) hear which sessions ended, to close
  * their connections. The user is re-read on every request (access.ts), so a
  * deleted user or a changed role takes effect immediately.
  */
@@ -81,6 +82,15 @@ export class Sessions {
   /** Ends every session of the user except `keep` (password change). */
   async endOthers(keep: Session): Promise<void> {
     const ended = await this.store.deleteOthers(keep.userId, keep.sessionId);
+    if (ended.length) this.tell(ended);
+  }
+
+  /**
+   * Ends every session of the user, everywhere, at once (owner, step 16: a manager disabled the
+   * account or issued a new temporary password). Their live connections close too.
+   */
+  async endAll(userId: string): Promise<void> {
+    const ended = await this.store.deleteAllOf(userId);
     if (ended.length) this.tell(ended);
   }
 

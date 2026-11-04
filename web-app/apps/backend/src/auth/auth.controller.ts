@@ -1,4 +1,5 @@
 import {
+  ACCOUNT_CODES,
   type ChangePasswordInput,
   changePasswordSchema,
   type LoginInput,
@@ -14,6 +15,7 @@ import {
   Body,
   ConflictException,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   Inject,
@@ -36,7 +38,7 @@ import {
   type UserStore,
 } from '../users/user-store.js';
 import { AllowDuringPasswordChange, CurrentSession, CurrentUser, Public } from './access.js';
-import { AuthService, WrongPasswordError } from './auth.service.js';
+import { AccountDisabledError, AuthService, WrongPasswordError } from './auth.service.js';
 import { readCookie, type Session, SESSION_COOKIE, Sessions } from './session.js';
 
 /**
@@ -80,7 +82,16 @@ export class AuthController {
     @Body(new ZodPipe(loginSchema)) input: LoginInput,
     @Res({ passthrough: true }) res: Response,
   ): Promise<PublicUser> {
-    const user = await this.auth.login(input);
+    let user: StoredUser | undefined;
+    try {
+      user = await this.auth.login(input);
+    } catch (error) {
+      // Owner, step 16: said only after the password was right (see AuthService.login).
+      if (error instanceof AccountDisabledError) {
+        throw new ForbiddenException({ message: 'account disabled', code: ACCOUNT_CODES.disabled });
+      }
+      throw error;
+    }
     // One message for both cases: do not reveal which emails have accounts.
     if (!user) throw new UnauthorizedException('wrong email or password');
     await this.startSession(res, user);

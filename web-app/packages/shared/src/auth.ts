@@ -1,8 +1,8 @@
 /**
  * Account rules shared by the backend (request validation) and the frontend
  * (forms), so both always agree: roles, governorates, sign-up, login and
- * staff creation (docs/03-ui-spec.md "Users and roles", docs/04-architecture.md
- * "users").
+ * staff creation and management (docs/03-ui-spec.md "Users and roles",
+ * docs/04-architecture.md "users").
  */
 import { z } from 'zod';
 
@@ -184,6 +184,36 @@ export interface PublicUser {
   /** True until a manager-created account has replaced its temporary password. */
   mustChangePassword: boolean;
 }
+
+/**
+ * A staff account as the users page sees it (owner, step 16: managers and workers only;
+ * customers get their own section later).
+ */
+export interface StaffMember {
+  id: string;
+  email: string;
+  role: StaffRole;
+  fullName: string | null;
+  locale: (typeof LANGUAGES)[number];
+  departmentId: string | null;
+  mustChangePassword: boolean;
+  /** When a manager disabled the account (ISO 8601); null = active. */
+  disabledAt: string | null;
+  createdAt: string;
+}
+
+/** Move a worker to another department. */
+export const changeDepartmentSchema = z.strictObject({
+  departmentId: z.uuid('expected a department id'),
+});
+export type ChangeDepartmentInput = z.infer<typeof changeDepartmentSchema>;
+
+/**
+ * A manager gives someone a new temporary password (owner, step 16): same rules as any new
+ * password; the person must change it at the next login.
+ */
+export const temporaryPasswordSchema = z.strictObject({ password: newPassword });
+export type TemporaryPasswordInput = z.infer<typeof temporaryPasswordSchema>;
 
 /** Change my password: the current one, then the new one (same rules as sign-up). */
 export const changePasswordSchema = z

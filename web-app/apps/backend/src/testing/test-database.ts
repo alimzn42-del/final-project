@@ -61,10 +61,10 @@ export interface TestDatabase {
   drop(): Promise<void>;
 }
 
-/** Creates an empty database and applies every migration to it. */
-export async function createTestDatabase(): Promise<TestDatabase> {
+/** Creates an empty database and applies every migration to it. `suffix`: a second one. */
+export async function createTestDatabase(suffix = ''): Promise<TestDatabase> {
   const env = loadRepoEnv();
-  const name = `mixline_test_${String(process.pid)}`;
+  const name = `mixline_test_${String(process.pid)}${suffix ? `_${suffix}` : ''}`;
   await admin(env, `DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
   await admin(env, `CREATE DATABASE ${name}`);
   const ownerUrl = url(env, name);

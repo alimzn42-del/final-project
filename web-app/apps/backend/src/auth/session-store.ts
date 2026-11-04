@@ -19,6 +19,8 @@ export interface SessionStore {
   delete(id: string): Promise<boolean>;
   /** Deletes every session of the user except `keepId`; returns the deleted ids. */
   deleteOthers(userId: string, keepId: string): Promise<string[]>;
+  /** Deletes every session of the user (disabled, new temporary password); returns the ids. */
+  deleteAllOf(userId: string): Promise<string[]>;
   /** Deletes the sessions that expired before `now`. */
   deleteExpired(now: Date): Promise<void>;
 }

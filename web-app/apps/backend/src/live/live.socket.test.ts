@@ -56,14 +56,17 @@ describe('live push (socket.io)', () => {
 
   /** A user straight in the store, logged in. */
   async function user(role: Role, mustChangePassword = false) {
-    const row = await t.store.create({
-      email: `${randomUUID()}@lab.sy`,
-      passwordHash: 'not used',
-      role,
-      locale: 'en',
-      departmentId: role === 'worker' ? t.departments.idOf('Production') : undefined,
-      mustChangePassword,
-    });
+    const row = await t.store.create(
+      {
+        email: `${randomUUID()}@lab.sy`,
+        passwordHash: 'not used',
+        role,
+        locale: 'en',
+        departmentId: role === 'worker' ? t.departments.idOf('Production') : undefined,
+        mustChangePassword,
+      },
+      { action: 'accountCreated', actorId: null },
+    );
     return { id: row.id, cookie: await cookieFor(row.id) };
   }
 
@@ -256,6 +259,32 @@ describe('live push (socket.io)', () => {
     }, 10_000);
   });
 
+  describe('disabling or a new temporary password closes every connection at once (owner, step 16)', () => {
+    it("closes all of that person's connections, on every device, without waiting for the re-check", async () => {
+      const disabled = await user('worker');
+      const secondDevice = await cookieFor(disabled.id);
+      const renewed = await user('worker');
+      const conns = [connect(disabled.cookie), connect(secondDevice), connect(renewed.cookie)];
+      await Promise.all(conns.map((c) => c.snapshot));
+      const stays = connect(manager);
+      await stays.snapshot;
+
+      const reasons = Promise.all(conns.map((c) => closed(c.socket)));
+      const off = await t.call('POST', `/users/${disabled.id}/disable`, undefined, manager);
+      expect(off.status).toBe(200);
+      const renew = await t.call(
+        'POST',
+        `/users/${renewed.id}/temporary-password`,
+        { password: 'a-temporary-pass-1' },
+        manager,
+      );
+      expect(renew.status).toBe(200);
+      expect(await reasons).toEqual(Array<string>(3).fill('io server disconnect'));
+      expect(stays.socket.connected).toBe(true);
+      expect(await refusal(disabled.cookie)).toBe('LOGIN_REQUIRED');
+    });
+  });
+
   describe('a session that ends closes its connections at once (owner, step 11)', () => {
     it('logout closes that session’s connection; the same user’s other device stays', async () => {
       const phone = await t.login(TEST_ENV.MANAGER_EMAIL, TEST_ENV.MANAGER_PASSWORD);
@@ -273,13 +302,16 @@ describe('live push (socket.io)', () => {
 
     it('a password change closes the other devices’ connections; this device stays', async () => {
       const email = `${randomUUID()}@lab.sy`;
-      await t.store.create({
-        email,
-        passwordHash: await hashPassword('worker-pass-1'),
-        role: 'worker',
-        locale: 'en',
-        departmentId: t.departments.idOf('Production'),
-      });
+      await t.store.create(
+        {
+          email,
+          passwordHash: await hashPassword('worker-pass-1'),
+          role: 'worker',
+          locale: 'en',
+          departmentId: t.departments.idOf('Production'),
+        },
+        { action: 'accountCreated', actorId: null },
+      );
       const here = await t.login(email, 'worker-pass-1');
       const other = await t.login(email, 'worker-pass-1');
       const onHere = connect(here);

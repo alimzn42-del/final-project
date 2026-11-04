@@ -5,7 +5,7 @@
  */
 import { randomUUID } from 'node:crypto';
 
-import type { Department } from '@mixline/shared';
+import type { AuditAction, AuditValues, Department } from '@mixline/shared';
 
 import {
   DepartmentHasWorkersError,
@@ -13,6 +13,7 @@ import {
   DepartmentNotFoundError,
   type DepartmentStore,
 } from '../departments/department-store.js';
+import { MemoryAuditLog } from './memory-audit-log.js';
 
 interface Row {
   id: string;
@@ -25,7 +26,7 @@ export class MemoryDepartmentStore implements DepartmentStore {
   /** Set by MemoryUserStore: how many workers are in a department. */
   workersIn: (departmentId: string) => number = () => 0;
 
-  constructor() {
+  constructor(readonly audit: MemoryAuditLog = new MemoryAuditLog()) {
     for (const [nameEn, nameAr] of [
       ['Maintenance', 'الصيانة'],
       ['Production', 'الإنتاج'],
@@ -56,29 +57,54 @@ export class MemoryDepartmentStore implements DepartmentStore {
     return Promise.resolve(row ? this.view(row) : undefined);
   }
 
-  create(input: { nameEn: string; nameAr: string }): Promise<Department> {
+  create(input: { nameEn: string; nameAr: string }, actorId: string): Promise<Department> {
     const taken = this.taken(input);
     if (taken) return Promise.reject(taken);
     const row = { id: randomUUID(), ...input };
     this.rows.set(row.id, row);
+    this.record(actorId, 'departmentCreated', row.id, null, { ...input });
     return Promise.resolve(this.view(row));
   }
 
-  rename(id: string, input: { nameEn?: string; nameAr?: string }): Promise<Department> {
+  rename(
+    id: string,
+    input: { nameEn?: string; nameAr?: string },
+    actorId: string,
+  ): Promise<Department> {
     const row = this.rows.get(id);
     if (!row) return Promise.reject(new DepartmentNotFoundError(id));
     const taken = this.taken(input, id);
     if (taken) return Promise.reject(taken);
+    const changed = (Object.keys(input) as ('nameEn' | 'nameAr')[]).filter(
+      (k) => input[k] !== row[k],
+    );
+    const before: AuditValues = Object.fromEntries(changed.map((k) => [k, row[k]]));
     Object.assign(row, input);
+    if (changed.length) {
+      const after: AuditValues = Object.fromEntries(changed.map((k) => [k, row[k]]));
+      this.record(actorId, 'departmentRenamed', id, before, after);
+    }
     return Promise.resolve(this.view(row));
   }
 
-  delete(id: string): Promise<void> {
-    if (!this.rows.has(id)) return Promise.reject(new DepartmentNotFoundError(id));
+  delete(id: string, actorId: string): Promise<void> {
+    const row = this.rows.get(id);
+    if (!row) return Promise.reject(new DepartmentNotFoundError(id));
     const workers = this.workersIn(id);
     if (workers > 0) return Promise.reject(new DepartmentHasWorkersError(workers));
     this.rows.delete(id);
+    this.record(actorId, 'departmentDeleted', id, { nameEn: row.nameEn, nameAr: row.nameAr }, null);
     return Promise.resolve();
+  }
+
+  private record(
+    actorId: string,
+    action: AuditAction,
+    targetId: string,
+    before: AuditValues | null,
+    after: AuditValues | null,
+  ): void {
+    this.audit.add({ actorId, action, targetType: 'department', targetId, before, after });
   }
 
   private view(row: Row): Department {

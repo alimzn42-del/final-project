@@ -26,6 +26,7 @@ import { DepartmentsService } from './departments/departments.service.js';
 import { PrismaDepartmentStore } from './departments/prisma-department-store.js';
 import { PrismaUserStore } from './users/prisma-user-store.js';
 import { USER_STORE, type UserStore } from './users/user-store.js';
+import { StaffService } from './users/staff.service.js';
 import { UsersController } from './users/users.controller.js';
 
 /** Requests allowed per address in a time window (ttl in ms). */
@@ -83,6 +84,7 @@ export class AppModule {
         userStoreProvider(options),
         departmentStoreProvider(options),
         DepartmentsService,
+        StaffService,
         StateService,
         LiveGateway,
         sessionStoreProvider(options),

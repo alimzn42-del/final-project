@@ -30,12 +30,15 @@ afterAll(async () => {
 let n = 0;
 const newUser = async () => {
   n++;
-  return users.create({
-    email: `user${String(n)}@lab.sy`,
-    passwordHash: 'not used',
-    role: 'manager',
-    locale: 'en',
-  });
+  return users.create(
+    {
+      email: `user${String(n)}@lab.sy`,
+      passwordHash: 'not used',
+      role: 'manager',
+      locale: 'en',
+    },
+    { action: 'accountCreated', actorId: null },
+  );
 };
 const inAnHour = () => new Date(Date.now() + 3_600_000);
 

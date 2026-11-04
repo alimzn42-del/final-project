@@ -58,8 +58,8 @@ export const CurrentSession = createParamDecorator((_data: unknown, ctx: Executi
 /**
  * Runs before every route. Reads the session cookie, checks that its session
  * has not ended (logout, password change), re-reads the user from the database
- * (so a deleted user or a changed role counts at once), then applies @Public
- * and @Roles.
+ * (so a deleted user, a changed role or a disabled account counts at once),
+ * then applies @Public and @Roles.
  */
 @Injectable()
 export class AccessGuard implements CanActivate {
@@ -74,7 +74,9 @@ export class AccessGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();
 
     const session = await this.sessions.verify(readCookie(req.headers.cookie, SESSION_COOKIE));
-    const user = session ? await this.users.findById(session.userId) : undefined;
+    const found = session ? await this.users.findById(session.userId) : undefined;
+    // A disabled account (step 16) has no sessions left; this is a second safety net.
+    const user = found?.disabledAt ? undefined : found;
     if (user) {
       req.user = toPublic(user);
       req.session = session;

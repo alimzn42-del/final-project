@@ -2,6 +2,7 @@ import {
   type CreateDepartmentInput,
   createDepartmentSchema,
   type Department,
+  type PublicUser,
   type RenameDepartmentInput,
   renameDepartmentSchema,
 } from '@mixline/shared';
@@ -19,7 +20,7 @@ import {
   Post,
 } from '@nestjs/common';
 
-import { Roles } from '../auth/access.js';
+import { CurrentUser, Roles } from '../auth/access.js';
 import { ZodPipe } from '../common/zod.pipe.js';
 import {
   DepartmentHasWorkersError,
@@ -45,26 +46,28 @@ export class DepartmentsController {
   @Post()
   @Roles('manager')
   create(
+    @CurrentUser() manager: PublicUser,
     @Body(new ZodPipe(createDepartmentSchema)) input: CreateDepartmentInput,
   ): Promise<Department> {
-    return answer(() => this.departments.create(input));
+    return answer(() => this.departments.create(input, manager.id));
   }
 
   @Patch(':id')
   @Roles('manager')
   rename(
+    @CurrentUser() manager: PublicUser,
     @Param('id') id: string,
     @Body(new ZodPipe(renameDepartmentSchema)) input: RenameDepartmentInput,
   ): Promise<Department> {
-    return answer(() => this.departments.rename(id, input));
+    return answer(() => this.departments.rename(id, input, manager.id));
   }
 
   /** Refused with 409 and the number of workers while the department has any. */
   @Delete(':id')
   @HttpCode(204)
   @Roles('manager')
-  async delete(@Param('id') id: string): Promise<void> {
-    await answer(() => this.departments.delete(id));
+  async delete(@CurrentUser() manager: PublicUser, @Param('id') id: string): Promise<void> {
+    await answer(() => this.departments.delete(id, manager.id));
   }
 }
 

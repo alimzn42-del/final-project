@@ -134,6 +134,34 @@ Modules:
   - Endpoints: `POST /api/auth/signup` (always `customer`, logs in), `POST /api/auth/login`,
     `POST /api/auth/logout`, `GET /api/auth/me`, `PATCH /api/auth/me` (language, theme),
     `POST /api/users` (managers create `manager` or `worker`).
+  - Staff account management (owner, step 16), managers only, staff accounts only (a customer id
+    answers 404; customers get their own section later):
+    - `GET /api/users`: managers and workers, managers first (`StaffMember`: no password hash).
+    - `PATCH /api/users/:id/department` `{ departmentId }`: workers only (`NOT_A_WORKER`
+      otherwise). Their sessions continue (doc 05: until department-based permissions).
+    - `POST /api/users/:id/temporary-password` `{ password }`: a new temporary password, changed
+      at the next login.
+    - `POST /api/users/:id/disable` and `/enable`. Doing what is already so changes and records
+      nothing.
+    - A new temporary password and disabling **end every session of that person at once**: their
+      cookies stop working and their live connections close (no wait for the minute re-check).
+    - **Lockout protection, in the backend:** a manager can never disable themselves (409
+      `CANNOT_DISABLE_SELF`), and no action may leave the line without an active manager (409
+      `LAST_ACTIVE_MANAGER`). "Active" = not disabled; a manager with a temporary password counts.
+      Each action runs in one transaction that first locks the managers' rows
+      (`SELECT ... FOR UPDATE`) and checks that the acting manager is still active (403
+      `ACCOUNT_DISABLED` otherwise), so two managers disabling each other at the same moment take
+      turns and the second is refused (tested on the real database).
+    - Every action writes its audit entry in the same transaction; without the entry the change
+      is undone (tested by taking the role's INSERT privilege away).
+  - Disabled accounts: login with the **right** password answers 403 `ACCOUNT_DISABLED` (the page
+    says "disabled, ask a manager"); a wrong password still gets the usual 401, so a stranger
+    guessing passwords learns nothing (owner, step 16). The guard and the live push also refuse a
+    disabled account, as a second safety net (its sessions are already gone).
+  - Audit entries are written by: sign-up (`signedUp`, the customer is the actor; only email and
+    role, not the profile), staff creation and the first manager (`accountCreated`; the first
+    manager has no actor), a person's own password change (`passwordChanged`), the staff actions
+    above, and department add, rename and delete. Not by language or theme changes (owner).
   - Passwords: **argon2id** (`@node-rs/argon2`, OWASP settings: 19 MiB, 2 passes, 1 lane;
     prebuilt for Windows and Alpine x64/arm64, no install script). An unknown email still costs
     one password check, and wrong email and wrong password give the same answer.
@@ -148,7 +176,9 @@ Modules:
     - a **password change** deletes the user's other rows (logs out the other devices and closes
       their live connections); the device that made the change stays logged in;
     - a deleted user's rows go with it (`ON DELETE CASCADE`); expired rows are deleted at the next
-      login.
+      login;
+    - disabling an account or a new temporary password (step 16) deletes all of the user's rows
+      (every device logged out, every live connection closed).
     Tokens from before step 11 have no session id and stop working: everyone logs in once more.
   - Rate limits per client address: login 10 per minute, sign-up 20 per hour (a kiosk is one
     address for many customers). Behind nginx (step 11) the backend trusts exactly one proxy
@@ -324,6 +354,10 @@ Database:
     stop someone who controls the database server. Protecting against that needs the log copied
     somewhere they cannot reach (not built).
   - Viewing the log is deferred (owner, step 16: storing is enough for now; doc 05).
+  - An account the log names as the actor cannot be deleted (foreign key, ON DELETE RESTRICT), so
+    entries never lose their author. There is no account deletion yet; when customer accounts
+    can be deleted later, this needs a decision (for example keeping the entry with the author
+    blanked).
 - **The backend's own database role** (owner, step 16): `DB_APP_USER` (default `mixline_app`) with
   `DB_APP_PASSWORD` from `.env`. Not an administrator; it cannot create tables or roles. It may
   read and change every app table (`users`, `sessions`, `departments`, `telemetry` and its
