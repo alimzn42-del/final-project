@@ -113,6 +113,7 @@ const checks = [
     'broken messages are dropped; the backend keeps running and storing',
     async () => {
       const ts = new Date().toISOString();
+      const since = new Date(Date.now() - 1000).toISOString();
       const ok = (value, unit) => JSON.stringify({ ts, value, unit, source: 'hw' });
       publish('lab/mixline/mixer/sensors/mass', '{"ts": broken');
       publish('lab/mixline/mixer/sensors/mass', ok(GARBAGE, 'kg')); // wrong unit
@@ -122,7 +123,11 @@ const checks = [
       await sleep(1500);
       const health = await fetch(`${api}/health`);
       if (health.status !== 200) throw new Error('backend is not healthy');
-      const stored = sql(`SELECT count(*) FROM telemetry WHERE value IN (${String(GARBAGE)}, 7)`);
+      // Only what this check sent: simulator v2 (step 15) sends real 7s (a cup count, say),
+      // so looking for the value 7 in the whole table found them too.
+      const stored = sql(
+        `SELECT count(*) FROM telemetry WHERE received_at >= '${since}' AND (value = ${String(GARBAGE)} OR (sensor_id = 'basePump.on' AND value = 7))`,
+      );
       if (stored !== '0') throw new Error(`${stored} broken readings were stored`);
       const { body } = await get('/telemetry/latest');
       const age = Date.now() - Date.parse(body.sensors['vessel.mass'].receivedAt);
