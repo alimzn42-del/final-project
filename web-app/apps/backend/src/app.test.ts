@@ -118,15 +118,25 @@ describe('startup checks', () => {
     );
   });
 
-  it('builds the database address from the POSTGRES_* values', () => {
+  it("connects with the backend's own role, never the database owner (owner, step 16)", () => {
     const c = loadConfig({
       ...TEST_ENV,
       POSTGRES_USER: 'mixline',
-      POSTGRES_PASSWORD: 'p@ss/word',
+      POSTGRES_PASSWORD: 'owner-secret',
+      DB_APP_PASSWORD: 'p@ss/word',
       POSTGRES_DB: 'mixline',
       POSTGRES_HOST: 'db',
     });
-    expect(c.databaseUrl).toBe('postgresql://mixline:p%40ss%2Fword@db:5432/mixline');
+    expect(c.databaseUrl).toBe('postgresql://mixline_app:p%40ss%2Fword@db:5432/mixline');
+    expect(c.databaseUrl).not.toContain('owner-secret');
+    const named = loadConfig({
+      ...TEST_ENV,
+      DB_APP_USER: 'line_app',
+      DB_APP_PASSWORD: 'x'.repeat(12),
+      POSTGRES_DB: 'm',
+    });
+    expect(named.databaseUrl).toMatch(/^postgresql:\/\/line_app:/);
+    expect(() => loadConfig({ ...TEST_ENV, DB_APP_USER: 'Bad-Name' })).toThrow(/DB_APP_USER/);
     expect(loadConfig(TEST_ENV).databaseUrl).toBeUndefined();
   });
 });

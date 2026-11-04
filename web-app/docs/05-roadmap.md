@@ -40,6 +40,13 @@ noted in the rows. Each step has its own branch and is merged into `main` after 
 | 15 | Simulator v2: batch of about 4 minutes (owner, step 15; planned as 3), masses balance, state and batch messages. **Owner, step 15:** Beer–Lambert colour model and CIEDE2000, 5 recipes with the minimum dyes each (every pump in at least two) in a separate tuning file, recipes with a deferred dye skipped, about 1 cup in 20 rejected, refills between batches as their own `batch/refill` message, sensor table inside the simulator | Realism only matters once the UI can show it | Watch one full cycle; masses balance across scales | |
 | 16 | User management page (`/users`, managers only): create manager and worker accounts, manage departments, change a worker's department. Then the phase 1 acceptance run: `docker compose up --build` from a clean clone, arm64 build check, README | The phase 1 "done when" test | Walk through the done criteria together | |
 
+## Phase 2 — first step (owner, step 16)
+
+Web control of the line, right after the phase 1 acceptance run (step 16). The owner gives its
+details then: which controls, who may use them, and how a command reaches the line (an MQTT
+command topic would change hard rule 3, so it needs the owner's approval). Until then the simulator
+runs its batches by itself and the web app only monitors.
+
 ## Design decisions that shape phase 1
 
 - **The PLC owns all limits, alarms, interlocks and safety decisions** (owner, step 6). The web app
@@ -57,6 +64,13 @@ repo already created). Commit and push after every finished task; see the git wo
 ## Later (do not build yet)
 
 - Manager actions: start/stop batch, recipes, color targets, orders.
+- Customer accounts on the users page (owner, step 16): the staff list shows managers and
+  workers only; customers get their own section later, with the customer pages.
+- Audit log viewer (owner, step 16): every account and department change is stored from step 16
+  (docs/04), but no page shows it yet.
+- Department-based permissions (open item below): when a department decides what a worker may
+  open, changing a worker's department must also end their sessions, like the other account
+  actions (owner, step 16: it does not now, since it changes no access yet).
 - Batch record for managers (owner, step 15): store the machine state and every batch message
   (`state`, `batch/<event>`, refills included) in the backend, and show them. Until then they are
   only published and checked (`pnpm sim:check`).

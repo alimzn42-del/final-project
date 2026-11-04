@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { DEFAULT_CLOCK_TOLERANCE_MS } from '@mixline/shared';
 import { z } from 'zod';
 
+import { APP_ROLE_NAME, DEFAULT_APP_ROLE } from './database/app-role.js';
+
 /** Repo paths; this file runs from apps/backend/src or apps/backend/dist. */
 const repoConfig = (relative: string) =>
   fileURLToPath(new URL(`../../../config/${relative}`, import.meta.url));
@@ -23,10 +25,15 @@ const envSchema = z
     MACHINE_CONFIG: z.string().min(1).default(repoConfig('machine.json')),
     LOCALES_DIR: z.string().min(1).default(repoConfig('locales')),
 
-    // Database: DATABASE_URL, or built from the POSTGRES_* values (same rule as prisma.config.ts).
+    // Database: DATABASE_URL, or built from POSTGRES_HOST / POSTGRES_PORT / POSTGRES_DB with the
+    // backend's own role (owner, step 16): not the database owner, and only allowed to add and
+    // read audit rows (src/database/app-role.ts). The owner's login is for the migrations only.
     DATABASE_URL: optional,
-    POSTGRES_USER: optional,
-    POSTGRES_PASSWORD: optional,
+    DB_APP_USER: z
+      .string()
+      .regex(APP_ROLE_NAME, 'lower-case letters, digits and _')
+      .default(DEFAULT_APP_ROLE),
+    DB_APP_PASSWORD: optional,
     POSTGRES_DB: optional,
     POSTGRES_HOST: z.string().min(1).default('localhost'),
     POSTGRES_PORT: z.coerce.number().int().min(1).max(65535).default(5432),
@@ -107,8 +114,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
 
 function databaseUrl(e: z.infer<typeof envSchema>): string | undefined {
   if (e.DATABASE_URL) return e.DATABASE_URL;
-  if (!e.POSTGRES_USER || !e.POSTGRES_PASSWORD || !e.POSTGRES_DB) return undefined;
-  const user = encodeURIComponent(e.POSTGRES_USER);
-  const password = encodeURIComponent(e.POSTGRES_PASSWORD);
+  if (!e.DB_APP_PASSWORD || !e.POSTGRES_DB) return undefined;
+  const user = encodeURIComponent(e.DB_APP_USER);
+  const password = encodeURIComponent(e.DB_APP_PASSWORD);
   return `postgresql://${user}:${password}@${e.POSTGRES_HOST}:${String(e.POSTGRES_PORT)}/${e.POSTGRES_DB}`;
 }

@@ -12,7 +12,7 @@
     "typecheck": "prisma generate && tsc --noEmit",
     "dev": "tsx watch --conditions=source --env-file-if-exists=../../.env src/main.ts",
     "start": "node dist/main.js",
-    "db:migrate": "prisma migrate deploy",
+    "db:migrate": "tsx --conditions=source --env-file-if-exists=../../.env src/database/migrate.ts",
     "db:migrate:dev": "prisma migrate dev && prisma generate",
     "db:status": "prisma migrate status",
     "postinstall": "prisma generate",

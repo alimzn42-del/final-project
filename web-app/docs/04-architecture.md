@@ -301,6 +301,40 @@ Database:
     uncompressed (86,400 rows), hence its compression.
   - Simulator v2 (step 15): about 47 readings/s stored on the running stack (5 Hz while dosing or
     filling), about 15% more than the figures above.
+- `users.disabled_at` (owner, step 16): set while a manager has disabled a staff account (no
+  login); null = active. The database refuses it on customer accounts
+  (`users_disabled_staff_only`).
+- `audit_log` (owner, step 16): every change to an account or a department. Columns: id (counts
+  up), at, actor_id (who; null = the system, for the first manager from `.env`; foreign key to
+  `users`, ON DELETE RESTRICT), action, target_type (`user | department`), target_id (no foreign
+  key: a deleted department keeps its entries), before and after (JSON, only the fields that
+  changed). Indexed by target and by time.
+  - Actions: `accountCreated`, `signedUp` (customers), `temporaryPasswordIssued`,
+    `passwordChanged` (a person's own change), `accountDisabled`, `accountEnabled`,
+    `departmentChanged` (a worker moved), `departmentCreated`, `departmentRenamed`,
+    `departmentDeleted`. Language and theme changes are not recorded (owner).
+  - Passwords and their hashes are never written to it: a new temporary password is recorded as
+    the action alone.
+  - **Append-only, two layers.** (1) The backend connects with its own role (below), which may
+    only `INSERT` and `SELECT` on this table. (2) A trigger refuses `UPDATE`, `DELETE` and
+    `TRUNCATE` from any role, the database owner included (migration `*_accounts_audit`).
+  - **Limit (owner, step 16): not absolute.** A full database administrator (the owner role from
+    `.env`, or anyone with the server itself) can drop or disable the trigger and then change
+    rows. The layers stop the app, its bugs and anyone who only has the app's login; they do not
+    stop someone who controls the database server. Protecting against that needs the log copied
+    somewhere they cannot reach (not built).
+  - Viewing the log is deferred (owner, step 16: storing is enough for now; doc 05).
+- **The backend's own database role** (owner, step 16): `DB_APP_USER` (default `mixline_app`) with
+  `DB_APP_PASSWORD` from `.env`. Not an administrator; it cannot create tables or roles. It may
+  read and change every app table (`users`, `sessions`, `departments`, `telemetry` and its
+  summary), only add and read `audit_log`, and not touch `_prisma_migrations`. The backend's
+  container gets only this role's password, never the owner's.
+  - Created or updated by `src/database/migrate.ts` after the migrations, every time they run (the
+    migrate container, `pnpm db:migrate`, `pnpm db:check`), so a new table gets its privileges at
+    once. Roles belong to the whole database server; the tests use their own role per test
+    database, with a random password, so they never change the real one.
+  - The database tests (`pnpm test:db`) connect as such a role, so they prove the app works with
+    these privileges.
 - No `alarms` table in phase 1: its design depends on the PLC alarm list (open item in
   `docs/05-roadmap.md`, owner decision in step 7).
 - Migrations: **Prisma 7.10.1** (pinned: the CLI's `latest` npm tag points at an 8.0 release
@@ -315,13 +349,15 @@ Database:
     creates a normal migration (no reset demand).
   - `prisma.config.ts` builds the database address from `POSTGRES_*` (host `POSTGRES_HOST`,
     default `localhost`), so the password is written once in `.env`.
-  - In Docker, the one-shot `migrate` service applies the migrations and exits; the backend starts
-    only after it succeeded. The backend image does not carry the Prisma CLI.
+  - In Docker, the one-shot `migrate` service applies the migrations as the owner, grants the
+    backend's role (above) and exits; the backend starts only after it succeeded. The backend image
+    does not carry the Prisma CLI.
   - pnpm 10 runs install scripts only for `prisma`, `@prisma/engines` and `esbuild`
     (`pnpm-workspace.yaml`), so the migration engine is downloaded when the image is built, never
     when a container starts (the lab is offline).
-  - `pnpm db:check` creates an empty database, runs every migration, checks the result (including
-    running the cleanup, compression and summary jobs), and removes it.
+  - `pnpm db:check` creates an empty database, prepares it like the migrate container (migrations
+    and the backend's role), checks the result (including running the cleanup, compression and
+    summary jobs, and the audit log's two layers), and removes it and its role.
 
 ## Frontend (React)
 

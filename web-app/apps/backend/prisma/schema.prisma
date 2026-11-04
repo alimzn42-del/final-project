@@ -53,6 +53,30 @@ enum Source {
   hw
 }
 
+/// What an audit entry records (owner, step 16). Language and theme changes are not recorded.
+enum AuditAction {
+  /// A manager created a manager or worker account.
+  accountCreated
+  /// A customer signed up.
+  signedUp
+  /// A manager issued a new temporary password (forced change at next login).
+  temporaryPasswordIssued
+  /// Someone changed their own password.
+  passwordChanged
+  accountDisabled
+  accountEnabled
+  /// A manager moved a worker to another department.
+  departmentChanged
+  departmentCreated
+  departmentRenamed
+  departmentDeleted
+}
+
+enum AuditTarget {
+  user
+  department
+}
+
 /// One table for all roles. The sign-up profile is required for customers
 /// (checked by the sign-up validation) and empty for staff accounts.
 /// Emails are stored lowercase (a database check refuses capitals).
@@ -77,6 +101,9 @@ model User {
   department         Department? @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   /// True for accounts a manager creates, until the temporary password is changed.
   mustChangePassword Boolean     @default(false) @map("must_change_password")
+  /// Staff only (owner, step 16): set while a manager has disabled the account (no login).
+  /// Null = active. The backend never leaves the line without an active manager.
+  disabledAt         DateTime?   @map("disabled_at") @db.Timestamptz(3)
 
   // Sign-up profile (customers).
   fullName     String?      @map("full_name")
@@ -90,7 +117,8 @@ model User {
   occupation   String?
   paintPurpose String?      @map("paint_purpose")
 
-  sessions Session[]
+  sessions     Session[]
+  auditEntries AuditEntry[] @relation("AuditActor")
 
   @@map("users")
 }
@@ -142,4 +170,27 @@ model Telemetry {
   @@index([sensorId, receivedAt(sort: Desc)], map: "telemetry_sensor_time_idx")
   @@map("telemetry")
   @@ignore
+}
+
+/// Every change to an account or a department (owner, step 16): who, on whom, before, after,
+/// when. Append-only: the backend's database role may only add and read rows, and a trigger
+/// refuses UPDATE, DELETE and TRUNCATE as a second layer (see the accounts_audit migration and
+/// docs/04-architecture.md). Passwords and their hashes are never written here.
+model AuditEntry {
+  id         BigInt      @id @default(autoincrement())
+  at         DateTime    @default(now()) @db.Timestamptz(3)
+  /// Who made the change; null = the system (the first manager, created from .env).
+  actorId    String?     @map("actor_id") @db.Uuid
+  actor      User?       @relation("AuditActor", fields: [actorId], references: [id], onDelete: Restrict)
+  action     AuditAction
+  targetType AuditTarget @map("target_type")
+  /// The account or department changed. No foreign key: a deleted department keeps its entries.
+  targetId   String      @map("target_id") @db.Uuid
+  /// What changed, before and after (only the fields that changed; null = nothing before/after).
+  before     Json?
+  after      Json?
+
+  @@index([targetType, targetId, at])
+  @@index([at])
+  @@map("audit_log")
 }
