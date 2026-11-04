@@ -129,6 +129,9 @@ Suggested routes:
 - Orbit camera with limits (no going under the table). Each page frames its own subject.
 - Hover highlights an object and shows its name. Click navigates.
 - `pending` parts render as a translucent placeholder with a "pending" tag.
+- Parts not installed yet (`installed: false`, owner, step 16) are dimmed in their own colours
+  (never the offline grey) with a "Not installed" tag; on the pages a "Not installed" label takes
+  the place of the state chip, and a part's page says no data is expected from it.
 - Black dye is shown active like the other three.
 
 ## State colors (must be visible without clicking)
@@ -139,7 +142,7 @@ Suggested routes:
 | warning | yellow outline / glow | 2 |
 | offline | grey, dimmed (no data for 10 s) | 3 |
 | ok | normal colors | 4 |
-| none | normal colors, no badge (part has no sensors) | not counted |
+| none | normal colors, no badge (part has no sensors, or is not installed yet) | not counted |
 
 - **Who decides warning and fault: the PLC** (design decision, `docs/01-overview.md`). The web app
   only displays what the PLC reports. Until the PLC alarm list and how alarms reach the web app are

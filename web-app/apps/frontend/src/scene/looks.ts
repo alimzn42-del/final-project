@@ -31,6 +31,11 @@ export const MATERIAL_LOOKS: Record<Material, Look> = {
 
 /** A pending part is a placeholder: see-through, never solid (doc 03). */
 export const PENDING_OPACITY = 0.35;
+/**
+ * A part not installed yet (owner, step 16) is dimmed the same way, in its own colours: never the
+ * offline grey, since no data is expected from it.
+ */
+export const NOT_INSTALLED_OPACITY = 0.35;
 /** The walls of a closed box when its inside is the subject of the page (owner, step 12). */
 export const SEE_THROUGH_OPACITY = 0.14;
 /** Parts drawn only for orientation (the table under a section, the box around a part). */
@@ -43,6 +48,7 @@ export function partLook(
   const base = MATERIAL_LOOKS[c.material];
   let opacity = base.opacity;
   if (c.status === 'pending') opacity = Math.min(opacity, PENDING_OPACITY);
+  if (!c.installed) opacity = Math.min(opacity, NOT_INSTALLED_OPACITY);
   if (seeThrough) opacity = Math.min(opacity, SEE_THROUGH_OPACITY);
   if (ghost) opacity = Math.min(opacity, GHOST_OPACITY);
   return { ...base, color: c.color ?? base.color, opacity };

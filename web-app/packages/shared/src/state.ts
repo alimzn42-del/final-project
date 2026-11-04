@@ -10,6 +10,8 @@
  *   ignoring `none`. A section's children are its sub-sections plus its own
  *   parts with `subsection: null`. Parents (grouping only) do not roll up.
  * - `pending` is a look, not a state: a pending part still shows its state.
+ * - A part that is not installed (`installed: false`, owner, step 16) has no state: it and its
+ *   sensors are `none`, so it is never offline and never changes its parents' state.
  */
 import type { Machine, MachineComponent, Sensor } from './machine.schema.js';
 
@@ -77,6 +79,8 @@ export function componentState(
   latest: ReadonlyMap<string, LatestValue>,
   now: number,
 ): State {
+  // Not installed (owner, step 16): no data is expected, so never offline and never counted.
+  if (!c.installed) return 'none';
   return worstState(c.sensors.map((s) => sensorState(s, latest.get(s.id), now)));
 }
 
@@ -105,7 +109,7 @@ export function machineStates(
   const components = new Map<string, State>();
   for (const c of machine.components) {
     const states = c.sensors.map((s) => {
-      const state = sensorState(s, latest.get(s.id), now);
+      const state = c.installed ? sensorState(s, latest.get(s.id), now) : 'none';
       sensors.set(s.id, state);
       return state;
     });

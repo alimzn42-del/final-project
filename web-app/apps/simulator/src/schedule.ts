@@ -46,9 +46,10 @@ export class Schedule {
     machine: Machine,
     private readonly random: Random = Math.random,
   ) {
-    this.sensors = machine.components.flatMap((c) =>
-      c.sensors.map((sensor) => ({ sensor, topic: sensorTopic(machine, sensor) })),
-    );
+    // A part that is not installed sends nothing, like the real line (owner, step 16).
+    this.sensors = machine.components
+      .filter((c) => c.installed)
+      .flatMap((c) => c.sensors.map((sensor) => ({ sensor, topic: sensorTopic(machine, sensor) })));
   }
 
   /** Forget what was sent, so the next tick sends every sensor (e.g. after a reconnect). */

@@ -1,7 +1,8 @@
 /**
  * One part of the line, drawn from machine.json with simple shapes (hard rule
  * 7): a box, a cylinder, or the six walls of a hollow box; tanks show their
- * liquid. A pending part is a see-through placeholder with a tag (doc 03).
+ * liquid. A pending part is a see-through placeholder with a tag (doc 03); a part not installed
+ * yet is dimmed with a "Not installed" tag (owner, step 16).
  *
  * Colours, from strongest to weakest:
  * - its state (doc 03 "State colors"): fault and warning glow and are outlined in
@@ -48,8 +49,8 @@ export interface PartProps {
   ghost?: boolean;
   /** Edge colour of a see-through box, so its shape stays readable. */
   outline?: string | undefined;
-  /** Text of the tag on a pending part; no tag when undefined. */
-  pendingTag?: string | undefined;
+  /** Text of the tag on a pending or not-installed part ("Pending", "Not installed"); none when undefined. */
+  tag?: string | undefined;
   onPointerOver?: (e: ThreeEvent<PointerEvent>) => void;
   onPointerOut?: (e: ThreeEvent<PointerEvent>) => void;
   onClick?: (e: ThreeEvent<MouseEvent>) => void;
@@ -69,7 +70,7 @@ export function Part({
   seeThrough = false,
   ghost = false,
   outline,
-  pendingTag,
+  tag,
   onPointerOver,
   onPointerOut,
   onClick,
@@ -134,9 +135,9 @@ export function Part({
             opacity={fill.opacity}
           />
         )}
-        {pendingTag && part.status === 'pending' && (
+        {tag && (part.status === 'pending' || !part.installed) && (
           <Html center position={[0, height / 2 + 0.03, 0] as Vec3} zIndexRange={[20, 0]}>
-            <span className={styles.tag}>{pendingTag}</span>
+            <span className={styles.tag}>{tag}</span>
           </Html>
         )}
       </group>

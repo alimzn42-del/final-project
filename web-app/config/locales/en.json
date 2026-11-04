@@ -332,5 +332,7 @@
   "departments.workers_one": "{{count}} worker",
   "departments.workers_other": "{{count}} workers",
   "departments.hasWorkers_one": "Cannot delete: {{count}} worker is in this department. Move them first.",
-  "departments.hasWorkers_other": "Cannot delete: {{count}} workers are in this department. Move them first."
+  "departments.hasWorkers_other": "Cannot delete: {{count}} workers are in this department. Move them first.",
+  "status.notInstalled": "Not installed",
+  "nav.notInstalled": "Not installed yet, so no data is expected from it."
 }

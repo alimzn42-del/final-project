@@ -30,7 +30,7 @@ import type { Program } from './program.js';
 import { type Random, seededRandom } from './random.js';
 import { Schedule, TICK_MS } from './schedule.js';
 import { activeRecipes, type Skipped, skipMessage } from './recipes.js';
-import type { Dye, Recipe, SimConfig } from './simConfig.js';
+import type { Recipe, SimConfig } from './simConfig.js';
 
 export type Message =
   | { kind: 'reading'; topic: string; payload: Reading }
@@ -49,8 +49,6 @@ export interface SimulationOptions {
   faults?: Faults;
   /** Further behind than this (the computer slept), the simulation skips ahead instead. */
   maxLagMs?: number;
-  /** Dyes deferred in machine.json: recipes that need one are skipped (owner, step 15). */
-  deferredDyes?: ReadonlySet<Dye>;
 }
 
 interface RunningBatch {
@@ -63,7 +61,7 @@ interface RunningBatch {
 export class Simulation {
   readonly plant: Plant;
   readonly line: Line;
-  /** Recipes left out because they need a deferred dye; main.ts logs them. */
+  /** Recipes left out because they need a dye pump that is not installed; main.ts logs them. */
   readonly skipped: readonly Skipped[];
   private readonly schedule: Schedule;
   private readonly program: Program;
@@ -82,10 +80,7 @@ export class Simulation {
     this.line = bindLine(machine, config);
     this.plant = new Plant(this.line, config, random, options.faults);
     this.schedule = new Schedule(machine, random);
-    const { active, skipped } = activeRecipes(
-      config.recipes.list,
-      options.deferredDyes ?? new Set(),
-    );
+    const { active, skipped } = activeRecipes(config.recipes.list, this.line.notInstalledDyes);
     this.skipped = skipped;
     if (active.length === 0) {
       const lines = skipped.map((s) => `- ${skipMessage(s)}`);

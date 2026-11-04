@@ -37,6 +37,11 @@ const config = loadConfig();
 const machine = loadMachineFile(config.machineConfigPath);
 const simConfig = loadSimConfig(config.simulatorConfigPath);
 const byTopic = sensorsByTopic(machine);
+/** Only installed parts send data (owner, step 16: a part with installed: false sends nothing). */
+const installedSensors = new Set(
+  machine.components.filter((c) => c.installed).flatMap((c) => c.sensors.map((s) => s.id)),
+);
+const expected = new Map([...byTopic].filter(([, sensor]) => installedSensors.has(sensor.id)));
 const topics = subscriptions(machine);
 const arrivals = new Map<string, number[]>();
 /** Device times (ts) per sensor topic, for the 5 Hz upper bound. */
@@ -184,9 +189,9 @@ function liveResults(): CheckResult[] {
   const start = end - LISTEN_MS;
   const results: CheckResult[] = [];
 
-  const missing = [...byTopic.keys()].filter((t) => !arrivals.has(t));
+  const missing = [...expected.keys()].filter((t) => !arrivals.has(t));
   results.push([
-    `all ${String(byTopic.size)} sensor topics arrive`,
+    `all ${String(expected.size)} sensor topics of installed parts arrive`,
     missing.map((t) => `${t}: nothing received`),
   ]);
   results.push(['every message passes decodeReading against machine.json', rejected.slice(0, 5)]);
@@ -194,7 +199,7 @@ function liveResults(): CheckResult[] {
 
   const late: string[] = [];
   const tooFast: string[] = [];
-  for (const [topic, sensor] of byTopic) {
+  for (const [topic, sensor] of expected) {
     const times = arrivals.get(topic);
     if (!times) continue;
     // Skip the first period: the listener may start between two messages.

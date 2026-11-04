@@ -98,7 +98,11 @@ export function SceneContent({
             stateColors={stateColors}
             seeThrough={page.seeThrough.has(part.id)}
             outline={outline}
-            pendingTag={allTags || on ? t('status.pending') : undefined}
+            tag={
+              allTags || on
+                ? t(part.installed ? 'status.pending' : 'status.notInstalled')
+                : undefined
+            }
             onPointerOver={
               target
                 ? (e) => {

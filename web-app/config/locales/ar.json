@@ -330,7 +330,7 @@
   "users.you": "أنت",
   "users.status.active": "فعّال",
   "users.status.disabled": "معطّل",
-  "users.status.temporary": "عليه تغيير كلمة المرور",
+  "users.status.temporary": "يجب تغيير كلمة المرور",
   "users.move": "نقل",
   "users.moved": "نُقل {{name}} إلى قسم {{department}}.",
   "users.newPassword": "كلمة مرور مؤقتة جديدة",
@@ -368,5 +368,7 @@
   "departments.hasWorkers_two": "لا يمكن الحذف: في هذا القسم عاملان. انقلهما أولاً.",
   "departments.hasWorkers_few": "لا يمكن الحذف: في هذا القسم {{count}} عمال. انقلهم أولاً.",
   "departments.hasWorkers_many": "لا يمكن الحذف: في هذا القسم {{count}} عاملاً. انقلهم أولاً.",
-  "departments.hasWorkers_other": "لا يمكن الحذف: في هذا القسم {{count}} عامل. انقلهم أولاً."
+  "departments.hasWorkers_other": "لا يمكن الحذف: في هذا القسم {{count}} عامل. انقلهم أولاً.",
+  "status.notInstalled": "غير مركّب",
+  "nav.notInstalled": "غير مركّب بعد، لذلك لا يُنتظر منه أي بيانات."
 }

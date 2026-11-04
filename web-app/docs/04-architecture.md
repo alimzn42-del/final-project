@@ -545,10 +545,12 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
     magenta + black), navy (cyan + magenta + black). Every dye pump appears in at least two
     recipes (checked at start-up). Amounts in grams of dye per kg of base (estimates). The
     target colour is what the colour model predicts for the recipe.
-  - **Deferred dyes** (owner, step 15): a recipe that needs a deferred dye is skipped and the
-    skip is logged (`recipes.ts`); if no recipe is left, the simulator refuses to start. Open:
-    how `machine.json` marks a dye as deferred (it has no such marker yet), so for now no dye is
-    deferred.
+  - **Pumps not installed** (owner, step 16): a recipe that needs a dye whose pump has
+    `installed: false` in `machine.json` is skipped and the skip is logged (`recipes.ts`); if no
+    recipe is left, the simulator refuses to start and lists them. The design status (`pending`)
+    plays no part. A part that is not installed sends nothing, like the real line: its sensors
+    are not published, and `pnpm sim:check` expects only the installed parts' topics. Today every
+    part is installed.
   - **Sensor table** (owner: option a, `bindings.ts`): which `machine.json` sensor and part plays
     which role in the process ("the vessel scale is `vessel.mass`"). Checked against
     `machine.json` at start-up (kind, unit, value words, conveyor stations one equal pitch apart,
@@ -657,6 +659,8 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
   - Limits are strict: a value exactly at a limit is OK (`warnBelow: 150` warns at 149.9).
   - Offline = no message received for more than 10 s, measured from when the backend
     **received** the message, not from its `ts` (device clocks in an offline lab can be wrong).
+  - A part that is not installed (`installed: false`, owner, step 16) and its sensors are `none`
+    too: never offline, and never changes its parents' state.
   - Parts without sensors are `none`. Parents do not take their children's state (grouping only);
     sub-section, section and line roll up along the page tree.
 
@@ -691,6 +695,7 @@ section ever disagree, the file wins; update this section.
     "subsection": "subsection id | null",                 // null = shown on the section page
     "parent": "component id",                             // optional, grouping only
     "status": "confirmed | estimated | pending",
+    "installed": true,                                    // owner, step 16; false = not built in yet (default true)
     "anchor": "bottom | center",
     "position": [x, y, z],
     "rotationDeg": [x, y, z],

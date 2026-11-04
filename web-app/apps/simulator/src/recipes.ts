@@ -1,6 +1,7 @@
 /**
- * Which recipes the simulator can run (owner, step 15): a recipe that needs a deferred dye is
- * skipped, and the skip is logged. The rest run in their order from config/simulator.json.
+ * Which recipes the simulator can run (owner, step 16): a recipe that needs a dye whose pump is
+ * not installed (machine.json `installed: false`) is skipped, and the skip is logged. The rest run
+ * in their order from config/simulator.json.
  */
 import { DYES, type Dye, type Recipe } from './simConfig.js';
 
@@ -11,18 +12,18 @@ export function dyesOf(recipe: Recipe): Dye[] {
 
 export interface Skipped {
   recipe: string;
-  /** The deferred dyes it needs. */
+  /** The dyes it needs whose pump is not installed. */
   dyes: Dye[];
 }
 
 export function activeRecipes(
   recipes: readonly Recipe[],
-  deferred: ReadonlySet<Dye>,
+  notInstalled: ReadonlySet<Dye>,
 ): { active: Recipe[]; skipped: Skipped[] } {
   const active: Recipe[] = [];
   const skipped: Skipped[] = [];
   for (const recipe of recipes) {
-    const missing = dyesOf(recipe).filter((d) => deferred.has(d));
+    const missing = dyesOf(recipe).filter((d) => notInstalled.has(d));
     if (missing.length) skipped.push({ recipe: recipe.id, dyes: missing });
     else active.push(recipe);
   }
@@ -31,4 +32,4 @@ export function activeRecipes(
 
 /** The log line for a skipped recipe. */
 export const skipMessage = (s: Skipped) =>
-  `recipe "${s.recipe}" skipped: it needs ${s.dyes.join(' and ')}, which machine.json marks as deferred`;
+  `recipe "${s.recipe}" skipped: it needs ${s.dyes.join(' and ')}, and machine.json says that pump is not installed`;

@@ -142,6 +142,7 @@
       "section": null,
       "subsection": null,
       "status": "estimated",
+      "installed": true,
       "position": [
         900,
         -30,
@@ -172,6 +173,7 @@
       "section": "supply",
       "subsection": "bigTank",
       "status": "estimated",
+      "installed": true,
       "position": [
         180,
         0,
@@ -201,6 +203,7 @@
       "section": "supply",
       "subsection": "bigTank",
       "status": "estimated",
+      "installed": true,
       "position": [
         180,
         18,
@@ -266,6 +269,7 @@
       "section": "supply",
       "subsection": "bigTank",
       "status": "confirmed",
+      "installed": true,
       "position": [
         180,
         343,
@@ -297,6 +301,7 @@
       "section": "supply",
       "subsection": "bigTank",
       "status": "confirmed",
+      "installed": true,
       "position": [
         260,
         40,
@@ -342,6 +347,7 @@
       "section": "supply",
       "subsection": "containerMagazine",
       "status": "pending",
+      "installed": true,
       "position": [
         250,
         180,
@@ -384,6 +390,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "estimated",
+      "installed": true,
       "position": [
         550,
         0,
@@ -414,6 +421,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         550,
         151.3,
@@ -440,6 +448,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         520,
         169.3,
@@ -469,6 +478,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         550,
         174.3,
@@ -499,6 +509,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         580,
         187.0,
@@ -528,6 +539,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         550,
         192.0,
@@ -554,6 +566,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         680,
         151.3,
@@ -583,6 +596,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         550,
         210.0,
@@ -635,6 +649,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         550,
         440.0,
@@ -662,6 +677,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "pending",
+      "installed": true,
       "position": [
         550,
         455.0,
@@ -708,6 +724,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "pending",
+      "installed": true,
       "position": [
         550,
         230.0,
@@ -735,6 +752,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         590,
         390.0,
@@ -781,6 +799,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         355,
         0,
@@ -843,6 +862,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         760,
         0,
@@ -905,6 +925,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         1500,
         -750,
@@ -950,6 +971,7 @@
       "section": "conveyor",
       "subsection": "filling",
       "status": "pending",
+      "installed": true,
       "position": [
         480,
         0,
@@ -998,6 +1020,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "estimated",
+      "installed": true,
       "position": [
         330,
         0,
@@ -1027,6 +1050,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "estimated",
+      "installed": true,
       "position": [
         770,
         0,
@@ -1056,6 +1080,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "estimated",
+      "installed": true,
       "position": [
         550,
         635.0,
@@ -1086,6 +1111,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         377.5,
         653.0,
@@ -1115,6 +1141,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         347.5,
         671.0,
@@ -1147,6 +1174,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         377.5,
         676.0,
@@ -1180,6 +1208,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         407.5,
         688.7,
@@ -1212,6 +1241,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         377.5,
         693.7,
@@ -1241,6 +1271,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "pending",
+      "installed": true,
       "position": [
         377.5,
         711.7,
@@ -1297,6 +1328,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         377.5,
         653.0,
@@ -1329,6 +1361,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         377.5,
         575.0,
@@ -1422,6 +1455,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         492.5,
         653.0,
@@ -1451,6 +1485,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         462.5,
         671.0,
@@ -1483,6 +1518,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         492.5,
         676.0,
@@ -1516,6 +1552,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         522.5,
         688.7,
@@ -1548,6 +1585,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         492.5,
         693.7,
@@ -1577,6 +1615,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "pending",
+      "installed": true,
       "position": [
         492.5,
         711.7,
@@ -1633,6 +1672,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         492.5,
         653.0,
@@ -1665,6 +1705,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         492.5,
         575.0,
@@ -1758,6 +1799,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         607.5,
         653.0,
@@ -1787,6 +1829,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         577.5,
         671.0,
@@ -1819,6 +1862,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         607.5,
         676.0,
@@ -1852,6 +1896,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         637.5,
         688.7,
@@ -1884,6 +1929,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         607.5,
         693.7,
@@ -1913,6 +1959,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "pending",
+      "installed": true,
       "position": [
         607.5,
         711.7,
@@ -1969,6 +2016,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         607.5,
         653.0,
@@ -2001,6 +2049,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         607.5,
         575.0,
@@ -2094,6 +2143,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         722.5,
         653.0,
@@ -2123,6 +2173,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         692.5,
         671.0,
@@ -2155,6 +2206,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         722.5,
         676.0,
@@ -2188,6 +2240,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         752.5,
         688.7,
@@ -2220,6 +2273,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         722.5,
         693.7,
@@ -2249,6 +2303,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "pending",
+      "installed": true,
       "position": [
         722.5,
         711.7,
@@ -2305,6 +2360,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         722.5,
         653.0,
@@ -2337,6 +2393,7 @@
       "section": "mixingColor",
       "subsection": "mixing",
       "status": "confirmed",
+      "installed": true,
       "position": [
         722.5,
         575.0,
@@ -2430,6 +2487,7 @@
       "section": "mixingColor",
       "subsection": "color",
       "status": "estimated",
+      "installed": true,
       "position": [
         935,
         0,
@@ -2463,6 +2521,7 @@
       "section": "mixingColor",
       "subsection": "color",
       "status": "confirmed",
+      "installed": true,
       "position": [
         835,
         40,
@@ -2565,6 +2624,7 @@
       "section": "mixingColor",
       "subsection": "color",
       "status": "estimated",
+      "installed": true,
       "position": [
         975,
         20,
@@ -2596,6 +2656,7 @@
       "section": "mixingColor",
       "subsection": "color",
       "status": "estimated",
+      "installed": true,
       "position": [
         975,
         6,
@@ -2626,6 +2687,7 @@
       "section": "mixingColor",
       "subsection": "color",
       "status": "estimated",
+      "installed": true,
       "position": [
         998,
         10,
@@ -2657,6 +2719,7 @@
       "section": "mixingColor",
       "subsection": "color",
       "status": "confirmed",
+      "installed": true,
       "position": [
         1025,
         10,
@@ -2688,6 +2751,7 @@
       "section": "mixingColor",
       "subsection": "color",
       "status": "confirmed",
+      "installed": true,
       "position": [
         935,
         0,
@@ -2754,6 +2818,7 @@
       "section": "conveyor",
       "subsection": null,
       "status": "estimated",
+      "installed": true,
       "position": [
         725,
         0,
@@ -2783,6 +2848,7 @@
       "section": "conveyor",
       "subsection": null,
       "status": "estimated",
+      "installed": true,
       "position": [
         725,
         0,
@@ -2812,6 +2878,7 @@
       "section": "conveyor",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         725,
         83,
@@ -2842,6 +2909,7 @@
       "section": "conveyor",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         725,
         98,
@@ -2872,6 +2940,7 @@
       "section": "conveyor",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         725,
         83,
@@ -2902,6 +2971,7 @@
       "section": "conveyor",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         725,
         98,
@@ -2932,6 +3002,7 @@
       "section": "conveyor",
       "subsection": null,
       "status": "estimated",
+      "installed": true,
       "position": [
         100,
         85,
@@ -2958,6 +3029,7 @@
       "section": "conveyor",
       "subsection": null,
       "status": "estimated",
+      "installed": true,
       "position": [
         1350,
         85,
@@ -2984,6 +3056,7 @@
       "section": "conveyor",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         100,
         40,
@@ -3074,6 +3147,7 @@
       "section": "conveyor",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1350,
         85,
@@ -3104,6 +3178,7 @@
       "section": "conveyor",
       "subsection": "feeder",
       "status": "confirmed",
+      "installed": true,
       "position": [
         320,
         90,
@@ -3151,6 +3226,7 @@
       "section": "conveyor",
       "subsection": "feeder",
       "status": "pending",
+      "installed": true,
       "position": [
         250,
         170,
@@ -3199,6 +3275,7 @@
       "section": "conveyor",
       "subsection": "filling",
       "status": "confirmed",
+      "installed": true,
       "position": [
         550,
         90,
@@ -3246,6 +3323,7 @@
       "section": "conveyor",
       "subsection": "filling",
       "status": "pending",
+      "installed": true,
       "position": [
         550,
         80,
@@ -3309,6 +3387,7 @@
       "section": "conveyor",
       "subsection": "filling",
       "status": "estimated",
+      "installed": true,
       "position": [
         550,
         45,
@@ -3338,6 +3417,7 @@
       "section": "conveyor",
       "subsection": "filling",
       "status": "confirmed",
+      "installed": true,
       "position": [
         600,
         0,
@@ -3367,6 +3447,7 @@
       "section": "conveyor",
       "subsection": "filling",
       "status": "pending",
+      "installed": true,
       "position": [
         550,
         175,
@@ -3394,6 +3475,7 @@
       "section": "conveyor",
       "subsection": "checkCap",
       "status": "confirmed",
+      "installed": true,
       "position": [
         850,
         90,
@@ -3441,6 +3523,7 @@
       "section": "conveyor",
       "subsection": "checkCap",
       "status": "pending",
+      "installed": true,
       "position": [
         850,
         80,
@@ -3522,6 +3605,7 @@
       "section": "conveyor",
       "subsection": "checkCap",
       "status": "estimated",
+      "installed": true,
       "position": [
         850,
         45,
@@ -3551,6 +3635,7 @@
       "section": "conveyor",
       "subsection": "checkCap",
       "status": "confirmed",
+      "installed": true,
       "position": [
         900,
         0,
@@ -3580,6 +3665,7 @@
       "section": "conveyor",
       "subsection": "checkCap",
       "status": "pending",
+      "installed": true,
       "position": [
         850,
         100,
@@ -3610,6 +3696,7 @@
       "section": "conveyor",
       "subsection": "checkCap",
       "status": "pending",
+      "installed": true,
       "position": [
         850,
         200,
@@ -3652,6 +3739,7 @@
       "section": "conveyor",
       "subsection": "checkCap",
       "status": "pending",
+      "installed": true,
       "position": [
         850,
         230,
@@ -3682,6 +3770,7 @@
       "section": "conveyor",
       "subsection": "checkCap",
       "status": "confirmed",
+      "installed": true,
       "position": [
         850,
         0,
@@ -3727,6 +3816,7 @@
       "section": "conveyor",
       "subsection": "tray",
       "status": "pending",
+      "installed": true,
       "position": [
         1430,
         0,
@@ -3775,6 +3865,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1210,
         100,
@@ -3823,6 +3914,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1320,
         470,
@@ -3872,6 +3964,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1100,
         380,
@@ -3900,6 +3993,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1150,
         380,
@@ -3928,6 +4022,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1200,
         380,
@@ -3956,6 +4051,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1250,
         380,
@@ -4002,6 +4098,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1330,
         550,
@@ -4050,6 +4147,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1150,
         420,
@@ -4080,6 +4178,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "pending",
+      "installed": true,
       "position": [
         1140,
         400,
@@ -4110,6 +4209,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1140,
         250,
@@ -4140,6 +4240,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1220,
         250,
@@ -4170,6 +4271,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1280,
         400,
@@ -4200,6 +4302,7 @@
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
+      "installed": true,
       "position": [
         1290,
         150,
