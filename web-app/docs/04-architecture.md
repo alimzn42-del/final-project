@@ -226,6 +226,12 @@ Modules:
     than a tolerance; then they use `received_at`, and the event is logged. Offline detection
     always uses `received_at` (see `state.ts`).
   - `CLOCK_TOLERANCE_MS` = **2000** (owner), configurable in `.env`.
+  - **Configuration mismatch** (owner, step 16): valid data from a part that `machine.json` marks
+    `installed: false` is kept like any reading (the part still shows "Not installed"), and the
+    backend logs one warning per part: "configuration mismatch: part ... sends data ... but
+    machine.json says installed: false". It usually means the part was installed and
+    `machine.json` was not updated. It is not a line alarm. Showing it on a page is deferred to
+    the hardware phase (doc 05).
   - **Robustness:** the backend never crashes on a malformed message (unknown topic, bad JSON,
     wrong unit, unknown code...): it drops the message and continues. This is robustness, not a
     line rule. There is no rejection log, no per-sensor rejection count and no rejections endpoint

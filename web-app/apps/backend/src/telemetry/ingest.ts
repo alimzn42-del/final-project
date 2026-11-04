@@ -9,6 +9,11 @@
  *   is queued for the database, and becomes the sensor's latest value.
  * - A device clock that drifts beyond CLOCK_TOLERANCE_MS is logged once per
  *   station when it goes out of tolerance and once when it comes back.
+ * - Data from a part that machine.json marks `installed: false` is kept like any
+ *   other reading, and logged once per part as a configuration mismatch (owner,
+ *   step 16): someone probably installed the part and forgot to update
+ *   machine.json. It is not a line alarm; showing it on a page comes with the
+ *   hardware phase (doc 05).
  */
 import {
   chartTime,
@@ -16,6 +21,7 @@ import {
   type LatestReading,
   type LatestValue,
   type Machine,
+  type MachineComponent,
   parseJson,
   parseTopic,
   type Sensor,
@@ -34,6 +40,10 @@ export class TelemetryIngest {
   private readonly latestBySensor = new Map<string, TelemetryRow>();
   /** Stations whose device clock is currently beyond the tolerance. */
   private readonly skewedStations = new Set<string>();
+  /** The part each sensor belongs to. */
+  private readonly partOf = new Map<string, MachineComponent>();
+  /** Parts marked not installed that sent data: logged once each. */
+  private readonly mismatchLogged = new Set<string>();
 
   constructor(
     private readonly machine: Machine,
@@ -42,6 +52,7 @@ export class TelemetryIngest {
     private readonly logger: IngestLog,
   ) {
     this.sensors = sensorsByTopic(machine);
+    for (const c of machine.components) for (const s of c.sensors) this.partOf.set(s.id, c);
   }
 
   /** Handles one message. Returns false if it was dropped. Never throws. */
@@ -64,6 +75,7 @@ export class TelemetryIngest {
         source: reading.value.source,
       };
       this.watchClock(sensor.station, row);
+      this.watchInstalled(sensor);
       this.latestBySensor.set(sensor.id, row);
       this.write(row);
       return true;
@@ -94,6 +106,15 @@ export class TelemetryIngest {
       out.set(id, { value: row.value, receivedAt: row.receivedAt.getTime() });
     }
     return out;
+  }
+
+  private watchInstalled(sensor: Sensor): void {
+    const part = this.partOf.get(sensor.id);
+    if (!part || part.installed || this.mismatchLogged.has(part.id)) return;
+    this.mismatchLogged.add(part.id);
+    this.logger.warn(
+      `configuration mismatch: part "${part.id}" sends data (sensor ${sensor.id}) but machine.json says installed: false. If it was installed, set installed: true in config/machine.json`,
+    );
   }
 
   private watchClock(station: string, row: TelemetryRow): void {

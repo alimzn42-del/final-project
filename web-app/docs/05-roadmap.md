@@ -92,6 +92,10 @@ repo already created). Commit and push after every finished task; see the git wo
     - log one warning when a station starts rejecting and one when it stops (not one per
       message, to avoid flooding the log);
     - kept in memory: starts from zero when the backend restarts.
+  - Configuration mismatches on a page (owner, step 16): data from a part that `machine.json`
+    marks `installed: false`. The backend logs it once per part since step 16; show it on screen
+    together with the wrong-message counts above, as a configuration problem, never a line
+    alarm.
 - Grafana dashboards (optional, reads the same database).
 
 ## Before deploying to the Raspberry Pi
