@@ -260,6 +260,8 @@ export class Plant {
       fast.push(dyeRole(d, 'PumpSpeed'), dyeRole(d, 'PumpLoad'));
     }
     if (this.flows.has('filling')) fast.push('vesselMass', 'fillingMass');
+    // The check station weighs each filled cup while its platform is up.
+    if (this.checkUp) fast.push('checkMass');
     for (const role of fast) this.fastUntilS.set(role, this.timeS + 1);
     return [...this.fastUntilS].filter(([, until]) => until >= this.timeS).map(([role]) => role);
   }

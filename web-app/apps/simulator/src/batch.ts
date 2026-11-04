@@ -27,6 +27,8 @@ import { type Program, together, waitS, waitUntil } from './program.js';
 import { between, jitter, type Random } from './random.js';
 import { DYES, type Dye, type Recipe, type SimConfig } from './simConfig.js';
 
+const WEIGH_PAUSE_S = 1;
+
 export interface Outbox {
   started(recipe: Recipe, targetLab: Lab): void;
   step(step: BatchStep): void;
@@ -164,6 +166,7 @@ export class BatchProgram {
     yield* waitS(plant, this.config.stations.settleS);
     plant.pump('sample', PLACE.cell, PLACE.vessel, plant.ledger.mass(PLACE.cell));
     yield* this.untilStopped('sample');
+    yield* this.weighPause();
     return seen;
   }
 
@@ -173,7 +176,7 @@ export class BatchProgram {
     const film = this.config.rinse.residueG;
     plant.pump('drain', PLACE.vessel, PLACE.drainBucket, plant.ledger.mass(PLACE.vessel) - film);
     yield* this.untilStopped('drain');
-    yield* this.settle();
+    yield* this.weighPause();
   }
 
   /** Doc 01: new colour, so drain and rinse twice; the camera confirms clear water. */
@@ -382,5 +385,14 @@ export class BatchProgram {
 
   private *settle(): Program {
     yield* waitS(this.plant, this.config.stations.settleS);
+  }
+
+  /**
+   * After liquid flowed in or out of the vessel without a dose (sample back, draining), the
+   * vessel scale settles for 1 s before the next dose is weighed, so a settled weight is always
+   * read (and published, at 1 Hz) before anything new goes in.
+   */
+  private *weighPause(): Program {
+    yield* waitS(this.plant, WEIGH_PAUSE_S);
   }
 }
