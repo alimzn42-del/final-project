@@ -251,6 +251,40 @@ describe('between batches: the service (owner, step 15)', () => {
   });
 });
 
+describe('publishing rates (doc 04)', () => {
+  const one = run(1);
+  const timesOf = (id: string) =>
+    one.messages.flatMap((m, i) =>
+      m.kind === 'reading' && byTopic.get(m.topic)?.id === id ? [one.at[i] ?? 0] : [],
+    );
+  const gaps = (times: number[]) => times.slice(1).map((t, i) => t - (times[i] ?? 0));
+
+  it('5 Hz while dosing or filling, 1 Hz otherwise', () => {
+    const vessel = gaps(timesOf('vessel.mass'));
+    expect(Math.min(...vessel)).toBe(200);
+    expect(Math.max(...vessel)).toBe(1000);
+    // The cyan tank's scale only speeds up while cyan is dosed.
+    const cyan = gaps(timesOf('dyeC.mass'));
+    const fastShare = cyan.filter((g) => g === 200).length / cyan.length;
+    expect(fastShare).toBeGreaterThan(0.02);
+    expect(fastShare).toBeLessThan(0.5);
+    // The camera never runs fast: its reading is held between samples.
+    expect(new Set(gaps(timesOf('color.L')))).toEqual(new Set([1000]));
+  });
+
+  it('digital sensors on change, at least every 5 s', () => {
+    const pump = gaps(timesOf('basePump.on'));
+    expect(Math.max(...pump)).toBeLessThanOrEqual(5000);
+    expect(Math.min(...pump)).toBeLessThan(5000);
+  });
+
+  it('stays light for the backend: under 60 readings a second on average', () => {
+    const readings = one.messages.filter((m) => m.kind === 'reading').length;
+    const seconds = ((one.at.at(-1) ?? 0) - T0) / 1000;
+    expect(readings / seconds).toBeLessThan(60);
+  });
+});
+
 describe('the fault hook (doc 04: not used in phase 1)', () => {
   it('a worn cyan pump needs more cyan steps for the same colour', () => {
     const healthy = run(1).sim;

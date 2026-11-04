@@ -62,6 +62,11 @@ latest reading is `sim` (doc 03, "Simulated data").
 
 Publishing rules (simulator now, hardware later):
 - Analog sensors: on a fixed timer (1 Hz idle, up to 5 Hz while dosing or filling).
+  Simulator v2 (step 15): 5 Hz for the sensors the moving liquid changes, until 1 s after the
+  pump stops: the vessel scale and the running dye pump's tank scale, steps, speed and load
+  while dosing dye; the vessel scale, base pump current and big tank level while the base pump
+  runs; the vessel and filling scales while filling. Everything else stays at 1 Hz (draining
+  and sampling too).
 - Digital and enum sensors: on change, plus a heartbeat every 5 s.
 - A sensor with no message for 10 s is `offline`.
 - Scales publish **net liquid mass** in grams. The vessel and dye scales are tared with the empty

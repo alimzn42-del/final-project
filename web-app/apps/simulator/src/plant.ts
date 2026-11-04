@@ -60,6 +60,8 @@ export class Plant {
 
   /** Liquid pumps running now, by pump. */
   private readonly flows = new Map<Pump, Flow>();
+  /** Until when each analog sensor publishes at 5 Hz (see fastRoles). */
+  private readonly fastUntilS = new Map<Role, number>();
   /** Steps of each dye pump's current (or last) dose. */
   readonly dyeSteps: Record<Dye, { left: number; done: number }>;
   /** Every step each dye pump has made since the start. */
@@ -240,6 +242,27 @@ export class Plant {
   }
 
   // ---- what the sensors read ----
+
+  /**
+   * Doc 04: analog sensors publish at 5 Hz while dosing or filling. These are the ones the moving
+   * liquid changes: the scales on both ends, the big tank's level, and the running pump's
+   * signals. Draining and sampling are neither, so they stay at 1 Hz. They stay fast for one
+   * second after the pump stops, so the settled end value goes out at once.
+   */
+  fastRoles(): Role[] {
+    const fast: Role[] = [];
+    if (this.flows.has('base')) {
+      fast.push('vesselMass', 'basePumpCurrent', 'bigTankLevel', 'bigTankVolume');
+    }
+    for (const d of DYES) {
+      if (this.dyeSteps[d].left <= 0) continue;
+      fast.push('vesselMass', dyeRole(d, 'Mass'), dyeRole(d, 'PumpSteps'));
+      fast.push(dyeRole(d, 'PumpSpeed'), dyeRole(d, 'PumpLoad'));
+    }
+    if (this.flows.has('filling')) fast.push('vesselMass', 'fillingMass');
+    for (const role of fast) this.fastUntilS.set(role, this.timeS + 1);
+    return [...this.fastUntilS].filter(([, until]) => until >= this.timeS).map(([role]) => role);
+  }
 
   /** A scale's reading: the net liquid on it, its drift (fault hook) and noise. */
   weigh(which: 'vessel' | 'filling' | 'check' | Dye): number {

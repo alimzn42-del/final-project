@@ -99,7 +99,8 @@ export class Simulation {
       for (const [role, value] of Object.entries(this.plant.readings()) as [Role, number][]) {
         values.set(this.line.sensors[role].id, value);
       }
-      for (const { topic, payload } of this.schedule.tick(this.timeMs, values)) {
+      const fast = new Set(this.plant.fastRoles().map((role) => this.line.sensors[role].id));
+      for (const { topic, payload } of this.schedule.tick(this.timeMs, values, fast)) {
         this.pending.push({ kind: 'reading', topic, payload });
       }
     }
