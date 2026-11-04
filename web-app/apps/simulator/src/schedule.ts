@@ -18,7 +18,8 @@ import {
   sensorTopic,
 } from '@mixline/shared';
 
-import { analogValue, nominal, type Random } from './values.js';
+import type { Random } from './random.js';
+import { analogValue, nominal } from './values.js';
 
 export const TICK_MS = 1000;
 export const HEARTBEAT_MS = 5000;

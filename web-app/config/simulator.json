@@ -1,0 +1,93 @@
+{
+  "notes": "Simulator v2 settings (plan step 15). Every number here is an estimate, to tune once the line runs. machine.json stays the source of truth for sensors, topics, positions and the container; this file only says how the simulated process behaves.",
+  "recipes": {
+    "list": [
+      { "id": "green", "dyesGPerKg": { "cyan": 2.0, "magenta": 0.3, "yellow": 2.5, "black": 0.3 } },
+      { "id": "orange", "dyesGPerKg": { "cyan": 0.2, "magenta": 1.2, "yellow": 3.0, "black": 0.2 } },
+      { "id": "violet", "dyesGPerKg": { "cyan": 1.0, "magenta": 2.0, "yellow": 0.3, "black": 0.3 } },
+      { "id": "brown", "dyesGPerKg": { "cyan": 0.6, "magenta": 1.5, "yellow": 3.0, "black": 0.8 } },
+      { "id": "grey", "dyesGPerKg": { "cyan": 0.4, "magenta": 0.4, "yellow": 0.4, "black": 1.5 } }
+    ],
+    "notes": "Owner, step 15: the simulator makes these 5 colours in turn, each with all four dyes. Grams of dye (food dye diluted 1:9) per kg of base. The target colour is what the colour model below predicts for the recipe."
+  },
+  "batch": {
+    "firstPortionG": 800,
+    "heelG": 200,
+    "firstDoseShare": 0.85,
+    "correctionShare": 0.95,
+    "maxCorrections": 2,
+    "toleranceDeltaE": 2.0,
+    "pauseS": 5,
+    "notes": "Doc 01 batch logic. Mix firstPortionG of base with firstDoseShare of the recipe's dye (approach from the light side), correct up to maxCorrections times with correctionShare of the computed missing dye, then complete to 6 x fillTargetG + heelG (doc 02: about 0.2 L heel). Owner: tolerance ΔE00 <= 2.0."
+  },
+  "rinse": {
+    "waterG": 400,
+    "times": 2,
+    "mixS": 4,
+    "emptyBelowG": 5,
+    "residueG": 3,
+    "clearDeltaE": 1.0,
+    "notes": "Between colours (doc 01): drain, then fill with water, mix and drain, twice; the camera confirms clear water (ΔE00 to clear water <= clearDeltaE) on the last rinse. The drain pump runs until the vessel reads below emptyBelowG; residueG stays on the walls."
+  },
+  "dyes": {
+    "absorbance": {
+      "cyan": [0.3, 0.07, 0.02],
+      "magenta": [0.03, 0.28, 0.08],
+      "yellow": [0.01, 0.04, 0.3],
+      "black": [0.18, 0.18, 0.17]
+    },
+    "lotSpread": 0.06,
+    "notes": "How strongly each dye absorbs red, green and blue light: absorbance per (g of dye per kg of mixture) per cm of light path (Beer-Lambert, shared/color.ts). To fit later from camera readings of our dyes. Each dye lot (every dye refill) is up to lotSpread weaker or stronger than this, so the first sample is never exactly right."
+  },
+  "camera": {
+    "pathMm": 15,
+    "cellG": 36,
+    "noise": 0.1,
+    "whiteRef": 235,
+    "notes": "Doc 02 sample cell: inside 40 x 60 x 15 mm, so the light crosses 15 mm of liquid and the cell holds about 36 g. noise: L*, a* and b* measurement noise. whiteRef: the LED panel's brightness (0-255)."
+  },
+  "pumps": {
+    "baseGPerS": 60,
+    "drainGPerS": 60,
+    "fillingGPerS": 50,
+    "sampleGPerS": 9,
+    "currentA": 0.6,
+    "dyeStepsPerS": 1600,
+    "dyeGPerStep": 0.0003,
+    "dyeLoad": 200,
+    "notes": "Flow rates while running. Dye pumps dose by volume: steps x dyeGPerStep (doc 02), at dyeStepsPerS. currentA: the R385 pumps' current. dyeLoad: the TMC2209 load reading while running."
+  },
+  "mixer": { "rpm": 180, "rampS": 1.5, "runS": 5 },
+  "conveyor": { "mmPerS": 100, "slipPercent": 1.5 },
+  "stations": {
+    "servoS": 0.5,
+    "settleS": 0.5,
+    "notes": "servoS: time for a servo move (feeder fingers, platforms, pusher, lid). settleS: time for a weight to settle before it is read."
+  },
+  "check": {
+    "toleranceG": 5,
+    "shortFillChance": 0.05,
+    "shortFillG": [8, 15],
+    "notes": "Owner, step 15: about 1 cup in 20 is rejected. That cup's fill stops short by 8 to 15 g, so the check station reads it outside +/- toleranceG of fillTargetG and pushes it to the reject box."
+  },
+  "supplies": {
+    "bigTankFullG": 14000,
+    "bigTankLowFloatMm": 30,
+    "dyeTankFullG": 600,
+    "dyeTankKeepG": 50,
+    "cupsFull": 24,
+    "lidsFull": 24,
+    "drainBucketFullG": 10000,
+    "rejectBoxFull": 10,
+    "serviceS": 10,
+    "notes": "Owner, step 15: between batches the line is serviced as if by a worker: the full tray is removed, and whatever cannot cover the next batch is refilled to full or emptied (one batch/refill message lists it all). The simulator never lets a supply run out, so it never trips a float: alarms belong to the PLC."
+  },
+  "cabinet": { "idleC": 25, "runningC": 28, "minutes": 10 },
+  "noise": {
+    "scaleG": 0.2,
+    "levelMm": 1,
+    "currentA": 0.02,
+    "share": 0.01,
+    "notes": "Measurement noise: scales, the ultrasonic level, pump currents, and a share of the value for speeds and the dye pump load."
+  }
+}

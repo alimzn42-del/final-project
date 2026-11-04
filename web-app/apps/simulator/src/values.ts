@@ -1,19 +1,18 @@
 /**
  * Values for simulator v1: every sensor sits at its nominal value from
  * machine.json. Analog values get a little noise but never leave the "ok"
- * band, so the whole line shows ok. The looping batch with realistic values
- * comes in simulator v2 (plan step 15).
+ * band, so the whole line shows ok. Since simulator v2 (plan step 15) only
+ * sensors outside the sensor table (bindings.ts) still behave like this.
  */
 import type { Sensor } from '@mixline/shared';
+
+import type { Random } from './random.js';
 
 /** Units that count whole things: no noise, whole numbers. */
 const COUNTING_UNITS = new Set(['count', 'steps']);
 
 /** Noise amplitude as a share of the sensor's simulated range. */
 export const NOISE_SHARE = 0.005;
-
-/** A random number in [0, 1). Injected so tests can be repeatable. */
-export type Random = () => number;
 
 export function nominal(sensor: Sensor): number {
   return sensor.sim?.nominal ?? 0;

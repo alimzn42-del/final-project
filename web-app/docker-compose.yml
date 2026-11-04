@@ -140,8 +140,9 @@ services:
       MQTT_USERNAME: ${MQTT_USERNAME:?set MQTT_USERNAME in .env}
       MQTT_PASSWORD: ${MQTT_PASSWORD:?set MQTT_PASSWORD in .env}
       MACHINE_CONFIG: /config/machine.json
+      SIMULATOR_CONFIG: /config/simulator.json
     volumes:
-      # Read-only: the simulator reads the line description, never changes it.
+      # Read-only: the simulator reads the line description and its tuning file, never changes them.
       - ./config:/config:ro
 
   frontend:

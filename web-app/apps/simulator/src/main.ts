@@ -5,8 +5,10 @@
 import { loadMachineFile } from '@mixline/shared/node';
 import { connect } from 'mqtt';
 
+import { bindLine } from './bindings.js';
 import { loadConfig } from './config.js';
 import { Schedule, TICK_MS } from './schedule.js';
+import { loadSimConfig } from './simConfig.js';
 
 const SUMMARY_EVERY_MS = 60_000;
 
@@ -17,9 +19,13 @@ function log(message: string): void {
 function main(): void {
   const config = loadConfig();
   const machine = loadMachineFile(config.machineConfigPath);
+  const simConfig = loadSimConfig(config.simulatorConfigPath);
+  // Refuses to start when machine.json lacks a sensor or part the process needs.
+  bindLine(machine, simConfig);
   const schedule = new Schedule(machine);
   const sensorCount = machine.components.reduce((n, c) => n + c.sensors.length, 0);
   log(`loaded ${config.machineConfigPath}: ${String(sensorCount)} sensors`);
+  log(`loaded ${config.simulatorConfigPath}: ${String(simConfig.recipes.list.length)} recipes`);
 
   const client = connect(config.mqttUrl, {
     clientId: 'mixline-simulator',
