@@ -127,8 +127,10 @@ Run from `web-app/`:
 `pnpm dev` and `pnpm sim:check` run on the laptop and need `pnpm infra:up` first. In Docker the web
 app is at http://localhost:8080 (`WEB_PORT`). `docker compose up --build` (or `pnpm stack:up`)
 builds all four images at once; that fits in this laptop's ~4 GB of Docker memory (measured from a
-clean clone without cache in step 16: 5.7 min). If a build ever stops for lack of memory, build one
-at a time: `docker compose build migrate`, then `backend`, `simulator`, `frontend`.
+clean clone without cache in step 16: 5.7 min; owner: parallel builds are fine). If a build ever stops
+for lack of memory (it has before), raise Docker's memory first (README, step 3; on this laptop it is
+`memory=4GB` in `%UserProfile%\.wslconfig`, the laptop has 16 GB). Only if that is not possible,
+build one at a time: `docker compose build migrate`, then `backend`, `simulator`, `frontend`.
 
 Shell note: this laptop's fnm hook switches Node on `cd` into a folder with `.nvmrc`; in a
 non-interactive shell use `builtin cd` if that hook errors.
