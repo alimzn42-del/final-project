@@ -106,18 +106,18 @@ repo already created). Commit and push after every finished task; see the git wo
 
 ## Before deploying to the Raspberry Pi
 
-- Slim the migrate image (now 702 MB).
-
-Decided not to do (owner, step 9): trimming Prisma's query engines for databases we do not use
-(~60 MB). 60 MB does not matter on the Pi, and the trimming would break on Prisma upgrades.
-Revisit only if space becomes a real problem.
-
 - **Open (owner, step 16): the first run of the stack on the Raspberry Pi 5.** Moved here from
   `QUESTIONS.md` (row 12) before the step 16 merge. On 2026-11-04 all four images were built for
   arm64 under emulation on the laptop, and their native programs were checked inside the images:
   Node, Prisma's migration engine, the password hashing library and nginx are all ARM aarch64.
   Still to do on the real Pi: clone, copy `.env`, `docker compose up --build`, then
   `pnpm infra:check`, `sim:check`, `telemetry:check`, `live:check` and `web:check`.
+- Slim the migrate image (now 702 MB).
+
+Decided not to do (owner, step 9): trimming Prisma's query engines for databases we do not use
+(~60 MB). 60 MB does not matter on the Pi, and the trimming would break on Prisma upgrades.
+Revisit only if space becomes a real problem.
+
 ## Open items (blocked on decisions or purchases)
 
 | Item | Blocks |
