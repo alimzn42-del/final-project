@@ -118,6 +118,14 @@ Decided not to do (owner, step 9): trimming Prisma's query engines for databases
 (~60 MB). 60 MB does not matter on the Pi, and the trimming would break on Prisma upgrades.
 Revisit only if space becomes a real problem.
 
+## Known issues
+
+- **One test failure, observed once, not reproduced** (step 15, 2026-11-04). During task 1 one
+  test in the full suite (`pnpm test`, 487 tests then) failed on one run. Its name and output were
+  not saved, so it is unexplained. It has not come back in 31 full runs since (25 of them in a
+  row). If any test fails again with no code change: save the full output before running again,
+  and add the test's name here.
+
 ## Open items (blocked on decisions or purchases)
 
 | Item | Blocks |
