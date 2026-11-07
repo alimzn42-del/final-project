@@ -66,6 +66,12 @@ repo already created). Commit and push after every finished task; see the git wo
 - Manager actions: start/stop batch, recipes, color targets, orders.
 - Customer accounts on the users page (owner, step 16): the staff list shows managers and
   workers only; customers get their own section later, with the customer pages.
+- Deleting a customer account (owner, step 16): anonymize it instead of deleting it. Clear the
+  name, email and phone (mobile) and keep the row, so the audit log stays intact: every entry
+  keeps its author (the log refuses deleting an account it names, docs/04). Still to decide
+  then: the rest of the sign-up profile (date of birth, governorate, country, city or area,
+  occupation, paint purpose), and what takes the email's place, since the column is required
+  and unique now.
 - Audit log viewer (owner, step 16): every account and department change is stored from step 16
   (docs/04), but no page shows it yet.
 - Department-based permissions (open item below): when a department decides what a worker may

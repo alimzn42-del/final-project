@@ -369,9 +369,9 @@ Database:
     somewhere they cannot reach (not built).
   - Viewing the log is deferred (owner, step 16: storing is enough for now; doc 05).
   - An account the log names as the actor cannot be deleted (foreign key, ON DELETE RESTRICT), so
-    entries never lose their author. There is no account deletion yet; when customer accounts
-    can be deleted later, this needs a decision (for example keeping the entry with the author
-    blanked).
+    entries never lose their author. There is no account deletion yet. Decided for later (owner,
+    step 16): a customer account is anonymized instead of deleted (name, email and phone cleared,
+    the row kept), so the log stays intact; details in doc 05 "Later".
 - **The backend's own database role** (owner, step 16): `DB_APP_USER` (default `mixline_app`) with
   `DB_APP_PASSWORD` from `.env`. Not an administrator; it cannot create tables or roles. It may
   read and change every app table (`users`, `sessions`, `departments`, `telemetry` and its
