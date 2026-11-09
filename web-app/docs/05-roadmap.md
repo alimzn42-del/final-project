@@ -36,9 +36,9 @@ noted in the rows. Each step has its own branch and is merged into `main` after 
 | 11 | Frontend skeleton: routes, en/ar with right-to-left, login, sign-up and forced password change pages, role guards, placeholder pages, nginx proxy, Dockerfile. **Brand:** dark and light themes from the colour tokens, bundled IBM Plex fonts, initial SVG logo, header. **Owner, step 11:** sessions on the server (logout revokes, password change logs out other devices) | The pages need routing, auth and language before the 3D scene | Manager logs in; a new customer lands on `/customer`; a customer typing `/line` is redirected; Arabic switches to right-to-left; a lint rule rejects hardcoded strings; a token used after logout gets 401 and its live connection is closed | done |
 | 12 | 3D scene, static, from `machine.json` (boxes, cylinders, anchors, rotation, hollow boxes, liquids, pending placeholders), orbit limits. **Brand:** brand blue glow on hover, status colours kept separate from brand blue | Hardest visual part, so it is isolated | Owner reviews it against the spec; transform tests for known parts; frame rate on a phone | done |
 | 13 | Navigation: 4 levels, framing per page, breadcrumbs, hover names, click to navigate. **Brand:** camera glides between levels, honours reduced motion | Builds on the static scene | Every section, sub-section and part is reachable by click and by URL | done |
-| 14 | Live data in the UI: state colours and roll-up, values panel, trend charts, reserved twin slots, SIMULATION badge. **Brand:** state chips, Plex Mono numbers that do not jump, one pulse on a state change | Connects the UI to steps 9 and 10 | Values move; parts with no data turn grey (offline), visible from level 1. (Planned as "a fault value shows red"; phase 1 has no limits since the owner's step 6 decision.) | |
-| 15 | Simulator v2: batch of about 4 minutes (owner, step 15; planned as 3), masses balance, state and batch messages. **Owner, step 15:** Beer–Lambert colour model and CIEDE2000, 5 recipes with the minimum dyes each (every pump in at least two) in a separate tuning file, recipes with a deferred dye skipped, about 1 cup in 20 rejected, refills between batches as their own `batch/refill` message, sensor table inside the simulator | Realism only matters once the UI can show it | Watch one full cycle; masses balance across scales | |
-| 16 | User management page (`/users`, managers only): create manager and worker accounts, manage departments, change a worker's department. **Owner, step 16:** staff only (customers later); new temporary password and disable / re-enable (no deleting, no role change), each ending all of that person's sessions; lockout protection in the backend (never disable yourself, never leave the line without an active manager); an append-only audit log of every account and department change (the backend's own database role may only add and read it, plus a database rule; viewer deferred); a checks account so automated checks never use a person's login. Then the phase 1 acceptance run: `docker compose up --build` from a clean clone, arm64 build check (built under emulation; the run on the Raspberry Pi 5 is pending), README | The phase 1 "done when" test | Walk through the done criteria together | |
+| 14 | Live data in the UI: state colours and roll-up, values panel, trend charts, reserved twin slots, SIMULATION badge. **Brand:** state chips, Plex Mono numbers that do not jump, one pulse on a state change | Connects the UI to steps 9 and 10 | Values move; parts with no data turn grey (offline), visible from level 1. (Planned as "a fault value shows red"; phase 1 has no limits since the owner's step 6 decision.) | done (part of the badge check still open, below) |
+| 15 | Simulator v2: batch of about 4 minutes (owner, step 15; planned as 3), masses balance, state and batch messages. **Owner, step 15:** Beer–Lambert colour model and CIEDE2000, 5 recipes with the minimum dyes each (every pump in at least two) in a separate tuning file, recipes with a deferred dye skipped, about 1 cup in 20 rejected, refills between batches as their own `batch/refill` message, sensor table inside the simulator | Realism only matters once the UI can show it | Watch one full cycle; masses balance across scales | done (cycle check by eye still open, below) |
+| 16 | User management page (`/users`, managers only): create manager and worker accounts, manage departments, change a worker's department. **Owner, step 16:** staff only (customers later); new temporary password and disable / re-enable (no deleting, no role change), each ending all of that person's sessions; lockout protection in the backend (never disable yourself, never leave the line without an active manager); an append-only audit log of every account and department change (the backend's own database role may only add and read it, plus a database rule; viewer deferred); a checks account so automated checks never use a person's login. Then the phase 1 acceptance run: `docker compose up --build` from a clean clone, arm64 build check (built under emulation; the run on the Raspberry Pi 5 is pending), README | The phase 1 "done when" test | Walk through the done criteria together | done 2026-11-09 (owner: browser checks; users page and "Not installed" look still open, below) |
 
 ## Phase 2 — first step (owner, step 16)
 
@@ -117,6 +117,30 @@ repo already created). Commit and push after every finished task; see the git wo
 Decided not to do (owner, step 9): trimming Prisma's query engines for databases we do not use
 (~60 MB). 60 MB does not matter on the Pi, and the trimming would break on Prisma upgrades.
 Revisit only if space becomes a real problem.
+
+## Browser checks still open
+
+Moved from `QUESTIONS.md` at the step 16 merge (owner, 2026-11-09: merge, test these later). Each
+needs the owner's manager login on the running stack (http://localhost:8080). Claude runs any
+command a check needs; the owner only looks in the browser.
+
+- **SIMULATION badge, the rest** (step 14, task 8). Seen on 2026-11-09: violet in the dark theme,
+  in Arabic, and still there with the simulator stopped. Still to see: the light theme, and
+  "60/60" at phone width.
+- **Step 15 acceptance** (doc 05 step 15). Watch one full cycle, about 5 minutes, on the line page,
+  then the Mixing and Conveyor pages: the vessel fills and changes colour after each sample, the
+  dye tanks drop, the pumps and the mixer switch on and off on the timelines, every container of
+  the batch goes through (a reject now and then), the rinse clears the colour. The masses part
+  passed (`pnpm sim:check --cycle`, 2026-11-04).
+- **The users page** (step 16; owner: skipped, to test later). The staff list, a new account, a
+  new temporary password, disable (the confirmation) and re-enable, moving a worker, the
+  departments (add, rename, a refused delete); Arabic, light theme, phone width; the "disabled"
+  message at login. Try disabling yourself (no button) and a test worker.
+- **The "Not installed" look in the 3D view** (step 16; no test can see the 3D labels). The part
+  dimmed in its own colours, never grey, with the "Not installed" tag; "Not installed" in the side
+  panel and on its page; its section and the line not turned grey. Claude sets
+  `"installed": false` on one dye pump in `config/machine.json` and restarts the backend and the
+  simulator; the owner looks at the Mixing page and the pump's page; then it is set back.
 
 ## Known issues
 
