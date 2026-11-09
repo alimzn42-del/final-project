@@ -241,7 +241,8 @@ Status: confirmed. The suction into the vessel is still open (a hole in the wall
 tube; parts list).
 
 ### Camera box (owner, step 17)
-Closed box, matte black inside, next to the vessel, touching the control cabinet's left wall. The
+Closed box, white outside (owner, step 17), matte black inside, next to the vessel, touching the
+control cabinet's left wall. The
 parts list puts one lighting box around the vessel and the flow cell; the owner chose, after
 seeing it in the scene, to keep the vessel alone and the camera box apart, as in the earlier
 design. Inside: the camera, the flow cell, its white patch and the LED strips.
@@ -348,7 +349,7 @@ narrower than the 113 mm container top (open item, doc 05).
 ## Section: Control cabinet (the control panel)
 
 Right-back corner, raised above the table (above liquid level), cables enter from below through
-cable glands. Status: confirmed.
+cable glands. White outside (owner, step 17). Status: confirmed.
 
 Door (front), as in the parts list (owner, step 17):
 - Emergency stop: red mushroom, latching, 2 NC, 22 mm. Through the contactor it cuts the 12 V

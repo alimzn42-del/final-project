@@ -2623,8 +2623,8 @@
       },
       "material": "wood",
       "sensors": [],
-      "color": "#1E1E1E",
-      "notes": "Closed camera box, matte black inside, touching the control cabinet's left wall (owner, step 17: apart from the vessel again, as in the earlier design). Inside: the camera, the flow cell, its white patch and the two LED strips. Size estimated.",
+      "color": "#F2F2EE",
+      "notes": "Closed camera box, white outside (owner, step 17; the scene draws one colour), matte black inside on the real box, touching the control cabinet's left wall. Apart from the vessel again, as in the earlier design (owner, step 17). Inside: the camera, the flow cell, its white patch and the two LED strips. Size estimated.",
       "anchor": "bottom"
     },
     {
@@ -4408,8 +4408,8 @@
       },
       "material": "wood",
       "sensors": [],
-      "color": "#D9D9D6",
-      "notes": "The control panel: raised 100 mm on legs, cables enter from below through glands. Interior parts on the back panel; positions estimated.",
+      "color": "#F2F2EE",
+      "notes": "The control panel, white outside (owner, step 17): raised 100 mm on legs, cables enter from below through glands. Interior parts on the back panel; positions estimated.",
       "anchor": "bottom"
     },
     {

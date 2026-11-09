@@ -194,6 +194,10 @@ describe('clicking in 3D (plan step 13)', () => {
 
   it('a section page leads on to sub-sections; the table is only a faint context', async () => {
     const { renderer, onNavigate } = await renderScene('mixingColor');
+    // Owner, step 17: the camera box opens at the first click, like the cabinet.
+    expect(
+      meshesOf(renderer, 'colorBox').every((w) => surface(w).opacity <= SEE_THROUGH_OPACITY),
+    ).toBe(true);
     await renderer.fireEvent(renderer.scene.findByProps({ name: 'camera' }), 'onClick', pointer());
     expect(onNavigate).toHaveBeenCalledWith('/line/mixingColor/color');
     const table = renderer.scene.findByProps({ name: 'table' });

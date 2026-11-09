@@ -130,12 +130,12 @@ describe('where a click leads, per level (doc 03)', () => {
   });
 });
 
-describe('closed boxes are see-through when their inside is on the page (owner, step 12)', () => {
+describe('closed boxes: closed on the line page, open once clicked (owner, steps 12 and 17)', () => {
   const clear = (path: string, id: string) => pageScene(machine, at(path)).seeThrough.has(id);
 
-  it('the camera box: opaque on the line and its section, see-through from its sub-section down', () => {
+  it('the camera box: opaque on the line, see-through from its section down (the first click)', () => {
     expect(clear('/line', 'colorBox')).toBe(false);
-    expect(clear('/line/mixingColor', 'colorBox')).toBe(false);
+    expect(clear('/line/mixingColor', 'colorBox')).toBe(true);
     expect(clear('/line/mixingColor/color', 'colorBox')).toBe(true);
     expect(clear('/line/mixingColor/color/colorBox', 'colorBox')).toBe(true);
     expect(clear('/line/mixingColor/color/camera', 'colorBox')).toBe(true);

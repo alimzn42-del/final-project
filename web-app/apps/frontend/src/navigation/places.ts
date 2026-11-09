@@ -180,16 +180,17 @@ export function pageScene(machine: Machine, place: Place): PageScene {
     }
   }
 
-  // A closed box is see-through when the page offers its inside parts as separate things to
-  // open (or the page is about the box or one of its parts): owner, step 12.
+  // A closed box is closed on the line page, and see-through on every page that clicking it
+  // opens, where its inside parts are shown (owner, step 17: the cabinet and the camera box
+  // both open at the first click; step 12 opened the camera box only one page later), and on
+  // the page of the box or of one of its parts.
   const seeThrough = new Set<string>();
   const shownIds = new Set([...subject, ...context].map((c) => c.id));
   for (const box of components) {
     if (box.geometry.shape !== 'box' || !box.geometry.hollow || !shownIds.has(box.id)) continue;
     const inside = components.filter((c) => c.parent === box.id && shownIds.has(c.id));
-    const separate = inside.some((c) => targets.get(c.id)?.path !== targets.get(box.id)?.path);
     const aboutIt = place.level === 4 && (place.part.id === box.id || place.part.parent === box.id);
-    if (aboutIt || (inside.length > 0 && separate)) seeThrough.add(box.id);
+    if (aboutIt || (place.level > 1 && inside.length > 0)) seeThrough.add(box.id);
   }
 
   const links = machine.links.filter((l) => shownIds.has(l.from) && shownIds.has(l.to));

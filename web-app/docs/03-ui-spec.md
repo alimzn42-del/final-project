@@ -147,8 +147,9 @@ Suggested routes:
 - Tubes and cables (owner, step 17): the pump tubes, the RS485 chain and the Ethernet cables are
   drawn as thin tubes along estimated paths (`machine.json` `links`), on the pages where both of
   their ends are shown. They are not clickable.
-- A closed box is see-through on a page where the parts inside it lead to another page (owner,
-  step 12): the camera box from the Color page down, the cabinet on its own page.
+- Closed boxes (the cabinet, the camera box) are white and closed on the line page; the first
+  click opens their page, where they are see-through with their inside parts shown (owner,
+  step 17; in step 12 the camera box opened only one page later, on the Color page).
 - Orbit camera with limits (no going under the table). Each page frames its own subject.
 - Hover highlights an object and shows its name. Click navigates.
 - `pending` parts render as a translucent placeholder with a "pending" tag.
