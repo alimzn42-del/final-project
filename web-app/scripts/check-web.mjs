@@ -1,7 +1,7 @@
 // Live check of the web app behind nginx (plan step 11), the way a browser on
 // the lab network uses it: http://localhost:WEB_PORT only, never the backend's
 // own port. Run with `pnpm web:check` while `pnpm stack:up` is running. Logs in
-// as the first manager from .env.
+// with the checks account from .env (CHECK_EMAIL, step 16), never a person's.
 // Exits with code 1 if any check fails.
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -27,7 +27,7 @@ async function login() {
   const res = await fetch(`${web}/api/auth/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email: env.MANAGER_EMAIL, password: env.MANAGER_PASSWORD }),
+    body: JSON.stringify({ email: env.CHECK_EMAIL, password: env.CHECK_PASSWORD }),
   });
   if (res.status !== 200) throw new Error(`login answered ${String(res.status)}`);
   return (res.headers.get('set-cookie') ?? '').split(';')[0];
@@ -106,7 +106,7 @@ const checks = [
     },
   ],
   [
-    'the manager logs in through nginx; the live push connects and upgrades to WebSocket',
+    'the checks account logs in through nginx; the live push connects and upgrades to WebSocket',
     async () => {
       const cookie = await login();
       if ((await get('/api/auth/me', cookie)).res.status !== 200) throw new Error('/me refused');

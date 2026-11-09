@@ -74,6 +74,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      # The backend's own role, created or updated after the migrations (step 16).
+      DB_APP_USER: ${DB_APP_USER:-mixline_app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?set DB_APP_PASSWORD in .env}
 
   backend:
     # NestJS API: machine config and locales now; auth, telemetry and state in later steps.
@@ -95,14 +98,18 @@ services:
       LOCALES_DIR: /config/locales
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
-      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      # Its own database role, not the owner (step 16): the owner's password never reaches it.
+      DB_APP_USER: ${DB_APP_USER:-mixline_app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?set DB_APP_PASSWORD in .env}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       SESSION_HOURS: ${SESSION_HOURS:-8}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       MANAGER_EMAIL: ${MANAGER_EMAIL:-}
       MANAGER_PASSWORD: ${MANAGER_PASSWORD:-}
+      # The automated checks' own worker account (step 16), never a person's login.
+      CHECK_EMAIL: ${CHECK_EMAIL:-}
+      CHECK_PASSWORD: ${CHECK_PASSWORD:-}
       MQTT_URL: mqtt://mqtt:1883
       MQTT_USERNAME: ${MQTT_USERNAME:?set MQTT_USERNAME in .env}
       MQTT_PASSWORD: ${MQTT_PASSWORD:?set MQTT_PASSWORD in .env}

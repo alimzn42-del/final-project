@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { DEFAULT_CLOCK_TOLERANCE_MS } from '@mixline/shared';
 import { z } from 'zod';
 
+import { APP_ROLE_NAME, DEFAULT_APP_ROLE } from './database/app-role.js';
+
 /** Repo paths; this file runs from apps/backend/src or apps/backend/dist. */
 const repoConfig = (relative: string) =>
   fileURLToPath(new URL(`../../../config/${relative}`, import.meta.url));
@@ -23,10 +25,15 @@ const envSchema = z
     MACHINE_CONFIG: z.string().min(1).default(repoConfig('machine.json')),
     LOCALES_DIR: z.string().min(1).default(repoConfig('locales')),
 
-    // Database: DATABASE_URL, or built from the POSTGRES_* values (same rule as prisma.config.ts).
+    // Database: DATABASE_URL, or built from POSTGRES_HOST / POSTGRES_PORT / POSTGRES_DB with the
+    // backend's own role (owner, step 16): not the database owner, and only allowed to add and
+    // read audit rows (src/database/app-role.ts). The owner's login is for the migrations only.
     DATABASE_URL: optional,
-    POSTGRES_USER: optional,
-    POSTGRES_PASSWORD: optional,
+    DB_APP_USER: z
+      .string()
+      .regex(APP_ROLE_NAME, 'lower-case letters, digits and _')
+      .default(DEFAULT_APP_ROLE),
+    DB_APP_PASSWORD: optional,
     POSTGRES_DB: optional,
     POSTGRES_HOST: z.string().min(1).default('localhost'),
     POSTGRES_PORT: z.coerce.number().int().min(1).max(65535).default(5432),
@@ -53,6 +60,9 @@ const envSchema = z
     // The first manager account, created at startup if no manager exists.
     MANAGER_EMAIL: optional,
     MANAGER_PASSWORD: optional,
+    // The automated checks' own worker account (owner, step 16), never a person's account.
+    CHECK_EMAIL: optional,
+    CHECK_PASSWORD: optional,
   })
   .superRefine((e, ctx) => {
     if (Boolean(e.MANAGER_EMAIL) !== Boolean(e.MANAGER_PASSWORD)) {
@@ -60,6 +70,13 @@ const envSchema = z
         code: 'custom',
         path: ['MANAGER_PASSWORD'],
         message: 'set MANAGER_EMAIL and MANAGER_PASSWORD together',
+      });
+    }
+    if (Boolean(e.CHECK_EMAIL) !== Boolean(e.CHECK_PASSWORD)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['CHECK_PASSWORD'],
+        message: 'set CHECK_EMAIL and CHECK_PASSWORD together',
       });
     }
   });
@@ -72,6 +89,8 @@ export interface BackendConfig {
   databaseUrl: string | undefined;
   session: { secret: string; hours: number; secureCookie: boolean };
   firstManager: { email: string; password: string } | undefined;
+  /** The automated checks' worker account (owner, step 16). */
+  checkAccount: { email: string; password: string } | undefined;
   /** Undefined when MQTT_USERNAME / MQTT_PASSWORD are not set (no intake). */
   mqtt: { url: string; username: string; password: string } | undefined;
   clockToleranceMs: number;
@@ -96,6 +115,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       e.MANAGER_EMAIL && e.MANAGER_PASSWORD
         ? { email: e.MANAGER_EMAIL.trim().toLowerCase(), password: e.MANAGER_PASSWORD }
         : undefined,
+    checkAccount:
+      e.CHECK_EMAIL && e.CHECK_PASSWORD
+        ? { email: e.CHECK_EMAIL.trim().toLowerCase(), password: e.CHECK_PASSWORD }
+        : undefined,
     mqtt:
       e.MQTT_USERNAME && e.MQTT_PASSWORD
         ? { url: e.MQTT_URL, username: e.MQTT_USERNAME, password: e.MQTT_PASSWORD }
@@ -107,8 +130,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
 
 function databaseUrl(e: z.infer<typeof envSchema>): string | undefined {
   if (e.DATABASE_URL) return e.DATABASE_URL;
-  if (!e.POSTGRES_USER || !e.POSTGRES_PASSWORD || !e.POSTGRES_DB) return undefined;
-  const user = encodeURIComponent(e.POSTGRES_USER);
-  const password = encodeURIComponent(e.POSTGRES_PASSWORD);
+  if (!e.DB_APP_PASSWORD || !e.POSTGRES_DB) return undefined;
+  const user = encodeURIComponent(e.DB_APP_USER);
+  const password = encodeURIComponent(e.DB_APP_PASSWORD);
   return `postgresql://${user}:${password}@${e.POSTGRES_HOST}:${String(e.POSTGRES_PORT)}/${e.POSTGRES_DB}`;
 }

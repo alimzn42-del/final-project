@@ -32,6 +32,12 @@ export class MemorySessionStore implements SessionStore {
     return Promise.resolve(ids);
   }
 
+  deleteAllOf(userId: string): Promise<string[]> {
+    const ids = this.idsOf(userId);
+    for (const id of ids) this.rows.delete(id);
+    return Promise.resolve(ids);
+  }
+
   deleteExpired(now: Date): Promise<void> {
     for (const [id, row] of this.rows) if (row.expiresAt < now) this.rows.delete(id);
     return Promise.resolve();

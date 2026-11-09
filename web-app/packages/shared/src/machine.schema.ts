@@ -194,6 +194,13 @@ const component = z
     /** Grouping only: the part is listed under its parent. */
     parent: id.optional(),
     status,
+    /**
+     * Owner, step 16: whether the part is built into the line yet, independent of `status`
+     * (a design status). A part that is not installed sends no data and is never offline: it
+     * has no state, the scene and pages show it dimmed with a "not installed" label, and the
+     * simulator skips recipes that need its dye pump. Default true.
+     */
+    installed: z.boolean().default(true),
     anchor: z.enum(ANCHORS).default('bottom'),
     position: vec3,
     rotationDeg: vec3,

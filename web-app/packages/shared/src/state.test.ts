@@ -261,3 +261,39 @@ describe('the real machine.json: no limits yet, the PLC owns them', () => {
     expect(silent.line).toBe('offline');
   });
 });
+
+describe('a part that is not installed (owner, step 16)', () => {
+  const raw = rawMachine();
+  const pump = raw.components.find((c) => c.id === 'dyeKPump');
+  if (!pump) throw new Error('no dyeKPump');
+  (pump as Record<string, unknown>).installed = false;
+  const m = machineSchema.parse(raw);
+
+  it('has no state, nor do its sensors, so it is never offline', () => {
+    const states = machineStates(m, new Map(), NOW);
+    expect(states.components.get('dyeKPump')).toBe('none');
+    expect(states.sensors.get('dyeKPump.on')).toBe('none');
+    expect(states.components.get('dyeCPump')).toBe('offline');
+  });
+
+  it("never changes its parents' state: the others decide", () => {
+    const fresh = { receivedAt: NOW - 1000, value: 0 };
+    const allButK = new Map(
+      m.components
+        .filter((c) => c.id !== 'dyeKPump')
+        .flatMap((c) =>
+          c.sensors.map((s) => [s.id, { ...fresh, value: s.sim?.nominal ?? 0 }] as const),
+        ),
+    );
+    const states = machineStates(m, allButK, NOW);
+    expect(states.line).toBe('ok');
+    expect(states.components.get('dyeKPump')).toBe('none');
+  });
+
+  it('every part is installed unless machine.json says otherwise', () => {
+    expect(realMachine.components.every((c) => c.installed)).toBe(true);
+    const without = rawMachine();
+    for (const c of without.components) delete (c as Record<string, unknown>).installed;
+    expect(machineSchema.parse(without).components.every((c) => c.installed)).toBe(true);
+  });
+});

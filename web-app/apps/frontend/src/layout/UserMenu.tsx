@@ -1,4 +1,7 @@
-/** The user's name and role; opens theme choice, password change and logout. */
+/**
+ * The user's name and role; opens theme choice, the users page (managers only, step 16),
+ * password change and logout.
+ */
 import type { Theme } from '@mixline/shared';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -70,6 +73,17 @@ export function UserMenu() {
                 </button>
               ))}
             </fieldset>
+          )}
+          {user.role === 'manager' && !user.mustChangePassword && (
+            <Link
+              to="/users"
+              className={styles.item}
+              onClick={() => {
+                setOpen(false);
+              }}
+            >
+              {t('menu.users')}
+            </Link>
           )}
           {!user.mustChangePassword && (
             <Link

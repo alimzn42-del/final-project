@@ -30,6 +30,12 @@ export class PrismaSessionStore implements SessionStore {
     return rows.map((r) => r.id);
   }
 
+  async deleteAllOf(userId: string): Promise<string[]> {
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      DELETE FROM sessions WHERE user_id = ${userId}::uuid RETURNING id`;
+    return rows.map((r) => r.id);
+  }
+
   async deleteExpired(now: Date): Promise<void> {
     await this.prisma.session.deleteMany({ where: { expiresAt: { lt: now } } });
   }

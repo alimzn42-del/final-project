@@ -1,13 +1,19 @@
 // Checks the database setup (plan step 7). Run with `pnpm db:check` after `pnpm infra:up`.
-// Creates an EMPTY database, runs every migration on it with Prisma, checks the
-// result (tables, hypertable, policies, 1-minute summary, email rule, no drift
-// between schema.prisma and the database), then deletes it. The real database
-// is never touched. Exits with code 1 if any check fails.
+// Creates an EMPTY database, prepares it the way the migrate container does
+// (every migration, then the backend's own role, step 16), checks the result
+// (tables, hypertable, policies, 1-minute summary, email rule, the append-only
+// audit log, no drift between schema.prisma and the database), then deletes it
+// and its role. The real database is never touched. Exits with code 1 if any
+// check fails.
 import { execFileSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 const CHECK_DB = 'mixline_check';
+const CHECK_ROLE = 'mixline_check_app';
+const CHECK_ROLE_PASSWORD = randomBytes(18).toString('base64url');
+const repoDir = fileURLToPath(new URL('../', import.meta.url));
 const backendDir = fileURLToPath(new URL('../apps/backend/', import.meta.url));
 const prismaCli = createRequire(new URL('package.json', `file:///${backendDir}`)).resolve(
   'prisma/build/index.js',
@@ -42,6 +48,38 @@ function sql(database, query) {
   ).trim();
 }
 
+/** Runs SQL as the backend's role (step 16): what the app itself may do. */
+function sqlAsApp(query) {
+  return execFileSync(
+    'docker',
+    [
+      'compose',
+      'exec',
+      '-T',
+      '-e',
+      `PGPASSWORD=${CHECK_ROLE_PASSWORD}`,
+      'db',
+      'sh',
+      '-c',
+      'psql -v ON_ERROR_STOP=1 -h localhost -U "$0" -d "$1" -tAqc "$2"',
+      CHECK_ROLE,
+      CHECK_DB,
+      query,
+    ],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+  ).trim();
+}
+
+/** The error text if the SQL is refused, or '' if it worked. */
+function refusal(run, query) {
+  try {
+    run(query);
+    return '';
+  } catch (error) {
+    return String(error.stderr ?? error.message);
+  }
+}
+
 /** Runs the Prisma CLI of apps/backend against the check database. */
 function prisma(...args) {
   return execFileSync(process.execPath, [prismaCli, ...args], {
@@ -57,10 +95,28 @@ const jobsSql = `SELECT application_name || ' ' || config::text FROM timescaledb
 
 const checks = [
   [
-    'every migration runs on an empty database',
+    'every migration runs on an empty database, then the backend role is granted (step 16)',
     () => {
-      const out = prisma('migrate', 'deploy');
-      if (!/successfully applied/.test(out)) throw new Error(out.trim().split('\n').pop());
+      // The same program as the migrate container and pnpm db:migrate.
+      const migrate = fileURLToPath(new URL('src/database/migrate.ts', `file:///${backendDir}`));
+      const out = execFileSync(
+        process.execPath,
+        ['--import', 'tsx', '--conditions=source', migrate],
+        {
+          cwd: repoDir,
+          env: {
+            ...env,
+            DATABASE_URL: checkUrl,
+            DB_APP_USER: CHECK_ROLE,
+            DB_APP_PASSWORD: CHECK_ROLE_PASSWORD,
+          },
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        },
+      );
+      if (!/successfully applied/.test(out) || !/privileges granted/.test(out)) {
+        throw new Error(out.trim().split('\n').pop());
+      }
       return `${q('SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL')} migrations`;
     },
   ],
@@ -85,13 +141,40 @@ const checks = [
     },
   ],
   [
-    'tables users, departments and telemetry exist; no alarms table (owner, step 7)',
+    'tables users, sessions, departments, telemetry and audit_log exist; no alarms table (owner, step 7)',
     () => {
       const tables = q(
         `SELECT string_agg(table_name, ',' ORDER BY table_name) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`,
       );
-      if (tables !== '_prisma_migrations,departments,telemetry,users')
+      if (tables !== '_prisma_migrations,audit_log,departments,sessions,telemetry,users')
         throw new Error(`tables: ${tables}`);
+    },
+  ],
+  [
+    'audit log (owner, step 16): the backend role only adds and reads; the rule refuses even the owner',
+    () => {
+      sqlAsApp(
+        `INSERT INTO audit_log (action, target_type, target_id) VALUES ('departmentCreated', 'department', gen_random_uuid())`,
+      );
+      if (sqlAsApp('SELECT count(*) FROM audit_log') !== '1') {
+        throw new Error('the backend role cannot read it');
+      }
+      for (const change of [
+        'UPDATE audit_log SET after = NULL',
+        'DELETE FROM audit_log',
+        'TRUNCATE audit_log',
+      ]) {
+        if (!/permission denied/.test(refusal(sqlAsApp, change))) {
+          throw new Error(`the backend role may: ${change}`);
+        }
+        if (!/append-only/.test(refusal(q, change))) throw new Error(`the owner may: ${change}`);
+      }
+      if (!/permission denied/.test(refusal(sqlAsApp, 'SELECT * FROM _prisma_migrations'))) {
+        throw new Error('the backend role can read the migrations table');
+      }
+      if (q(`SELECT rolsuper FROM pg_roles WHERE rolname = '${CHECK_ROLE}'`) !== 'f') {
+        throw new Error('the backend role is an administrator');
+      }
     },
   ],
   [
@@ -145,12 +228,15 @@ const checks = [
       const chunks = q(
         `SELECT string_agg(CASE WHEN is_compressed THEN 'old:yes' ELSE 'old:no' END, ',') FROM timescaledb_information.chunks WHERE hypertable_name = '${mat}' AND range_end < now() - INTERVAL '7 days'`,
       );
+      // The chunk that holds the 2-day-old bucket (step 16 fix: asking for chunks that *start*
+      // in the last 7 days found none on some dates, since summary chunks span 10 days).
       const recent = q(
-        `SELECT bool_or(is_compressed) FROM timescaledb_information.chunks WHERE hypertable_name = '${mat}' AND range_start > now() - INTERVAL '7 days'`,
+        `SELECT bool_or(is_compressed) FROM timescaledb_information.chunks WHERE hypertable_name = '${mat}' AND range_start <= now() - INTERVAL '2 days' AND range_end > now() - INTERVAL '2 days'`,
       );
       if (!chunks || chunks.includes('old:no'))
         throw new Error(`old summary chunks: ${chunks || 'none'}`);
-      if (recent !== 'f') throw new Error('a recent summary chunk was compressed');
+      if (recent === '') throw new Error('no summary chunk holds the 2-day-old bucket');
+      if (recent !== 'f') throw new Error('the 2-day-old summary chunk was compressed');
       const kept = q("SELECT count(*) FROM telemetry_1m WHERE sensor_id = 'mixer.rpm'");
       if (kept !== '2') throw new Error(`${kept} summary rows readable after compression`);
     },
@@ -274,8 +360,11 @@ try {
   }
 } finally {
   sql('postgres', `DROP DATABASE IF EXISTS ${CHECK_DB} WITH (FORCE)`);
+  sql('postgres', `DROP ROLE IF EXISTS ${CHECK_ROLE}`);
 }
 console.log(
-  failed ? `\n${failed} check(s) failed.` : '\nAll checks passed. Check database removed.',
+  failed
+    ? `\n${failed} check(s) failed.`
+    : '\nAll checks passed. Check database and its role removed.',
 );
 process.exitCode = failed ? 1 : 0;

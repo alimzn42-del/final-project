@@ -8,6 +8,7 @@ import { LinePage } from '../pages/LinePage';
 import { LoginPage } from '../pages/LoginPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { SignupPage } from '../pages/SignupPage';
+import { UsersPage } from '../users/UsersPage';
 import { useSession } from '../session/session';
 import styles from './App.module.css';
 import { Landing, RequireUser, VisitorsOnly } from './guards';
@@ -43,6 +44,9 @@ export function App() {
       <Route element={<RequireUser roles={STAFF} />}>
         <Route path="/line/*" element={<LinePage />} />
         <Route path="/worker" element={<ComingSoonPage titleKey="page.worker" />} />
+      </Route>
+      <Route element={<RequireUser roles={['manager']} />}>
+        <Route path="/users" element={<UsersPage />} />
       </Route>
       <Route element={<RequireUser roles={['customer']} />}>
         <Route path="/customer" element={<ComingSoonPage titleKey="page.customer" />} />

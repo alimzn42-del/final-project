@@ -57,13 +57,26 @@ function LinkList({
           <li key={link.path}>
             <Link to={link.path}>
               <span>{label(link)}</span>
-              {place && <StateChip state={stateOf(states, place)} />}
+              {place?.level === 4 && !place.part.installed ? (
+                <NotInstalled />
+              ) : (
+                place && <StateChip state={stateOf(states, place)} />
+              )}
             </Link>
           </li>
         );
       })}
     </ul>
   );
+}
+
+/**
+ * A part not installed yet (owner, step 16): a plain label instead of a state chip. It is never
+ * offline and raises no warning, since no data is expected from it.
+ */
+function NotInstalled() {
+  const { t } = useTranslation();
+  return <span className={styles.notInstalled}>{t('status.notInstalled')}</span>;
 }
 
 function PartPanel({
@@ -87,7 +100,7 @@ function PartPanel({
         <h2 id="place-panel" className={styles.panelTitle}>
           {label(part)}
         </h2>
-        <StateChip state={states?.components[part.id]} />
+        {part.installed ? <StateChip state={states?.components[part.id]} /> : <NotInstalled />}
       </div>
       <dl className={styles.facts}>
         <dt>{t('nav.status')}</dt>
@@ -108,7 +121,9 @@ function PartPanel({
         </>
       )}
       <h3 className={styles.subTitle}>{t('nav.sensors')}</h3>
-      {part.sensors.length === 0 ? (
+      {!part.installed ? (
+        <p className={styles.muted}>{t('nav.notInstalled')}</p>
+      ) : part.sensors.length === 0 ? (
         <p className={styles.muted}>{t('nav.noSensors')}</p>
       ) : (
         <SensorValues part={part} />

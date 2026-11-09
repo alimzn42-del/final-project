@@ -125,3 +125,13 @@ html[dir='rtl'] .crumb + .crumb::before {
   color: var(--text-muted);
   font-size: 0.85rem;
 }
+
+/* A part not installed yet (owner, step 16): neutral, never a state colour. */
+.notInstalled {
+  flex: none;
+  padding: 0.05rem 0.45rem;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}

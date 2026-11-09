@@ -120,3 +120,37 @@ describe('TelemetryIngest', () => {
     expect(logs).toHaveLength(2);
   });
 });
+
+describe('data from a part marked not installed (owner, step 16)', () => {
+  const withoutPump = {
+    ...machine,
+    components: machine.components.map((c) =>
+      c.id === 'basePump' ? { ...c, installed: false } : c,
+    ),
+  };
+  const pumpOn = 'lab/mixline/mixer/sensors/base_pump_on';
+  const on = (value: number) =>
+    JSON.stringify({ ts: new Date(NOW - 300).toISOString(), value, unit: 'bool', source: 'hw' });
+
+  it('keeps the data and logs a configuration mismatch once per part, not per message', () => {
+    const rows: TelemetryRow[] = [];
+    const logs: string[] = [];
+    const ingest = new TelemetryIngest(withoutPump, (r) => rows.push(r), 2000, {
+      warn: (m) => logs.push(`warn: ${m}`),
+      log: (m) => logs.push(`log: ${m}`),
+    });
+    expect(ingest.handle(pumpOn, on(1), NOW)).toBe(true);
+    expect(ingest.handle(pumpOn, on(0), NOW + 1000)).toBe(true);
+    expect(rows).toHaveLength(2);
+    expect(ingest.latest()['basePump.on']?.value).toBe(0);
+    expect(logs).toEqual([
+      'warn: configuration mismatch: part "basePump" sends data (sensor basePump.on) but machine.json says installed: false. If it was installed, set installed: true in config/machine.json',
+    ]);
+  });
+
+  it('says nothing for installed parts', () => {
+    const { ingest, logs } = setup();
+    expect(ingest.handle(pumpOn, on(1), NOW)).toBe(true);
+    expect(logs).toEqual([]);
+  });
+});

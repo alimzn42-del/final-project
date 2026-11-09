@@ -11,6 +11,13 @@ Every part of the physical line, where it sits, what it is made of, and its sens
 | `estimated` | Decided in principle, number is a best guess. Keep it configurable. |
 | `pending` | Not decided yet. Show a labeled placeholder, do not invent details. |
 
+Installed (owner, step 16): every part in `machine.json` also has `installed: true | false`
+(default true), **separate from the status above**. The status says whether the design is decided;
+`installed` says whether the part is built into the line yet. A part with `installed: false` sends
+no data: it is never offline and raises no warning, the scene and pages show it dimmed with a "not
+installed" label, and the simulator skips recipes that need its dye pump. Today every part is
+installed.
+
 ## Coordinate system (for the scene)
 
 - Units: millimeters, grams.

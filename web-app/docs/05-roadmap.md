@@ -36,9 +36,16 @@ noted in the rows. Each step has its own branch and is merged into `main` after 
 | 11 | Frontend skeleton: routes, en/ar with right-to-left, login, sign-up and forced password change pages, role guards, placeholder pages, nginx proxy, Dockerfile. **Brand:** dark and light themes from the colour tokens, bundled IBM Plex fonts, initial SVG logo, header. **Owner, step 11:** sessions on the server (logout revokes, password change logs out other devices) | The pages need routing, auth and language before the 3D scene | Manager logs in; a new customer lands on `/customer`; a customer typing `/line` is redirected; Arabic switches to right-to-left; a lint rule rejects hardcoded strings; a token used after logout gets 401 and its live connection is closed | done |
 | 12 | 3D scene, static, from `machine.json` (boxes, cylinders, anchors, rotation, hollow boxes, liquids, pending placeholders), orbit limits. **Brand:** brand blue glow on hover, status colours kept separate from brand blue | Hardest visual part, so it is isolated | Owner reviews it against the spec; transform tests for known parts; frame rate on a phone | done |
 | 13 | Navigation: 4 levels, framing per page, breadcrumbs, hover names, click to navigate. **Brand:** camera glides between levels, honours reduced motion | Builds on the static scene | Every section, sub-section and part is reachable by click and by URL | done |
-| 14 | Live data in the UI: state colours and roll-up, values panel, trend charts, reserved twin slots, SIMULATION badge. **Brand:** state chips, Plex Mono numbers that do not jump, one pulse on a state change | Connects the UI to steps 9 and 10 | Values move; parts with no data turn grey (offline), visible from level 1. (Planned as "a fault value shows red"; phase 1 has no limits since the owner's step 6 decision.) | |
-| 15 | Simulator v2: batch of about 4 minutes (owner, step 15; planned as 3), masses balance, state and batch messages. **Owner, step 15:** Beer–Lambert colour model and CIEDE2000, 5 recipes with the minimum dyes each (every pump in at least two) in a separate tuning file, recipes with a deferred dye skipped, about 1 cup in 20 rejected, refills between batches as their own `batch/refill` message, sensor table inside the simulator | Realism only matters once the UI can show it | Watch one full cycle; masses balance across scales | |
-| 16 | User management page (`/users`, managers only): create manager and worker accounts, manage departments, change a worker's department. Then the phase 1 acceptance run: `docker compose up --build` from a clean clone, arm64 build check, README | The phase 1 "done when" test | Walk through the done criteria together | |
+| 14 | Live data in the UI: state colours and roll-up, values panel, trend charts, reserved twin slots, SIMULATION badge. **Brand:** state chips, Plex Mono numbers that do not jump, one pulse on a state change | Connects the UI to steps 9 and 10 | Values move; parts with no data turn grey (offline), visible from level 1. (Planned as "a fault value shows red"; phase 1 has no limits since the owner's step 6 decision.) | done (part of the badge check still open, below) |
+| 15 | Simulator v2: batch of about 4 minutes (owner, step 15; planned as 3), masses balance, state and batch messages. **Owner, step 15:** Beer–Lambert colour model and CIEDE2000, 5 recipes with the minimum dyes each (every pump in at least two) in a separate tuning file, recipes with a deferred dye skipped, about 1 cup in 20 rejected, refills between batches as their own `batch/refill` message, sensor table inside the simulator | Realism only matters once the UI can show it | Watch one full cycle; masses balance across scales | done (cycle check by eye still open, below) |
+| 16 | User management page (`/users`, managers only): create manager and worker accounts, manage departments, change a worker's department. **Owner, step 16:** staff only (customers later); new temporary password and disable / re-enable (no deleting, no role change), each ending all of that person's sessions; lockout protection in the backend (never disable yourself, never leave the line without an active manager); an append-only audit log of every account and department change (the backend's own database role may only add and read it, plus a database rule; viewer deferred); a checks account so automated checks never use a person's login. Then the phase 1 acceptance run: `docker compose up --build` from a clean clone, arm64 build check (built under emulation; the run on the Raspberry Pi 5 is pending), README | The phase 1 "done when" test | Walk through the done criteria together | done 2026-11-09 (owner: browser checks; users page and "Not installed" look still open, below) |
+
+## Phase 2 — first step (owner, step 16)
+
+Web control of the line, right after the phase 1 acceptance run (step 16). The owner gives its
+details then: which controls, who may use them, and how a command reaches the line (an MQTT
+command topic would change hard rule 3, so it needs the owner's approval). Until then the simulator
+runs its batches by itself and the web app only monitors.
 
 ## Design decisions that shape phase 1
 
@@ -57,6 +64,19 @@ repo already created). Commit and push after every finished task; see the git wo
 ## Later (do not build yet)
 
 - Manager actions: start/stop batch, recipes, color targets, orders.
+- Customer accounts on the users page (owner, step 16): the staff list shows managers and
+  workers only; customers get their own section later, with the customer pages.
+- Deleting a customer account (owner, step 16): anonymize it instead of deleting it. Clear the
+  name, email and phone (mobile) and keep the row, so the audit log stays intact: every entry
+  keeps its author (the log refuses deleting an account it names, docs/04). Still to decide
+  then: the rest of the sign-up profile (date of birth, governorate, country, city or area,
+  occupation, paint purpose), and what takes the email's place, since the column is required
+  and unique now.
+- Audit log viewer (owner, step 16): every account and department change is stored from step 16
+  (docs/04), but no page shows it yet.
+- Department-based permissions (open item below): when a department decides what a worker may
+  open, changing a worker's department must also end their sessions, like the other account
+  actions (owner, step 16: it does not now, since it changes no access yet).
 - Batch record for managers (owner, step 15): store the machine state and every batch message
   (`state`, `batch/<event>`, refills included) in the backend, and show them. Until then they are
   only published and checked (`pnpm sim:check`).
@@ -78,15 +98,57 @@ repo already created). Commit and push after every finished task; see the git wo
     - log one warning when a station starts rejecting and one when it stops (not one per
       message, to avoid flooding the log);
     - kept in memory: starts from zero when the backend restarts.
+  - Configuration mismatches on a page (owner, step 16): data from a part that `machine.json`
+    marks `installed: false`. The backend logs it once per part since step 16; show it on screen
+    together with the wrong-message counts above, as a configuration problem, never a line
+    alarm.
 - Grafana dashboards (optional, reads the same database).
 
 ## Before deploying to the Raspberry Pi
 
+- **Open (owner, step 16): the first run of the stack on the Raspberry Pi 5.** Moved here from
+  `QUESTIONS.md` (row 12) before the step 16 merge. On 2026-11-04 all four images were built for
+  arm64 under emulation on the laptop, and their native programs were checked inside the images:
+  Node, Prisma's migration engine, the password hashing library and nginx are all ARM aarch64.
+  Still to do on the real Pi: clone, copy `.env`, `docker compose up --build`, then
+  `pnpm infra:check`, `sim:check`, `telemetry:check`, `live:check` and `web:check`.
 - Slim the migrate image (now 702 MB).
 
 Decided not to do (owner, step 9): trimming Prisma's query engines for databases we do not use
 (~60 MB). 60 MB does not matter on the Pi, and the trimming would break on Prisma upgrades.
 Revisit only if space becomes a real problem.
+
+## Browser checks still open
+
+Moved from `QUESTIONS.md` at the step 16 merge (owner, 2026-11-09: merge, test these later). Each
+needs the owner's manager login on the running stack (http://localhost:8080). Claude runs any
+command a check needs; the owner only looks in the browser.
+
+- **SIMULATION badge, the rest** (step 14, task 8). Seen on 2026-11-09: violet in the dark theme,
+  in Arabic, and still there with the simulator stopped. Still to see: the light theme, and
+  "60/60" at phone width.
+- **Step 15 acceptance** (doc 05 step 15). Watch one full cycle, about 5 minutes, on the line page,
+  then the Mixing and Conveyor pages: the vessel fills and changes colour after each sample, the
+  dye tanks drop, the pumps and the mixer switch on and off on the timelines, every container of
+  the batch goes through (a reject now and then), the rinse clears the colour. The masses part
+  passed (`pnpm sim:check --cycle`, 2026-11-04).
+- **The users page** (step 16; owner: skipped, to test later). The staff list, a new account, a
+  new temporary password, disable (the confirmation) and re-enable, moving a worker, the
+  departments (add, rename, a refused delete); Arabic, light theme, phone width; the "disabled"
+  message at login. Try disabling yourself (no button) and a test worker.
+- **The "Not installed" look in the 3D view** (step 16; no test can see the 3D labels). The part
+  dimmed in its own colours, never grey, with the "Not installed" tag; "Not installed" in the side
+  panel and on its page; its section and the line not turned grey. Claude sets
+  `"installed": false` on one dye pump in `config/machine.json` and restarts the backend and the
+  simulator; the owner looks at the Mixing page and the pump's page; then it is set back.
+
+## Known issues
+
+- **One test failure, observed once, not reproduced** (step 15, 2026-11-04). During task 1 one
+  test in the full suite (`pnpm test`, 487 tests then) failed on one run. Its name and output were
+  not saved, so it is unexplained. It has not come back in 31 full runs since (25 of them in a
+  row). If any test fails again with no code change: save the full output before running again,
+  and add the test's name here.
 
 ## Open items (blocked on decisions or purchases)
 

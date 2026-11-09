@@ -24,6 +24,17 @@
     required free-text city / area field. "Outside Syria" adds a required free-text country field.
   - Storage: see `users` in `docs/04-architecture.md`.
 - Self-registration can never create `manager` or `worker`. Enforce in the backend, not only the UI.
+- Managers manage staff accounts on the users page (owner, step 16): managers and workers only,
+  customers later in their own section. Besides creating accounts, a manager can move a worker
+  to another department, give someone a new temporary password (they must change it at the next
+  login) and disable or re-enable an account. A new temporary password and disabling log that
+  person out everywhere at once. No deleting and no role change for now.
+  - A manager can never disable their own account, and the line can never be left without an
+    active manager; the backend refuses both, whatever the page sends.
+  - A disabled person who logs in with the right password is told the account is disabled and to
+    ask a manager; a wrong password always gets the plain "wrong email or password".
+  - Every change to an account or a department is recorded in the audit log (who, on whom,
+    before, after, when). Viewing it is deferred (doc 05).
 - A manager creates a worker or manager account with (owner, step 9):
   - Required: full name, email, role, a **temporary password**. Optional: language.
   - Workers also need a **department** (required).
@@ -118,6 +129,9 @@ Suggested routes:
 - Orbit camera with limits (no going under the table). Each page frames its own subject.
 - Hover highlights an object and shows its name. Click navigates.
 - `pending` parts render as a translucent placeholder with a "pending" tag.
+- Parts not installed yet (`installed: false`, owner, step 16) are dimmed in their own colours
+  (never the offline grey) with a "Not installed" tag; on the pages a "Not installed" label takes
+  the place of the state chip, and a part's page says no data is expected from it.
 - Black dye is shown active like the other three.
 
 ## State colors (must be visible without clicking)
@@ -128,7 +142,7 @@ Suggested routes:
 | warning | yellow outline / glow | 2 |
 | offline | grey, dimmed (no data for 10 s) | 3 |
 | ok | normal colors | 4 |
-| none | normal colors, no badge (part has no sensors) | not counted |
+| none | normal colors, no badge (part has no sensors, or is not installed yet) | not counted |
 
 - **Who decides warning and fault: the PLC** (design decision, `docs/01-overview.md`). The web app
   only displays what the PLC reports. Until the PLC alarm list and how alarms reach the web app are

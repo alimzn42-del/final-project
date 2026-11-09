@@ -1,6 +1,6 @@
 // Live check of the telemetry path (plan step 9): simulator -> MQTT -> backend
 // -> TimescaleDB -> API. Run with `pnpm telemetry:check` while `pnpm stack:up`
-// is running. Logs in as the first manager from .env. Also sends broken
+// is running. Logs in with the checks account (CHECK_EMAIL, step 16). Also sends broken
 // messages and a reading from a device whose clock is an hour off, to show the
 // backend drops the first without crashing and logs the second.
 // Exits with code 1 if any check fails.
@@ -60,21 +60,18 @@ async function get(path) {
 
 const checks = [
   [
-    'the first manager can log in',
+    'the checks account (CHECK_EMAIL in .env) can log in',
     async () => {
       const res = await fetch(`${api}/auth/login`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: env.MANAGER_EMAIL, password: env.MANAGER_PASSWORD }),
+        body: JSON.stringify({ email: env.CHECK_EMAIL, password: env.CHECK_PASSWORD }),
       });
       if (res.status !== 200) throw new Error(`login answered ${String(res.status)}`);
       cookie = (res.headers.get('set-cookie') ?? '').split(';')[0];
       const me = await (await fetch(`${api}/auth/me`, { headers: { cookie } })).json();
       if (me.mustChangePassword) {
-        throw new Error(
-          'the first manager still has its temporary password: log in once and change it, ' +
-            'then put the new password in MANAGER_PASSWORD for this check',
-        );
+        throw new Error('the checks account has a temporary password: restart the backend');
       }
     },
   ],
@@ -116,6 +113,7 @@ const checks = [
     'broken messages are dropped; the backend keeps running and storing',
     async () => {
       const ts = new Date().toISOString();
+      const since = new Date(Date.now() - 1000).toISOString();
       const ok = (value, unit) => JSON.stringify({ ts, value, unit, source: 'hw' });
       publish('lab/mixline/mixer/sensors/mass', '{"ts": broken');
       publish('lab/mixline/mixer/sensors/mass', ok(GARBAGE, 'kg')); // wrong unit
@@ -125,7 +123,11 @@ const checks = [
       await sleep(1500);
       const health = await fetch(`${api}/health`);
       if (health.status !== 200) throw new Error('backend is not healthy');
-      const stored = sql(`SELECT count(*) FROM telemetry WHERE value IN (${String(GARBAGE)}, 7)`);
+      // Only what this check sent: simulator v2 (step 15) sends real 7s (a cup count, say),
+      // so looking for the value 7 in the whole table found them too.
+      const stored = sql(
+        `SELECT count(*) FROM telemetry WHERE received_at >= '${since}' AND (value = ${String(GARBAGE)} OR (sensor_id = 'basePump.on' AND value = 7))`,
+      );
       if (stored !== '0') throw new Error(`${stored} broken readings were stored`);
       const { body } = await get('/telemetry/latest');
       const age = Date.now() - Date.parse(body.sensors['vessel.mass'].receivedAt);

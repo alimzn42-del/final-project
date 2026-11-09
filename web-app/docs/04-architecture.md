@@ -134,6 +134,34 @@ Modules:
   - Endpoints: `POST /api/auth/signup` (always `customer`, logs in), `POST /api/auth/login`,
     `POST /api/auth/logout`, `GET /api/auth/me`, `PATCH /api/auth/me` (language, theme),
     `POST /api/users` (managers create `manager` or `worker`).
+  - Staff account management (owner, step 16), managers only, staff accounts only (a customer id
+    answers 404; customers get their own section later):
+    - `GET /api/users`: managers and workers, managers first (`StaffMember`: no password hash).
+    - `PATCH /api/users/:id/department` `{ departmentId }`: workers only (`NOT_A_WORKER`
+      otherwise). Their sessions continue (doc 05: until department-based permissions).
+    - `POST /api/users/:id/temporary-password` `{ password }`: a new temporary password, changed
+      at the next login.
+    - `POST /api/users/:id/disable` and `/enable`. Doing what is already so changes and records
+      nothing.
+    - A new temporary password and disabling **end every session of that person at once**: their
+      cookies stop working and their live connections close (no wait for the minute re-check).
+    - **Lockout protection, in the backend:** a manager can never disable themselves (409
+      `CANNOT_DISABLE_SELF`), and no action may leave the line without an active manager (409
+      `LAST_ACTIVE_MANAGER`). "Active" = not disabled; a manager with a temporary password counts.
+      Each action runs in one transaction that first locks the managers' rows
+      (`SELECT ... FOR UPDATE`) and checks that the acting manager is still active (403
+      `ACCOUNT_DISABLED` otherwise), so two managers disabling each other at the same moment take
+      turns and the second is refused (tested on the real database).
+    - Every action writes its audit entry in the same transaction; without the entry the change
+      is undone (tested by taking the role's INSERT privilege away).
+  - Disabled accounts: login with the **right** password answers 403 `ACCOUNT_DISABLED` (the page
+    says "disabled, ask a manager"); a wrong password still gets the usual 401, so a stranger
+    guessing passwords learns nothing (owner, step 16). The guard and the live push also refuse a
+    disabled account, as a second safety net (its sessions are already gone).
+  - Audit entries are written by: sign-up (`signedUp`, the customer is the actor; only email and
+    role, not the profile), staff creation and the first manager (`accountCreated`; the first
+    manager has no actor), a person's own password change (`passwordChanged`), the staff actions
+    above, and department add, rename and delete. Not by language or theme changes (owner).
   - Passwords: **argon2id** (`@node-rs/argon2`, OWASP settings: 19 MiB, 2 passes, 1 lane;
     prebuilt for Windows and Alpine x64/arm64, no install script). An unknown email still costs
     one password check, and wrong email and wrong password give the same answer.
@@ -148,7 +176,9 @@ Modules:
     - a **password change** deletes the user's other rows (logs out the other devices and closes
       their live connections); the device that made the change stays logged in;
     - a deleted user's rows go with it (`ON DELETE CASCADE`); expired rows are deleted at the next
-      login.
+      login;
+    - disabling an account or a new temporary password (step 16) deletes all of the user's rows
+      (every device logged out, every live connection closed).
     Tokens from before step 11 have no session id and stop working: everyone logs in once more.
   - Rate limits per client address: login 10 per minute, sign-up 20 per hour (a kiosk is one
     address for many customers). Behind nginx (step 11) the backend trusts exactly one proxy
@@ -159,6 +189,14 @@ Modules:
     exists; never changed afterwards. It starts with a temporary password that must be changed at
     first login (owner, step 9). The flag is set only when the seed creates the account: once any
     manager exists the seed does nothing, so a restart never resets the flag or the password.
+  - The checks account (owner, step 16): `CHECK_EMAIL` / `CHECK_PASSWORD`. `pnpm live:check`,
+    `telemetry:check` and `web:check` log in with it, never with a person's account (the first
+    manager's `.env` password is stale by design: it must be changed at first login). A worker,
+    never a manager: it can read the line, it never counts toward the lockout check. Created by
+    the system at startup in the first department (recorded, no actor), named "Automated checks"
+    on the users page. A changed `CHECK_PASSWORD` replaces its password at the next start
+    (recorded). It never touches an account it did not create, and stays disabled if a manager
+    disabled it (the checks then fail with that reason).
   - Validation with the shared zod rules (`packages/shared/src/auth.ts`); a 400 answer lists
     every invalid field. Users are stored through a `UserStore` interface: Prisma 7 client in
     the app, in memory in the HTTP tests (`pnpm test` needs no Docker); `pnpm test:db` runs the
@@ -188,6 +226,12 @@ Modules:
     than a tolerance; then they use `received_at`, and the event is logged. Offline detection
     always uses `received_at` (see `state.ts`).
   - `CLOCK_TOLERANCE_MS` = **2000** (owner), configurable in `.env`.
+  - **Configuration mismatch** (owner, step 16): valid data from a part that `machine.json` marks
+    `installed: false` is kept like any reading (the part still shows "Not installed"), and the
+    backend logs one warning per part: "configuration mismatch: part ... sends data ... but
+    machine.json says installed: false". It usually means the part was installed and
+    `machine.json` was not updated. It is not a line alarm. Showing it on a page is deferred to
+    the hardware phase (doc 05).
   - **Robustness:** the backend never crashes on a malformed message (unknown topic, bad JSON,
     wrong unit, unknown code...): it drops the message and continues. This is robustness, not a
     line rule. There is no rejection log, no per-sensor rejection count and no rejections endpoint
@@ -301,6 +345,44 @@ Database:
     uncompressed (86,400 rows), hence its compression.
   - Simulator v2 (step 15): about 47 readings/s stored on the running stack (5 Hz while dosing or
     filling), about 15% more than the figures above.
+- `users.disabled_at` (owner, step 16): set while a manager has disabled a staff account (no
+  login); null = active. The database refuses it on customer accounts
+  (`users_disabled_staff_only`).
+- `audit_log` (owner, step 16): every change to an account or a department. Columns: id (counts
+  up), at, actor_id (who; null = the system, for the first manager from `.env`; foreign key to
+  `users`, ON DELETE RESTRICT), action, target_type (`user | department`), target_id (no foreign
+  key: a deleted department keeps its entries), before and after (JSON, only the fields that
+  changed). Indexed by target and by time.
+  - Actions: `accountCreated`, `signedUp` (customers), `temporaryPasswordIssued`,
+    `passwordChanged` (a person's own change), `accountDisabled`, `accountEnabled`,
+    `departmentChanged` (a worker moved), `departmentCreated`, `departmentRenamed`,
+    `departmentDeleted`. Language and theme changes are not recorded (owner).
+  - Passwords and their hashes are never written to it: a new temporary password is recorded as
+    the action alone.
+  - **Append-only, two layers.** (1) The backend connects with its own role (below), which may
+    only `INSERT` and `SELECT` on this table. (2) A trigger refuses `UPDATE`, `DELETE` and
+    `TRUNCATE` from any role, the database owner included (migration `*_accounts_audit`).
+  - **Limit (owner, step 16): not absolute.** A full database administrator (the owner role from
+    `.env`, or anyone with the server itself) can drop or disable the trigger and then change
+    rows. The layers stop the app, its bugs and anyone who only has the app's login; they do not
+    stop someone who controls the database server. Protecting against that needs the log copied
+    somewhere they cannot reach (not built).
+  - Viewing the log is deferred (owner, step 16: storing is enough for now; doc 05).
+  - An account the log names as the actor cannot be deleted (foreign key, ON DELETE RESTRICT), so
+    entries never lose their author. There is no account deletion yet. Decided for later (owner,
+    step 16): a customer account is anonymized instead of deleted (name, email and phone cleared,
+    the row kept), so the log stays intact; details in doc 05 "Later".
+- **The backend's own database role** (owner, step 16): `DB_APP_USER` (default `mixline_app`) with
+  `DB_APP_PASSWORD` from `.env`. Not an administrator; it cannot create tables or roles. It may
+  read and change every app table (`users`, `sessions`, `departments`, `telemetry` and its
+  summary), only add and read `audit_log`, and not touch `_prisma_migrations`. The backend's
+  container gets only this role's password, never the owner's.
+  - Created or updated by `src/database/migrate.ts` after the migrations, every time they run (the
+    migrate container, `pnpm db:migrate`, `pnpm db:check`), so a new table gets its privileges at
+    once. Roles belong to the whole database server; the tests use their own role per test
+    database, with a random password, so they never change the real one.
+  - The database tests (`pnpm test:db`) connect as such a role, so they prove the app works with
+    these privileges.
 - No `alarms` table in phase 1: its design depends on the PLC alarm list (open item in
   `docs/05-roadmap.md`, owner decision in step 7).
 - Migrations: **Prisma 7.10.1** (pinned: the CLI's `latest` npm tag points at an 8.0 release
@@ -315,13 +397,15 @@ Database:
     creates a normal migration (no reset demand).
   - `prisma.config.ts` builds the database address from `POSTGRES_*` (host `POSTGRES_HOST`,
     default `localhost`), so the password is written once in `.env`.
-  - In Docker, the one-shot `migrate` service applies the migrations and exits; the backend starts
-    only after it succeeded. The backend image does not carry the Prisma CLI.
+  - In Docker, the one-shot `migrate` service applies the migrations as the owner, grants the
+    backend's role (above) and exits; the backend starts only after it succeeded. The backend image
+    does not carry the Prisma CLI.
   - pnpm 10 runs install scripts only for `prisma`, `@prisma/engines` and `esbuild`
     (`pnpm-workspace.yaml`), so the migration engine is downloaded when the image is built, never
     when a container starts (the lab is offline).
-  - `pnpm db:check` creates an empty database, runs every migration, checks the result (including
-    running the cleanup, compression and summary jobs), and removes it.
+  - `pnpm db:check` creates an empty database, prepares it like the migrate container (migrations
+    and the backend's role), checks the result (including running the cleanup, compression and
+    summary jobs, and the audit log's two layers), and removes it and its role.
 
 ## Frontend (React)
 
@@ -436,6 +520,14 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
   so a recreated backend container is followed); any other address gets `index.html` (deep
   links); `/assets/*` cached for a year (file names change with every build); `nosniff`,
   `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`.
+- The users page `/users` (owner, step 16), managers only, reached from the user menu (shown to
+  managers only): the staff list (move a worker, new temporary password, disable with a
+  confirmation on the page, re-enable; no "Disable" on yourself), a new account form, and the
+  departments (add, rename, delete with a confirmation; a refusal says how many workers are in
+  it). Account statuses are told by words and borders, never the line's state colours. Every
+  call goes through the session (a 401 ends it); the lists are loaded again after each change,
+  and a status line says what happened. The login page says "disabled, ask a manager" for
+  `ACCOUNT_DISABLED`.
 - Tests: the app against a fake backend and a fake live connection (Testing Library, jsdom), with
   the real locale files and machine.json; step 14 adds the values panel, the charts (history
   spans, the window switch, live additions, reload after a reconnect, failure and "Try again",
@@ -459,10 +551,12 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
     magenta + black), navy (cyan + magenta + black). Every dye pump appears in at least two
     recipes (checked at start-up). Amounts in grams of dye per kg of base (estimates). The
     target colour is what the colour model predicts for the recipe.
-  - **Deferred dyes** (owner, step 15): a recipe that needs a deferred dye is skipped and the
-    skip is logged (`recipes.ts`); if no recipe is left, the simulator refuses to start. Open:
-    how `machine.json` marks a dye as deferred (it has no such marker yet), so for now no dye is
-    deferred.
+  - **Pumps not installed** (owner, step 16): a recipe that needs a dye whose pump has
+    `installed: false` in `machine.json` is skipped and the skip is logged (`recipes.ts`); if no
+    recipe is left, the simulator refuses to start and lists them. The design status (`pending`)
+    plays no part. A part that is not installed sends nothing, like the real line: its sensors
+    are not published, and `pnpm sim:check` expects only the installed parts' topics. Today every
+    part is installed.
   - **Sensor table** (owner: option a, `bindings.ts`): which `machine.json` sensor and part plays
     which role in the process ("the vessel scale is `vessel.mass`"). Checked against
     `machine.json` at start-up (kind, unit, value words, conveyor stations one equal pitch apart,
@@ -571,6 +665,8 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
   - Limits are strict: a value exactly at a limit is OK (`warnBelow: 150` warns at 149.9).
   - Offline = no message received for more than 10 s, measured from when the backend
     **received** the message, not from its `ts` (device clocks in an offline lab can be wrong).
+  - A part that is not installed (`installed: false`, owner, step 16) and its sensors are `none`
+    too: never offline, and never changes its parents' state.
   - Parts without sensors are `none`. Parents do not take their children's state (grouping only);
     sub-section, section and line roll up along the page tree.
 
@@ -605,6 +701,7 @@ section ever disagree, the file wins; update this section.
     "subsection": "subsection id | null",                 // null = shown on the section page
     "parent": "component id",                             // optional, grouping only
     "status": "confirmed | estimated | pending",
+    "installed": true,                                    // owner, step 16; false = not built in yet (default true)
     "anchor": "bottom | center",
     "position": [x, y, z],
     "rotationDeg": [x, y, z],

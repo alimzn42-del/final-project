@@ -40,11 +40,12 @@ RUN pnpm --filter "@mixline/${APP}" deploy --prod --legacy --ignore-scripts /out
 # ---- migrate (backend only): applies the database migrations, then exits ----
 # Built with `target: migrate` by docker-compose.yml. It reuses the build stage,
 # which already has the Prisma CLI and its migration engine (downloaded at
-# install time, so nothing is fetched when the container starts).
+# install time, so nothing is fetched when the container starts). After the
+# migrations it creates or updates the backend's own database role (step 16).
 FROM build AS migrate
 WORKDIR /repo/apps/backend
 USER node
-CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+CMD ["node", "dist/database/migrate.js"]
 
 # ---- runtime: only what the app needs to run ----
 FROM ${NODE_IMAGE} AS runtime

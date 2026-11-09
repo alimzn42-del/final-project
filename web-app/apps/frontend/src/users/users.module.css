@@ -1,0 +1,228 @@
+/*
+ * The users page (owner, step 16). Rows are a grid on wide screens and stack on phones. Account
+ * statuses use neutral looks, never the line's state colours (docs/06-brand.md: those are
+ * reserved for the line); only destructive buttons and errors use the fault colour, as the forms do.
+ */
+.page {
+  display: grid;
+  gap: 1.5rem;
+  width: min(100%, 64rem);
+  margin-inline: auto;
+}
+
+.section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* What the last change did, read out by screen readers. Empty until the first change. */
+.said {
+  margin: 0;
+  min-height: 1.4em;
+  color: var(--text);
+}
+
+.failed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--fault);
+  border-radius: 6px;
+}
+
+.failed p {
+  margin: 0;
+}
+
+.list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.disabledRow {
+  opacity: 0.75;
+}
+
+.who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.5rem;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.email {
+  flex-basis: 100%;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+}
+
+.tag {
+  padding: 0 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.role {
+  color: var(--text-muted);
+}
+
+/* Account statuses: neutral, told apart by words and a border, not by colour. */
+.status {
+  justify-self: start;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.status[data-status='disabled'] {
+  border-style: dashed;
+  color: var(--text-muted);
+}
+
+.status[data-status='temporary'] {
+  border-color: var(--text-muted);
+}
+
+.department {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.department > div {
+  flex: 1 1 14rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: end;
+}
+
+/* The forms that open inside a row: a new password, a confirmation, a rename. */
+.inline {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.inline .actions {
+  justify-content: start;
+}
+
+.confirm {
+  margin: 0;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem 1rem;
+  align-items: start;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.form > button,
+.form > [role='alert'] {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.inlineForm {
+  align-items: end;
+}
+
+.button {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.primary {
+  padding: 0.45rem 1rem;
+  border: 0;
+  border-radius: 6px;
+  background: var(--brand);
+  color: var(--on-brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:disabled,
+.primary:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.danger {
+  border-color: var(--fault);
+  color: var(--fault);
+}
+
+.dangerPrimary {
+  background: var(--fault);
+  color: var(--on-brand);
+}
+
+/* Phones: one column, actions under the name. */
+@media (width < 48rem) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+    justify-content: start;
+  }
+}

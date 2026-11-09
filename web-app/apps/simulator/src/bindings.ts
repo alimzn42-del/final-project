@@ -102,6 +102,10 @@ export const PART_TABLE = {
   magentaTank: 'dyeMTank',
   yellowTank: 'dyeYTank',
   blackTank: 'dyeKTank',
+  cyanPump: 'dyeCPump',
+  magentaPump: 'dyeMPump',
+  yellowPump: 'dyeYPump',
+  blackPump: 'dyeKPump',
   cups: 'containerMagazine',
   lids: 'lidMagazine',
   drainBucket: 'drainBucket',
@@ -123,12 +127,18 @@ export interface Line {
   bigTankHeightMm: number;
   /** Conveyor positions (x, mm): stations one pitch apart, then the belt end. */
   stations: { feeder: number; filling: number; check: number; beltEnd: number; pitch: number };
+  /**
+   * Dyes whose pump machine.json marks `installed: false` (owner, step 16): recipes that need
+   * one are skipped.
+   */
+  notInstalledDyes: ReadonlySet<Dye>;
 }
 
 export const dyeRole = <S extends DyeSuffix>(dye: Dye, suffix: S): `${Dye}${S}` =>
   `${dye}${suffix}`;
 
 export const dyeTank = (dye: Dye) => `${dye}Tank` as const;
+export const dyePump = (dye: Dye) => `${dye}Pump` as const;
 
 /** Reads the line out of machine.json; throws one error listing every problem. */
 export function bindLine(machine: Machine, config: SimConfig): Line {
@@ -222,6 +232,9 @@ export function bindLine(machine: Machine, config: SimConfig): Line {
     bigTankAreaMm2: Math.PI * (cylinder.diameter / 2) ** 2,
     bigTankHeightMm: cylinder.height,
     stations,
+    notInstalledDyes: new Set(
+      DYES.filter((d) => !(parts as Record<Part, MachineComponent>)[dyePump(d)].installed),
+    ),
   };
 }
 

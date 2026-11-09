@@ -53,7 +53,7 @@ export class BatchProgram {
     private readonly out: Outbox,
   ) {}
 
-  /** Runs the recipes in turn, forever (the ones with a deferred dye are already left out). */
+  /** Runs the recipes in turn, forever (the ones needing a pump not installed are left out). */
   *run(recipes: readonly Recipe[]): Program {
     for (let n = 0; ; n++) {
       yield* waitS(this.plant, this.config.batch.pauseS);

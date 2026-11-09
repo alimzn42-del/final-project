@@ -19,12 +19,20 @@ let db: TestDatabase;
 let prisma: PrismaService;
 let departments: PrismaDepartmentStore;
 let users: PrismaUserStore;
+/** The manager who makes the department changes (step 16: every change is recorded). */
+let actor = '';
 
 beforeAll(async () => {
   db = await createTestDatabase();
   prisma = new PrismaService(db.url);
   departments = new PrismaDepartmentStore(prisma);
   users = new PrismaUserStore(prisma);
+  actor = (
+    await users.create(
+      { email: 'boss@lab.sy', passwordHash: 'x', role: 'manager', locale: 'en' },
+      { action: 'accountCreated', actorId: null },
+    )
+  ).id;
 });
 
 afterAll(async () => {
@@ -45,13 +53,15 @@ describe('PrismaDepartmentStore on the real database', () => {
   });
 
   it('adds and renames; the database keeps names unique', async () => {
-    const p = await departments.create({ nameEn: 'Packaging', nameAr: 'التغليف' });
+    const p = await departments.create({ nameEn: 'Packaging', nameAr: 'التغليف' }, actor);
     expect(await departments.findById(p.id)).toEqual(p);
-    expect((await departments.rename(p.id, { nameAr: 'قسم التغليف' })).nameAr).toBe('قسم التغليف');
-    await expect(departments.create({ nameEn: 'Packaging', nameAr: 'آخر' })).rejects.toThrow(
+    expect((await departments.rename(p.id, { nameAr: 'قسم التغليف' }, actor)).nameAr).toBe(
+      'قسم التغليف',
+    );
+    await expect(departments.create({ nameEn: 'Packaging', nameAr: 'آخر' }, actor)).rejects.toThrow(
       DepartmentNameTakenError,
     );
-    await expect(departments.rename(p.id, { nameAr: 'الجودة' })).rejects.toMatchObject({
+    await expect(departments.rename(p.id, { nameAr: 'الجودة' }, actor)).rejects.toMatchObject({
       field: 'nameAr',
     });
   });
@@ -59,15 +69,18 @@ describe('PrismaDepartmentStore on the real database', () => {
   it('refuses to delete a department with workers, giving the count', async () => {
     const quality = await idOf('Quality');
     for (const email of ['a@lab.sy', 'b@lab.sy', 'c@lab.sy']) {
-      await users.create({
-        email,
-        passwordHash: 'x',
-        role: 'worker',
-        locale: 'en',
-        departmentId: quality,
-      });
+      await users.create(
+        {
+          email,
+          passwordHash: 'x',
+          role: 'worker',
+          locale: 'en',
+          departmentId: quality,
+        },
+        { action: 'accountCreated', actorId: null },
+      );
     }
-    await expect(departments.delete(quality)).rejects.toThrow(
+    await expect(departments.delete(quality, actor)).rejects.toThrow(
       new DepartmentHasWorkersError(3).message,
     );
     expect((await departments.findById(quality))?.workerCount).toBe(3);
@@ -82,21 +95,24 @@ describe('PrismaDepartmentStore on the real database', () => {
 
   it('a worker cannot point at a missing department', async () => {
     await expect(
-      users.create({
-        email: 'ghost@lab.sy',
-        passwordHash: 'x',
-        role: 'worker',
-        locale: 'en',
-        departmentId: '0b5e2c1a-8f4d-4c3b-9a2e-7d6f5e4c3b2a',
-      }),
+      users.create(
+        {
+          email: 'ghost@lab.sy',
+          passwordHash: 'x',
+          role: 'worker',
+          locale: 'en',
+          departmentId: '0b5e2c1a-8f4d-4c3b-9a2e-7d6f5e4c3b2a',
+        },
+        { action: 'accountCreated', actorId: null },
+      ),
     ).rejects.toThrow(DepartmentNotFoundError);
   });
 
   it('deletes an empty department; deleted ones are not recreated', async () => {
     const maintenance = await idOf('Maintenance');
-    await departments.delete(maintenance);
+    await departments.delete(maintenance, actor);
     expect(await departments.findById(maintenance)).toBeUndefined();
-    await expect(departments.delete(maintenance)).rejects.toThrow(DepartmentNotFoundError);
-    await expect(departments.delete('not-an-id')).rejects.toThrow(DepartmentNotFoundError);
+    await expect(departments.delete(maintenance, actor)).rejects.toThrow(DepartmentNotFoundError);
+    await expect(departments.delete('not-an-id', actor)).rejects.toThrow(DepartmentNotFoundError);
   });
 });

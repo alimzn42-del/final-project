@@ -7,6 +7,7 @@ import type { INestApplication } from '@nestjs/common';
 
 import { DEFAULT_RATE_LIMITS, type RateLimits } from '../app.module.js';
 import { createApp } from '../bootstrap.js';
+import { MemoryAuditLog } from './memory-audit-log.js';
 import { MemoryDepartmentStore } from './memory-department-store.js';
 import { MemorySessionStore } from './memory-session-store.js';
 import { MemoryTelemetryStore } from './memory-telemetry-store.js';
@@ -36,6 +37,8 @@ export interface Reply {
 export interface TestApp {
   app: INestApplication;
   store: MemoryUserStore;
+  /** Every account and department change the app recorded (step 16). */
+  audit: MemoryAuditLog;
   departments: MemoryDepartmentStore;
   telemetry: MemoryTelemetryStore;
   sessions: MemorySessionStore;
@@ -57,8 +60,9 @@ export async function startTestApp(
     keepFirstManagerTemporary?: boolean;
   } = {},
 ): Promise<TestApp> {
-  const departments = new MemoryDepartmentStore();
-  const store = new MemoryUserStore(departments);
+  const audit = new MemoryAuditLog();
+  const departments = new MemoryDepartmentStore(audit);
+  const store = new MemoryUserStore(departments, audit);
   const telemetry = new MemoryTelemetryStore();
   const sessions = new MemorySessionStore();
   const { app } = await createApp(options.env ?? TEST_ENV, {
@@ -103,7 +107,17 @@ export async function startTestApp(
     return reply.cookie;
   };
 
-  return { app, store, departments, telemetry, sessions, call, login, close: () => app.close() };
+  return {
+    app,
+    store,
+    audit,
+    departments,
+    telemetry,
+    sessions,
+    call,
+    login,
+    close: () => app.close(),
+  };
 }
 
 export { DEFAULT_RATE_LIMITS };

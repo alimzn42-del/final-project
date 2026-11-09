@@ -160,7 +160,7 @@ export class LiveGateway
   ): Promise<{ session: Session } | { refusal: LiveRefusal }> {
     const session = await this.sessions.verify(token);
     const user = session ? await this.users.findById(session.userId) : undefined;
-    if (!session || !user) return { refusal: LIVE_REFUSALS.loginRequired };
+    if (!session || !user || user.disabledAt) return { refusal: LIVE_REFUSALS.loginRequired };
     if (user.mustChangePassword) return { refusal: LIVE_REFUSALS.passwordChangeRequired };
     if (!STAFF.includes(user.role)) return { refusal: LIVE_REFUSALS.forbidden };
     return { session };

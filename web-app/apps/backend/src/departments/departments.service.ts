@@ -20,18 +20,18 @@ export class DepartmentsService {
     return this.store.list();
   }
 
-  async create(input: CreateDepartmentInput): Promise<Department> {
+  async create(input: CreateDepartmentInput, actorId: string): Promise<Department> {
     await this.refuseTakenNames(input);
-    return this.store.create(input);
+    return this.store.create(input, actorId);
   }
 
-  async rename(id: string, input: RenameDepartmentInput): Promise<Department> {
+  async rename(id: string, input: RenameDepartmentInput, actorId: string): Promise<Department> {
     await this.refuseTakenNames(input, id);
-    return this.store.rename(id, input);
+    return this.store.rename(id, input, actorId);
   }
 
-  delete(id: string): Promise<void> {
-    return this.store.delete(id);
+  delete(id: string, actorId: string): Promise<void> {
+    return this.store.delete(id, actorId);
   }
 
   private async refuseTakenNames(
