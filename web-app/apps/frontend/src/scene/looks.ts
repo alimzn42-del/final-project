@@ -23,8 +23,9 @@ export const MATERIAL_LOOKS: Record<Material, Look> = {
   blackPlastic: { color: '#1b1c1e', opacity: 1, metalness: 0, roughness: 0.45 },
   plastic: { color: '#e3e6ea', opacity: 1, metalness: 0, roughness: 0.5 },
   metal: { color: '#aeb6bf', opacity: 1, metalness: 0.8, roughness: 0.35 },
-  // Sample cell and diffuser.
   acrylic: { color: '#f2f6f8', opacity: 0.5, metalness: 0, roughness: 0.2 },
+  // The flow cell's window: clear, so the liquid behind it shows (owner, step 17).
+  glass: { color: '#e6f2f7', opacity: 0.25, metalness: 0, roughness: 0.05 },
   // 3D-printed PLA.
   printed: { color: '#d3d9df', opacity: 1, metalness: 0, roughness: 0.7 },
   electronics: { color: '#2f5d50', opacity: 1, metalness: 0.1, roughness: 0.6 },

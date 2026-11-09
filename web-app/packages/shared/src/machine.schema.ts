@@ -19,6 +19,8 @@ export const MATERIALS = [
   'plastic',
   'metal',
   'acrylic',
+  /** The flow cell's window (owner, step 17). */
+  'glass',
   'printed',
   'electronics',
   'rubber',
@@ -65,6 +67,8 @@ const boxGeometry = z
     size: z.tuple([positive, positive, positive]),
     hollow: z.literal(true).optional(),
     wallThickness: positive.optional(),
+    /** A liquid seen in the box (the flow cell's window, owner step 17). */
+    liquid: liquid.optional(),
   })
   .refine((g) => !g.hollow || g.wallThickness !== undefined, {
     message: 'a hollow box needs wallThickness',
@@ -73,6 +77,10 @@ const boxGeometry = z
   .refine((g) => g.wallThickness === undefined || 2 * g.wallThickness < Math.min(...g.size), {
     message: 'walls are thicker than the box',
     path: ['wallThickness'],
+  })
+  .refine((g) => !(g.hollow && g.liquid), {
+    message: 'a hollow box cannot hold a liquid of its own',
+    path: ['liquid'],
   });
 
 const cylinderGeometry = z.strictObject({
@@ -340,6 +348,8 @@ export const machineSchema = z.strictObject({
       endX: z.number(),
       beltWidth: positive,
       beltGap: positive,
+      /** How high a weighing platform lifts a container off the belts (the scene shows it). */
+      liftMm: positive,
       status,
       stations: z.array(z.strictObject({ id, x: z.number() })),
     })

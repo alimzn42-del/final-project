@@ -100,7 +100,7 @@ describe('live states in the list beside the view (plan step 14)', () => {
     line: 'fault',
     sections: { supply: 'ok', mixingColor: 'fault', conveyor: 'ok', cabinet: 'offline' },
     subsections: { 'mixingColor/mixing': 'ok', 'mixingColor/color': 'fault' },
-    components: { colorBox: 'none', camera: 'fault', sampleCell: 'none' },
+    components: { colorBox: 'none', camera: 'fault', flowCell: 'none' },
     sensors: {},
   };
 
@@ -131,12 +131,12 @@ describe('live states in the list beside the view (plan step 14)', () => {
       live.send('snapshot', { readings: {}, states: statesFromServer });
     });
     const panel = within(screen.getByRole('complementary'));
-    expect(panel.getByRole('link', { name: /Camera box/ })).not.toHaveTextContent(/OK|Fault/);
-    expect(panel.getByRole('link', { name: /^Camera(?! box)/ })).toHaveTextContent('Fault');
+    expect(panel.getByRole('link', { name: /Lighting box/ })).not.toHaveTextContent(/OK|Fault/);
+    expect(panel.getByRole('link', { name: /^Camera(?! mount)/ })).toHaveTextContent('Fault');
     act(() => {
       live.send('states', { components: { camera: 'ok' } });
     });
-    expect(panel.getByRole('link', { name: /^Camera(?! box)/ })).toHaveTextContent('OK');
+    expect(panel.getByRole('link', { name: /^Camera(?! mount)/ })).toHaveTextContent('OK');
   });
 });
 
@@ -409,14 +409,14 @@ describe('navigation between the levels (plan step 13)', () => {
     expect(panel().getByText('Confirmed')).toBeInTheDocument();
     expect(panel().getByText('Net mass')).toBeInTheDocument();
     expect(panel().getByText('No data yet')).toBeInTheDocument();
-    // The vessel holds the lid, the mixer and the overflow float.
+    // The vessel holds its lid (the mixer hangs from its own frame, owner step 17).
     expect(panel().getByRole('heading', { name: 'Parts inside' })).toBeInTheDocument();
   });
 
   it('a part inside a box links back to the box', async () => {
     fakeApi(as(USERS.manager));
     await renderApp('/line/mixingColor/color/camera');
-    const box = await panelLink('Camera box');
+    const box = await panelLink('Lighting box');
     expect(box).toHaveAttribute('href', '/line/mixingColor/color/colorBox');
   });
 

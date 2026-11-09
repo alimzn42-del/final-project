@@ -84,7 +84,7 @@ export function Part({
   const edges = shown.outline ?? glow ?? (seeThrough ? outline : undefined);
   const g = part.geometry;
   const [, height] = frame.size;
-  const liquid = g.shape === 'cylinder' ? g.liquid : undefined;
+  const liquid = g.liquid;
   const fill = liquid && liquidLook(machine, liquid);
   const mix =
     liquid && 'colorRef' in liquid && liquid.colorRef === 'mix'
@@ -125,9 +125,9 @@ export function Part({
             {(shown.outline ?? glow) && <Edges color={shown.outline ?? glow} threshold={20} />}
           </mesh>
         )}
-        {g.shape === 'cylinder' && liquid && fill && (
+        {liquid && fill && (
           <Liquid
-            radius={(g.diameter / 2000) * 0.94}
+            shape={g.shape === 'cylinder' ? { radius: (g.diameter / 2000) * 0.94 } : frame.size}
             height={height}
             level={liveLevel(liquid, readings)}
             dim={state === 'offline'}
@@ -228,16 +228,19 @@ function Surface({
   );
 }
 
-/** The liquid fills the tank from its bottom up to `level` (0..1); dimmed when the tank is offline. */
+/**
+ * The liquid fills the tank from its bottom up to `level` (0..1); dimmed when the tank is offline.
+ * A cylinder's liquid is a cylinder; a box's (the flow cell's window) a box a little smaller.
+ */
 function Liquid({
-  radius,
+  shape,
   height,
   level,
   color,
   opacity,
   dim,
 }: {
-  radius: number;
+  shape: { radius: number } | Vec3;
   height: number;
   level: number;
   color: string;
@@ -249,7 +252,11 @@ function Liquid({
   const shown = dim ? opacity * 0.45 : opacity;
   return (
     <mesh position={[0, -inner / 2 + depth / 2, 0]} raycast={() => null}>
-      <cylinderGeometry args={[radius, radius, depth, 32]} />
+      {'radius' in shape ? (
+        <cylinderGeometry args={[shape.radius, shape.radius, depth, 32]} />
+      ) : (
+        <boxGeometry args={[shape[0] * 0.94, depth, shape[2] * 0.5]} />
+      )}
       <meshStandardMaterial
         color={color}
         transparent={shown < 1}

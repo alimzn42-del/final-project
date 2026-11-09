@@ -88,7 +88,8 @@
         "id": "tray",
         "x": 1430
       }
-    ]
+    ],
+    "liftMm": 8
   },
   "sections": [
     {
@@ -345,11 +346,11 @@
       "labelKey": "part.containerMagazine",
       "section": "supply",
       "subsection": "containerMagazine",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         250,
-        180,
+        182,
         250
       ],
       "rotationDeg": [
@@ -359,12 +360,12 @@
       ],
       "geometry": {
         "shape": "cylinder",
-        "diameter": 100,
+        "diameter": 110,
         "height": 300
       },
       "material": "clearPlastic",
       "sensors": [],
-      "notes": "Vertical tube of nested empty containers above the feeder station. Size depends on container.",
+      "notes": "Vertical PVC tube holding a stack of nested empty containers (parts list 2026-11-09). Owner, step 17: 110 mm is an assumption, not a decision; estimated until the tube is chosen. A 110 mm PVC pipe is about 103 mm inside, less than the container's 113 mm top, so it has to be resized.",
       "anchor": "bottom"
     },
     {
@@ -425,9 +426,9 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        550,
+        572.5,
         0,
-        600
+        595
       ],
       "rotationDeg": [
         0,
@@ -437,14 +438,14 @@
       "geometry": {
         "shape": "box",
         "size": [
-          300,
-          151.3,
-          300
+          345,
+          172.3,
+          310
         ]
       },
       "material": "wood",
       "sensors": [],
-      "notes": "Raises the vessel so its bottom is 50 mm above the container top. Height derived: 210 - 58.7.",
+      "notes": "Carries the lighting box with the vessel and the flow cell (owner, step 17). Height derived: 227 vessel bottom (50 mm above the 177 mm container top) - 48.7 scale stack - 6 box floor = 172.3.",
       "anchor": "bottom"
     },
     {
@@ -457,7 +458,7 @@
       "installed": true,
       "position": [
         550,
-        151.3,
+        178.3,
         600
       ],
       "rotationDeg": [
@@ -484,7 +485,7 @@
       "installed": true,
       "position": [
         520,
-        169.3,
+        196.3,
         600
       ],
       "rotationDeg": [
@@ -514,7 +515,7 @@
       "installed": true,
       "position": [
         550,
-        174.3,
+        201.3,
         600
       ],
       "rotationDeg": [
@@ -545,7 +546,7 @@
       "installed": true,
       "position": [
         580,
-        187,
+        214,
         600
       ],
       "rotationDeg": [
@@ -568,14 +569,14 @@
     {
       "id": "vesselScaleTopPlate",
       "type": "scalePlate",
-      "labelKey": "part.scaleTopPlate",
+      "labelKey": "part.vesselBasePlate",
       "section": "mixingColor",
       "subsection": "mixing",
-      "status": "confirmed",
+      "status": "estimated",
       "installed": true,
       "position": [
         550,
-        192,
+        219,
         600
       ],
       "rotationDeg": [
@@ -586,11 +587,12 @@
       "geometry": {
         "shape": "cylinder",
         "diameter": 200,
-        "height": 18
+        "height": 8
       },
-      "material": "wood",
+      "material": "printed",
       "sensors": [],
-      "anchor": "bottom"
+      "anchor": "bottom",
+      "notes": "Printed round plate on the 5 kg load cell; the vessel stands on it (parts list 2026-11-09). Thickness estimated."
     },
     {
       "id": "vesselHx711",
@@ -601,9 +603,9 @@
       "status": "confirmed",
       "installed": true,
       "position": [
-        680,
-        151.3,
-        470
+        450,
+        178.3,
+        480
       ],
       "rotationDeg": [
         0,
@@ -632,7 +634,7 @@
       "installed": true,
       "position": [
         550,
-        210,
+        227,
         600
       ],
       "rotationDeg": [
@@ -672,7 +674,7 @@
           "measures": "netLiquid"
         }
       ],
-      "notes": "Placed on the scale, not fixed. Screw lid used as manifold for tubes and mixer.",
+      "notes": "Placed on the printed base plate, not fixed; inside the closed lighting box (parts list 2026-11-09). Screw lid used as manifold for the tubes and the mixer shaft.",
       "anchor": "bottom"
     },
     {
@@ -685,7 +687,7 @@
       "installed": true,
       "position": [
         550,
-        440,
+        457,
         600
       ],
       "rotationDeg": [
@@ -713,7 +715,7 @@
       "installed": true,
       "position": [
         550,
-        455,
+        500,
         600
       ],
       "rotationDeg": [
@@ -746,8 +748,7 @@
           "labelKey": "sensor.mixer_rpm"
         }
       ],
-      "notes": "Motor on the vessel lid, long shaft with blades. Teammate is designing it.",
-      "parent": "vessel",
+      "notes": "Overhead motor (5 V, or the motor with a speed sensor), stainless shaft, printed 3-blade propeller, hung from the mixer frame (parts list 2026-11-09; owner, step 17). Not on the vessel, so the vessel scale does not weigh it. The teammate is designing it.",
       "anchor": "bottom"
     },
     {
@@ -760,7 +761,7 @@
       "installed": true,
       "position": [
         550,
-        230,
+        247,
         600
       ],
       "rotationDeg": [
@@ -771,11 +772,169 @@
       "geometry": {
         "shape": "cylinder",
         "diameter": 6,
-        "height": 225
+        "height": 253
       },
       "material": "metal",
       "sensors": [],
-      "parent": "vessel",
+      "parent": "mixerMotor",
+      "anchor": "bottom",
+      "notes": "Through the lighting box roof and the vessel lid; the blades end about 20 mm above the vessel bottom (doc 02)."
+    },
+    {
+      "id": "mixerFrame",
+      "type": "frame",
+      "labelKey": "part.mixerFrame",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        572.5,
+        580,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          405,
+          20,
+          20
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "notes": "Owner, step 17: the mixer hangs from a frame (added, estimated): a 20 x 20 aluminium beam over the lighting box on two posts.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "mixerPostLeft",
+      "type": "post",
+      "labelKey": "part.mixerPostLeft",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        380,
+        0,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          580,
+          20
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "parent": "mixerFrame",
+      "anchor": "bottom"
+    },
+    {
+      "id": "mixerPostRight",
+      "type": "post",
+      "labelKey": "part.mixerPostRight",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        765,
+        0,
+        600
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          580,
+          20
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "parent": "mixerFrame",
+      "anchor": "bottom"
+    },
+    {
+      "id": "station1",
+      "type": "station",
+      "labelKey": "part.station1",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        620,
+        615,
+        690
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          140,
+          60,
+          50
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "color": "#5B6770",
+      "notes": "Station 1: the four dye scales (HX711) and the four dye pumps (TMC2209 drivers). Hung under the back of the dye shelf. ESP32 DevKit V1 with a MAX3485 RS485 module, a terminal board and an LM2596 24 to 5 V buck, in a printed DIN enclosure (parts list 2026-11-09). Size and position estimated.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "station2",
+      "type": "station",
+      "labelKey": "part.station2",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        880,
+        0,
+        610
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          160,
+          60,
+          100
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "color": "#5B6770",
+      "notes": "Station 2: the base tank level, the vessel and filling scales, the base, water, filling, drain and sample pumps (D4184 MOSFET modules, a reversing driver), the mixer and the filling lift servo (XL4015 buck). ESP32 DevKit V1 with a MAX3485 RS485 module, a terminal board and an LM2596 24 to 5 V buck, in a printed DIN enclosure (parts list 2026-11-09). Size and position estimated.",
       "anchor": "bottom"
     },
     {
@@ -913,9 +1072,9 @@
       "status": "confirmed",
       "installed": true,
       "position": [
-        760,
+        790,
         0,
-        440
+        400
       ],
       "rotationDeg": [
         0,
@@ -1001,7 +1160,7 @@
       "labelKey": "part.fillingPump",
       "section": "conveyor",
       "subsection": "filling",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         480,
@@ -1017,7 +1176,7 @@
         "shape": "box",
         "size": [
           90,
-          50,
+          40,
           40
         ]
       },
@@ -1041,7 +1200,7 @@
           }
         }
       ],
-      "notes": "Peristaltic preferred. Draws from the vessel, feeds the filling nozzle.",
+      "notes": "R385 12 V diaphragm pump, vessel to container. Loss-in-weight: the vessel scale decides when it stops; the platform scale cross-checks (parts list 2026-11-09; owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -1066,7 +1225,7 @@
         "shape": "box",
         "size": [
           40,
-          635,
+          680,
           40
         ]
       },
@@ -1096,7 +1255,7 @@
         "shape": "box",
         "size": [
           40,
-          635,
+          680,
           40
         ]
       },
@@ -1114,7 +1273,7 @@
       "installed": true,
       "position": [
         550,
-        635,
+        680,
         620
       ],
       "rotationDeg": [
@@ -1132,7 +1291,7 @@
       },
       "material": "wood",
       "sensors": [],
-      "notes": "Shelf bottom must clear the mixer motor on the vessel lid. Confirm with mixer design.",
+      "notes": "Shelf bottom about 100 mm above the mixer motor (doc 02), now 680: the motor hangs from its frame above the lighting box (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -1145,7 +1304,7 @@
       "installed": true,
       "position": [
         377.5,
-        653,
+        698,
         650
       ],
       "rotationDeg": [
@@ -1175,7 +1334,7 @@
       "installed": true,
       "position": [
         347.5,
-        671,
+        716,
         650
       ],
       "rotationDeg": [
@@ -1208,7 +1367,7 @@
       "installed": true,
       "position": [
         377.5,
-        676,
+        721,
         650
       ],
       "rotationDeg": [
@@ -1242,7 +1401,7 @@
       "installed": true,
       "position": [
         407.5,
-        688.7,
+        733.7,
         650
       ],
       "rotationDeg": [
@@ -1275,7 +1434,7 @@
       "installed": true,
       "position": [
         377.5,
-        693.7,
+        738.7,
         650
       ],
       "rotationDeg": [
@@ -1301,11 +1460,11 @@
       "labelKey": "part.dyeTank",
       "section": "mixingColor",
       "subsection": "mixing",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         377.5,
-        711.7,
+        756.7,
         650
       ],
       "rotationDeg": [
@@ -1316,18 +1475,9 @@
       "geometry": {
         "shape": "cylinder",
         "diameter": 90,
-        "height": 110,
-        "liquid": {
-          "colorHex": "#00B7EB",
-          "level": 0.75,
-          "levelSource": {
-            "sensor": "dyeC.mass",
-            "min": 0,
-            "max": 700
-          }
-        }
+        "height": 110
       },
-      "material": "clearPlastic",
+      "material": "plastic",
       "sensors": [
         {
           "id": "dyeC.mass",
@@ -1346,7 +1496,7 @@
         }
       ],
       "color": "#00B7EB",
-      "notes": "cyan dye diluted 1:9. Size D90 x H110 (700 ml) or D100 x H130 (1 L) pending. Outlet on side wall near bottom, facing front.",
+      "notes": "Opaque bottle of cyan food dye diluted 1:9, on a 1 kg load cell (parts list 2026-11-09; owner, step 17). Size estimated to fit the 1 kg cell (about 700 ml). Opaque, so the scene shows no level; drawn in its dye's colour.",
       "anchor": "bottom",
       "labelParams": {
         "color": "color.cyan"
@@ -1362,7 +1512,7 @@
       "installed": true,
       "position": [
         377.5,
-        653,
+        698,
         550
       ],
       "rotationDeg": [
@@ -1395,7 +1545,7 @@
       "installed": true,
       "position": [
         377.5,
-        575,
+        620,
         545
       ],
       "rotationDeg": [
@@ -1489,7 +1639,7 @@
       "installed": true,
       "position": [
         492.5,
-        653,
+        698,
         650
       ],
       "rotationDeg": [
@@ -1519,7 +1669,7 @@
       "installed": true,
       "position": [
         462.5,
-        671,
+        716,
         650
       ],
       "rotationDeg": [
@@ -1552,7 +1702,7 @@
       "installed": true,
       "position": [
         492.5,
-        676,
+        721,
         650
       ],
       "rotationDeg": [
@@ -1586,7 +1736,7 @@
       "installed": true,
       "position": [
         522.5,
-        688.7,
+        733.7,
         650
       ],
       "rotationDeg": [
@@ -1619,7 +1769,7 @@
       "installed": true,
       "position": [
         492.5,
-        693.7,
+        738.7,
         650
       ],
       "rotationDeg": [
@@ -1645,11 +1795,11 @@
       "labelKey": "part.dyeTank",
       "section": "mixingColor",
       "subsection": "mixing",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         492.5,
-        711.7,
+        756.7,
         650
       ],
       "rotationDeg": [
@@ -1660,18 +1810,9 @@
       "geometry": {
         "shape": "cylinder",
         "diameter": 90,
-        "height": 110,
-        "liquid": {
-          "colorHex": "#E5007E",
-          "level": 0.75,
-          "levelSource": {
-            "sensor": "dyeM.mass",
-            "min": 0,
-            "max": 700
-          }
-        }
+        "height": 110
       },
-      "material": "clearPlastic",
+      "material": "plastic",
       "sensors": [
         {
           "id": "dyeM.mass",
@@ -1690,7 +1831,7 @@
         }
       ],
       "color": "#E5007E",
-      "notes": "magenta dye diluted 1:9. Size D90 x H110 (700 ml) or D100 x H130 (1 L) pending. Outlet on side wall near bottom, facing front.",
+      "notes": "Opaque bottle of magenta food dye diluted 1:9, on a 1 kg load cell (parts list 2026-11-09; owner, step 17). Size estimated to fit the 1 kg cell (about 700 ml). Opaque, so the scene shows no level; drawn in its dye's colour.",
       "anchor": "bottom",
       "labelParams": {
         "color": "color.magenta"
@@ -1706,7 +1847,7 @@
       "installed": true,
       "position": [
         492.5,
-        653,
+        698,
         550
       ],
       "rotationDeg": [
@@ -1739,7 +1880,7 @@
       "installed": true,
       "position": [
         492.5,
-        575,
+        620,
         545
       ],
       "rotationDeg": [
@@ -1833,7 +1974,7 @@
       "installed": true,
       "position": [
         607.5,
-        653,
+        698,
         650
       ],
       "rotationDeg": [
@@ -1863,7 +2004,7 @@
       "installed": true,
       "position": [
         577.5,
-        671,
+        716,
         650
       ],
       "rotationDeg": [
@@ -1896,7 +2037,7 @@
       "installed": true,
       "position": [
         607.5,
-        676,
+        721,
         650
       ],
       "rotationDeg": [
@@ -1930,7 +2071,7 @@
       "installed": true,
       "position": [
         637.5,
-        688.7,
+        733.7,
         650
       ],
       "rotationDeg": [
@@ -1963,7 +2104,7 @@
       "installed": true,
       "position": [
         607.5,
-        693.7,
+        738.7,
         650
       ],
       "rotationDeg": [
@@ -1989,11 +2130,11 @@
       "labelKey": "part.dyeTank",
       "section": "mixingColor",
       "subsection": "mixing",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         607.5,
-        711.7,
+        756.7,
         650
       ],
       "rotationDeg": [
@@ -2004,18 +2145,9 @@
       "geometry": {
         "shape": "cylinder",
         "diameter": 90,
-        "height": 110,
-        "liquid": {
-          "colorHex": "#FFE600",
-          "level": 0.75,
-          "levelSource": {
-            "sensor": "dyeY.mass",
-            "min": 0,
-            "max": 700
-          }
-        }
+        "height": 110
       },
-      "material": "clearPlastic",
+      "material": "plastic",
       "sensors": [
         {
           "id": "dyeY.mass",
@@ -2034,7 +2166,7 @@
         }
       ],
       "color": "#FFE600",
-      "notes": "yellow dye diluted 1:9. Size D90 x H110 (700 ml) or D100 x H130 (1 L) pending. Outlet on side wall near bottom, facing front.",
+      "notes": "Opaque bottle of yellow food dye diluted 1:9, on a 1 kg load cell (parts list 2026-11-09; owner, step 17). Size estimated to fit the 1 kg cell (about 700 ml). Opaque, so the scene shows no level; drawn in its dye's colour.",
       "anchor": "bottom",
       "labelParams": {
         "color": "color.yellow"
@@ -2050,7 +2182,7 @@
       "installed": true,
       "position": [
         607.5,
-        653,
+        698,
         550
       ],
       "rotationDeg": [
@@ -2083,7 +2215,7 @@
       "installed": true,
       "position": [
         607.5,
-        575,
+        620,
         545
       ],
       "rotationDeg": [
@@ -2177,7 +2309,7 @@
       "installed": true,
       "position": [
         722.5,
-        653,
+        698,
         650
       ],
       "rotationDeg": [
@@ -2207,7 +2339,7 @@
       "installed": true,
       "position": [
         692.5,
-        671,
+        716,
         650
       ],
       "rotationDeg": [
@@ -2240,7 +2372,7 @@
       "installed": true,
       "position": [
         722.5,
-        676,
+        721,
         650
       ],
       "rotationDeg": [
@@ -2274,7 +2406,7 @@
       "installed": true,
       "position": [
         752.5,
-        688.7,
+        733.7,
         650
       ],
       "rotationDeg": [
@@ -2307,7 +2439,7 @@
       "installed": true,
       "position": [
         722.5,
-        693.7,
+        738.7,
         650
       ],
       "rotationDeg": [
@@ -2333,11 +2465,11 @@
       "labelKey": "part.dyeTank",
       "section": "mixingColor",
       "subsection": "mixing",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         722.5,
-        711.7,
+        756.7,
         650
       ],
       "rotationDeg": [
@@ -2348,18 +2480,9 @@
       "geometry": {
         "shape": "cylinder",
         "diameter": 90,
-        "height": 110,
-        "liquid": {
-          "colorHex": "#1A1A1A",
-          "level": 0.75,
-          "levelSource": {
-            "sensor": "dyeK.mass",
-            "min": 0,
-            "max": 700
-          }
-        }
+        "height": 110
       },
-      "material": "clearPlastic",
+      "material": "plastic",
       "sensors": [
         {
           "id": "dyeK.mass",
@@ -2378,7 +2501,7 @@
         }
       ],
       "color": "#1A1A1A",
-      "notes": "black dye diluted 1:9. Size D90 x H110 (700 ml) or D100 x H130 (1 L) pending. Outlet on side wall near bottom, facing front.",
+      "notes": "Opaque bottle of black food dye diluted 1:9, on a 1 kg load cell (parts list 2026-11-09; owner, step 17). Size estimated to fit the 1 kg cell (about 700 ml). Opaque, so the scene shows no level; drawn in its dye's colour.",
       "anchor": "bottom",
       "labelParams": {
         "color": "color.black"
@@ -2394,7 +2517,7 @@
       "installed": true,
       "position": [
         722.5,
-        653,
+        698,
         550
       ],
       "rotationDeg": [
@@ -2427,7 +2550,7 @@
       "installed": true,
       "position": [
         722.5,
-        575,
+        620,
         545
       ],
       "rotationDeg": [
@@ -2520,9 +2643,9 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        935,
-        0,
-        625
+        572.5,
+        172.3,
+        595
       ],
       "rotationDeg": [
         0,
@@ -2532,9 +2655,9 @@
       "geometry": {
         "shape": "box",
         "size": [
-          250,
-          150,
-          140
+          345,
+          318,
+          310
         ],
         "wallThickness": 6,
         "hollow": true
@@ -2542,7 +2665,7 @@
       "material": "wood",
       "sensors": [],
       "color": "#1E1E1E",
-      "notes": "Closed, matte black inside. Touches the control cabinet's left wall. Inside 215 x 100 x ~110.",
+      "notes": "Closed lighting box around the vessel and the flow cell, for stable light (parts list 2026-11-09; owner, step 17). Matte black inside. On the pedestal; the mixer shaft and the tubes come in through its roof. Size estimated.",
       "anchor": "bottom"
     },
     {
@@ -2554,9 +2677,9 @@
       "status": "confirmed",
       "installed": true,
       "position": [
-        835,
-        40,
-        625
+        703,
+        200.3,
+        469
       ],
       "rotationDeg": [
         0,
@@ -2644,22 +2767,22 @@
           "labelKey": "sensor.white_ref"
         }
       ],
-      "notes": "Raspberry Pi Camera Module 3 on a printed mount, lens 120 mm from the sample cell, 200 mm cable.",
+      "notes": "Raspberry Pi Camera Module 3, straight on at 90 degrees to the flow cell window, lens 120 mm from it (doc 02); looks at the flow cell only (parts list 2026-11-09; owner, step 17).",
       "parent": "colorBox",
       "anchor": "bottom"
     },
     {
-      "id": "sampleCell",
-      "type": "sampleCell",
-      "labelKey": "part.sampleCell",
+      "id": "cameraMount",
+      "type": "mount",
+      "labelKey": "part.cameraMount",
       "section": "mixingColor",
       "subsection": "color",
       "status": "estimated",
       "installed": true,
       "position": [
-        975,
-        20,
-        625
+        703,
+        178.3,
+        469
       ],
       "rotationDeg": [
         0,
@@ -2669,29 +2792,61 @@
       "geometry": {
         "shape": "box",
         "size": [
-          21,
-          66,
-          46
+          30,
+          22,
+          20
         ]
       },
-      "material": "acrylic",
+      "material": "printed",
       "sensors": [],
-      "notes": "Inside 40 W x 60 H x 15 deep, 3 mm walls. One port bottom center, vent at top.",
       "parent": "colorBox",
       "anchor": "bottom"
     },
     {
-      "id": "sampleCellHolder",
-      "type": "holder",
-      "labelKey": "part.sampleCellHolder",
+      "id": "flowCell",
+      "type": "flowCell",
+      "labelKey": "part.flowCell",
       "section": "mixingColor",
       "subsection": "color",
       "status": "estimated",
       "installed": true,
       "position": [
-        975,
-        6,
-        625
+        703,
+        178.3,
+        605
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          48,
+          82,
+          14
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "color": "#F4F4F2",
+      "notes": "Small cell beside the vessel: printed white body, glass window toward the camera (parts list 2026-11-09). Owner, step 17, estimated: inside 40 x 40 x 10 mm, 10 mm from the glass to the white back, so the light crosses the liquid twice (20 mm). One port at the bottom, both ways; the vent tube to the vessel lid stays.",
+      "parent": "colorBox",
+      "anchor": "bottom"
+    },
+    {
+      "id": "flowCellWindow",
+      "type": "window",
+      "labelKey": "part.flowCellWindow",
+      "section": "mixingColor",
+      "subsection": "color",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        703,
+        192.3,
+        596.5
       ],
       "rotationDeg": [
         0,
@@ -2702,78 +2857,117 @@
         "shape": "box",
         "size": [
           40,
-          14,
-          70
-        ]
+          40,
+          3
+        ],
+        "liquid": {
+          "colorRef": "mix",
+          "level": 1
+        }
       },
-      "material": "printed",
+      "material": "glass",
       "sensors": [],
+      "notes": "The liquid behind the glass shows the colour the camera read last.",
       "parent": "colorBox",
       "anchor": "bottom"
     },
     {
-      "id": "diffuser",
-      "type": "diffuser",
-      "labelKey": "part.diffuser",
+      "id": "whitePatch",
+      "type": "reference",
+      "labelKey": "part.whitePatch",
       "section": "mixingColor",
       "subsection": "color",
       "status": "estimated",
       "installed": true,
       "position": [
-        998,
-        10,
-        625
+        703,
+        238.3,
+        597
       ],
       "rotationDeg": [
         0,
         0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          18,
+          18,
+          2
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "color": "#F4F4F2",
+      "notes": "White reference patch beside the window, outside the glass, the same white plastic as the cell (parts list 2026-11-09; owner, step 17): every reading is taken relative to it, for lighting compensation.",
+      "parent": "colorBox",
+      "anchor": "bottom"
+    },
+    {
+      "id": "ledStripLeft",
+      "type": "led",
+      "labelKey": "part.ledStripLeft",
+      "section": "mixingColor",
+      "subsection": "color",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        674.7,
+        212.3,
+        566.7
+      ],
+      "rotationDeg": [
+        0,
+        -45,
         0
       ],
       "geometry": {
         "shape": "box",
         "size": [
           3,
-          80,
-          80
+          40,
+          10
         ]
       },
-      "material": "acrylic",
+      "material": "electronics",
       "sensors": [],
-      "color": "#F2F2F2",
+      "color": "#FFF6D5",
+      "notes": "White 12 V LED strip at 45 degrees to the window, so the glass glare misses the camera (parts list 2026-11-09; owner, step 17).",
       "parent": "colorBox",
-      "anchor": "bottom"
+      "anchor": "center"
     },
     {
-      "id": "ledPanel",
+      "id": "ledStripRight",
       "type": "led",
-      "labelKey": "part.ledPanel",
+      "labelKey": "part.ledStripRight",
       "section": "mixingColor",
       "subsection": "color",
-      "status": "confirmed",
+      "status": "estimated",
       "installed": true,
       "position": [
-        1025,
-        10,
-        625
+        731.3,
+        212.3,
+        566.7
       ],
       "rotationDeg": [
         0,
-        0,
+        45,
         0
       ],
       "geometry": {
         "shape": "box",
         "size": [
-          6,
-          80,
-          80
+          3,
+          40,
+          10
         ]
       },
       "material": "electronics",
       "sensors": [],
       "color": "#FFF6D5",
       "parent": "colorBox",
-      "anchor": "bottom"
+      "anchor": "center"
     },
     {
       "id": "samplePump",
@@ -2784,7 +2978,7 @@
       "status": "confirmed",
       "installed": true,
       "position": [
-        935,
+        800,
         0,
         500
       ],
@@ -2839,7 +3033,69 @@
           }
         }
       ],
-      "notes": "DC peristaltic, reversible. Forward fills the cell, reverse returns the sample to the vessel.",
+      "notes": "DC pump, reversible (parts list 2026-11-09): forward fills the flow cell from the vessel through its bottom port, reverse returns the sample to the vessel.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "customerCameraMount",
+      "type": "mount",
+      "labelKey": "part.customerCameraMount",
+      "section": "mixingColor",
+      "subsection": "color",
+      "status": "estimated",
+      "installed": false,
+      "position": [
+        300,
+        0,
+        60
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          30,
+          100,
+          30
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "customerCamera",
+      "type": "camera",
+      "labelKey": "part.customerCamera",
+      "section": "mixingColor",
+      "subsection": "color",
+      "status": "estimated",
+      "installed": false,
+      "position": [
+        300,
+        100,
+        60
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          25,
+          9,
+          24
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "Raspberry Pi Camera Module 2 for the customer colour station, a planned feature (parts list 2026-11-09). Not installed; at the front, position estimated (owner, step 17).",
+      "parent": "customerCameraMount",
       "anchor": "bottom"
     },
     {
@@ -3329,7 +3585,7 @@
       "labelKey": "part.weighPlatform",
       "section": "conveyor",
       "subsection": "filling",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         550,
@@ -3384,7 +3640,7 @@
           "measures": "netLiquid"
         }
       ],
-      "notes": "Lift-and-weigh platform in the gap between belts, on a 1 kg load cell, lifted by a servo.",
+      "notes": "Lift-and-weigh platform in the gap between the belts, on a 1 kg load cell, lifted by an MG996R servo (rack and pinion) so the container leaves the belts. Fits under the 79 mm base (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -3415,6 +3671,37 @@
       },
       "material": "metal",
       "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "fillingLiftServo",
+      "type": "servo",
+      "labelKey": "part.liftServo",
+      "section": "conveyor",
+      "subsection": "filling",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        550,
+        0,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          41,
+          43,
+          20
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "MG996R servo, raises the platform by rack and pinion (parts list 2026-11-09).",
       "anchor": "bottom"
     },
     {
@@ -3453,11 +3740,11 @@
       "labelKey": "part.fillingNozzle",
       "section": "conveyor",
       "subsection": "filling",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         550,
-        175,
+        195,
         250
       ],
       "rotationDeg": [
@@ -3472,7 +3759,7 @@
       },
       "material": "metal",
       "sensors": [],
-      "notes": "Above the container, never touches it. Height depends on container.",
+      "notes": "Above the lifted container (top at 185), never touches it.",
       "anchor": "bottom"
     },
     {
@@ -3529,7 +3816,7 @@
       "labelKey": "part.weighPlatform",
       "section": "conveyor",
       "subsection": "checkCap",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         850,
@@ -3602,7 +3889,7 @@
           }
         }
       ],
-      "notes": "decision: 0 none, 1 pass, 2 reject. Press is forbidden while the platform is up.",
+      "notes": "decision: 0 none, 1 pass, 2 reject. The lid drops while the platform is up; the press works only after it lowers (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -3633,6 +3920,37 @@
       },
       "material": "metal",
       "sensors": [],
+      "anchor": "bottom"
+    },
+    {
+      "id": "checkLiftServo",
+      "type": "servo",
+      "labelKey": "part.liftServo",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        850,
+        0,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          41,
+          43,
+          20
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "MG996R servo, raises the platform by rack and pinion (parts list 2026-11-09).",
       "anchor": "bottom"
     },
     {
@@ -3671,7 +3989,7 @@
       "labelKey": "part.rejectPusher",
       "section": "conveyor",
       "subsection": "checkCap",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         850,
@@ -3693,7 +4011,7 @@
       },
       "material": "printed",
       "sensors": [],
-      "notes": "Servo pusher, pushes toward the front.",
+      "notes": "MG996R servo with a pusher: pushes bad containers off the belt toward the reject bin on the front side (parts list 2026-11-09).",
       "anchor": "bottom"
     },
     {
@@ -3702,12 +4020,12 @@
       "labelKey": "part.lidMagazine",
       "section": "conveyor",
       "subsection": "checkCap",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         850,
-        200,
-        330
+        230,
+        340
       ],
       "rotationDeg": [
         0,
@@ -3716,12 +4034,76 @@
       ],
       "geometry": {
         "shape": "cylinder",
-        "diameter": 80,
-        "height": 220
+        "diameter": 125,
+        "height": 150
       },
       "material": "clearPlastic",
       "sensors": [],
-      "notes": "Same two-finger mechanism as the feeder. Lid drops through a guide funnel.",
+      "notes": "Holds the lids (parts list 2026-11-09). A lid drops through a guide funnel onto the container (doc 02). Size estimated from the 113 mm lid.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "lidGate",
+      "type": "gate",
+      "labelKey": "part.lidGate",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        850,
+        224,
+        340
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          130,
+          6,
+          130
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "notes": "Drop gate under the lid magazine: lets one lid fall while the container is still lifted (parts list 2026-11-09; owner, step 17).",
+      "parent": "lidMagazine",
+      "anchor": "bottom"
+    },
+    {
+      "id": "lidServo",
+      "type": "servo",
+      "labelKey": "part.lidServo",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        925,
+        210,
+        340
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          23,
+          29,
+          12
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "MG90S servo that opens the drop gate (parts list 2026-11-09).",
+      "parent": "lidMagazine",
       "anchor": "bottom"
     },
     {
@@ -3730,7 +4112,7 @@
       "labelKey": "part.capPress",
       "section": "conveyor",
       "subsection": "checkCap",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         850,
@@ -3745,14 +4127,14 @@
       "geometry": {
         "shape": "box",
         "size": [
-          60,
-          40,
-          60
+          30,
+          120,
+          40
         ]
       },
-      "material": "printed",
+      "material": "electronics",
       "sensors": [],
-      "notes": "Press plate pushes the lid down.",
+      "notes": "Car central-lock actuator 12 V, switched by a 2-channel relay that swaps its polarity (parts list 2026-11-09). Presses the lid only after the platform lowered (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -3805,6 +4187,66 @@
       "anchor": "bottom"
     },
     {
+      "id": "pressHead",
+      "type": "pressHead",
+      "labelKey": "part.pressHead",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        850,
+        200,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "cylinder",
+        "diameter": 100,
+        "height": 8
+      },
+      "material": "printed",
+      "sensors": [],
+      "parent": "capPress",
+      "anchor": "bottom"
+    },
+    {
+      "id": "station3",
+      "type": "station",
+      "labelKey": "part.station3",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        980,
+        0,
+        380
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          120,
+          60,
+          90
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "color": "#5B6770",
+      "notes": "Station 3: the check scale, the check lift servo, the reject pusher, the lid-drop servo and the lid press (2-channel relay), with an XL4015 buck for the servos. ESP32 DevKit V1 with a MAX3485 RS485 module, a terminal board and an LM2596 24 to 5 V buck, in a printed DIN enclosure (parts list 2026-11-09). Size and position estimated.",
+      "anchor": "bottom"
+    },
+    {
       "id": "rejectBox",
       "type": "box",
       "labelKey": "part.rejectBox",
@@ -3847,7 +4289,7 @@
           "labelKey": "sensor.reject_count"
         }
       ],
-      "notes": "Front side, facing the viewer.",
+      "notes": "Reject bin, on the front (audience) side. Owner, step 17: 100 mm deep, narrower than the 113 mm container top (open item, doc 05).",
       "anchor": "bottom"
     },
     {
@@ -3856,12 +4298,12 @@
       "labelKey": "part.batchTray",
       "section": "conveyor",
       "subsection": "tray",
-      "status": "pending",
+      "status": "estimated",
       "installed": false,
       "position": [
-        1430,
-        0,
-        250
+        1415,
+        15,
+        555
       ],
       "rotationDeg": [
         0,
@@ -3871,14 +4313,174 @@
       "geometry": {
         "shape": "box",
         "size": [
-          150,
-          60,
-          150
+          130,
+          30,
+          730
         ]
       },
       "material": "wood",
       "sensors": [],
-      "notes": "PENDING. 6-slot tray with linear travel does not fit the table (needs ~1100 mm along z). Mechanism to be decided with the supervisor. Static placeholder at the belt end.",
+      "notes": "6-slot tray that slides sideways on a rail, driven by a NEMA 17 stepper (parts list 2026-11-09); deferred, not installed (owner, step 17). Open (doc 05): 6 slots are fewer than the largest batch, and the tray needs more travel than the 800 mm table gives: drawn at home with slot 1 at the belt, it sticks out behind the table.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "trayRail",
+      "type": "tray",
+      "labelKey": "part.trayRail",
+      "section": "conveyor",
+      "subsection": "tray",
+      "status": "estimated",
+      "installed": false,
+      "position": [
+        1415,
+        0,
+        400
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          12,
+          8,
+          780
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "notes": "MGN12H rail.",
+      "parent": "batchTray",
+      "anchor": "bottom"
+    },
+    {
+      "id": "trayBelt",
+      "type": "tray",
+      "labelKey": "part.trayBelt",
+      "section": "conveyor",
+      "subsection": "tray",
+      "status": "estimated",
+      "installed": false,
+      "position": [
+        1440,
+        4,
+        400
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          6,
+          6,
+          740
+        ]
+      },
+      "material": "rubber",
+      "sensors": [],
+      "notes": "GT2 belt with its pulley and idler.",
+      "parent": "batchTray",
+      "anchor": "bottom"
+    },
+    {
+      "id": "trayStepper",
+      "type": "tray",
+      "labelKey": "part.trayStepper",
+      "section": "conveyor",
+      "subsection": "tray",
+      "status": "estimated",
+      "installed": false,
+      "position": [
+        1445,
+        0,
+        21
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          42,
+          42,
+          40
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "NEMA 17 stepper with a TMC2209 driver.",
+      "parent": "batchTray",
+      "anchor": "bottom"
+    },
+    {
+      "id": "trayHomeSwitch",
+      "type": "tray",
+      "labelKey": "part.trayHomeSwitch",
+      "section": "conveyor",
+      "subsection": "tray",
+      "status": "estimated",
+      "installed": false,
+      "position": [
+        1395,
+        0,
+        30
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          10,
+          10
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "KW12 home switch.",
+      "parent": "batchTray",
+      "anchor": "bottom"
+    },
+    {
+      "id": "station4",
+      "type": "station",
+      "labelKey": "part.station4",
+      "section": "conveyor",
+      "subsection": "tray",
+      "status": "estimated",
+      "installed": false,
+      "position": [
+        1560,
+        0,
+        400
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          120,
+          60,
+          90
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "color": "#5B6770",
+      "notes": "Station 4: the tray stepper and its home switch. Deferred. ESP32 DevKit V1 with a MAX3485 RS485 module, a terminal board and an LM2596 24 to 5 V buck, in a printed DIN enclosure (parts list 2026-11-09). Size and position estimated.",
       "anchor": "bottom"
     },
     {
@@ -3912,7 +4514,7 @@
       "material": "wood",
       "sensors": [],
       "color": "#D9D9D6",
-      "notes": "Raised 100 mm on legs. Cables enter from below through glands.",
+      "notes": "The control panel: raised 100 mm on legs, cables enter from below through glands. Interior parts on the back panel; positions estimated.",
       "anchor": "bottom"
     },
     {
@@ -3963,7 +4565,8 @@
       ],
       "color": "#D32F2F",
       "parent": "cabinet",
-      "anchor": "bottom"
+      "anchor": "bottom",
+      "notes": "Mushroom head, latching, 2 NC, 22 mm. Cuts the 12 V motor line through the contactor; the ESP32s stay powered."
     },
     {
       "id": "startButton",
@@ -3992,7 +4595,8 @@
       "sensors": [],
       "color": "#2E7D32",
       "parent": "cabinet",
-      "anchor": "center"
+      "anchor": "center",
+      "notes": "Green, normally open (LA38-11, 22 mm)."
     },
     {
       "id": "stopButton",
@@ -4019,14 +4623,15 @@
       },
       "material": "plastic",
       "sensors": [],
-      "color": "#424242",
+      "color": "#C62828",
       "parent": "cabinet",
-      "anchor": "center"
+      "anchor": "center",
+      "notes": "Red, normally closed (LA38-11, 22 mm)."
     },
     {
-      "id": "ackButton",
+      "id": "resetButton",
       "type": "button",
-      "labelKey": "part.ackButton",
+      "labelKey": "part.resetButton",
       "section": "cabinet",
       "subsection": null,
       "status": "confirmed",
@@ -4048,9 +4653,10 @@
       },
       "material": "plastic",
       "sensors": [],
-      "color": "#1565C0",
+      "color": "#F9A825",
       "parent": "cabinet",
-      "anchor": "center"
+      "anchor": "center",
+      "notes": "Yellow, normally open (LA38-11, 22 mm). Replaces the alarm acknowledge button (owner, step 17)."
     },
     {
       "id": "stackLight",
@@ -4097,7 +4703,7 @@
           }
         }
       ],
-      "notes": "0 off, 1 green, 2 yellow, 3 red. Buzzer inside.",
+      "notes": "Tower light with buzzer LTA-205J 24 V: green, yellow, red (parts list 2026-11-09). 0 off, 1 green, 2 yellow, 3 red.",
       "parent": "cabinet",
       "anchor": "bottom"
     },
@@ -4107,12 +4713,12 @@
       "labelKey": "part.plc",
       "section": "cabinet",
       "subsection": null,
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         1140,
-        400,
-        720
+        422.5,
+        716.5
       ],
       "rotationDeg": [
         0,
@@ -4122,13 +4728,174 @@
       "geometry": {
         "shape": "box",
         "size": [
-          120,
-          90,
-          70
+          110,
+          95,
+          75
         ]
       },
       "material": "electronics",
       "sensors": [],
+      "parent": "cabinet",
+      "anchor": "bottom",
+      "notes": "Inovance Easy320-0808TN: 8 digital inputs, 8 transistor outputs, 1 RS485, 2 Ethernet (parts list 2026-11-09). Owns the sequence, the limits and the alarms (doc 01). Size estimated."
+    },
+    {
+      "id": "plcInputCard",
+      "type": "electronics",
+      "labelKey": "part.plcInputCard",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1209.5,
+        422.5,
+        716.5
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          25,
+          95,
+          75
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "GE20-4DI: 4 more inputs, 12 in all.",
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "contactor",
+      "type": "electronics",
+      "labelKey": "part.contactor",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1248.5,
+        433,
+        714
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          45,
+          74,
+          80
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "CJX2-0910Z, 24 V DC coil: cuts the 12 V motor line on e-stop.",
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "dinRail",
+      "type": "electronics",
+      "labelKey": "part.dinRail",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1210,
+        452.5,
+        758
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          250,
+          35,
+          8
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "notes": "DIN rail with the terminals and the fuse holders.",
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "terminals",
+      "type": "electronics",
+      "labelKey": "part.terminals",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1301,
+        447.5,
+        731.5
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          50,
+          45,
+          45
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "Terminals and fuse holders on the DIN rail.",
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "relayBoard",
+      "type": "electronics",
+      "labelKey": "part.relayBoard",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1122.5,
+        335,
+        752
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          75,
+          55,
+          20
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "4-channel 24 V relay board, low-level trigger: the conveyor motor and the infeed solenoid.",
       "parent": "cabinet",
       "anchor": "bottom"
     },
@@ -4141,9 +4908,9 @@
       "status": "confirmed",
       "installed": true,
       "position": [
-        1140,
-        250,
-        725
+        1217.5,
+        330,
+        747
       ],
       "rotationDeg": [
         0,
@@ -4154,45 +4921,15 @@
         "shape": "box",
         "size": [
           95,
-          30,
-          65
+          65,
+          30
         ]
       },
       "material": "electronics",
       "sensors": [],
       "parent": "cabinet",
-      "anchor": "bottom"
-    },
-    {
-      "id": "esp32",
-      "type": "electronics",
-      "labelKey": "part.esp32",
-      "section": "cabinet",
-      "subsection": null,
-      "status": "confirmed",
-      "installed": true,
-      "position": [
-        1220,
-        250,
-        740
-      ],
-      "rotationDeg": [
-        0,
-        0,
-        0
-      ],
-      "geometry": {
-        "shape": "box",
-        "size": [
-          60,
-          20,
-          40
-        ]
-      },
-      "material": "electronics",
-      "sensors": [],
-      "parent": "cabinet",
-      "anchor": "bottom"
+      "anchor": "bottom",
+      "notes": "Raspberry Pi 5 4 GB with a 27 W supply and an RTC battery: the camera station, later also the gateway (parts list 2026-11-09). Currently dead: repair or replace."
     },
     {
       "id": "psu12v",
@@ -4200,12 +4937,12 @@
       "labelKey": "part.psu12v",
       "section": "cabinet",
       "subsection": null,
-      "status": "confirmed",
+      "status": "estimated",
       "installed": true,
       "position": [
-        1280,
-        400,
-        720
+        1164.5,
+        222,
+        747
       ],
       "rotationDeg": [
         0,
@@ -4215,28 +4952,61 @@
       "geometry": {
         "shape": "box",
         "size": [
-          110,
-          50,
-          80
+          159,
+          97,
+          30
         ]
       },
       "material": "electronics",
       "sensors": [],
       "parent": "cabinet",
+      "anchor": "bottom",
+      "notes": "Mean Well LRS-150-12: the 12 V motor line, after the contactor (parts list 2026-11-09)."
+    },
+    {
+      "id": "psu24v",
+      "type": "electronics",
+      "labelKey": "part.psu24v",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1134.5,
+        120,
+        747
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          99,
+          97,
+          30
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "notes": "Mean Well LRS-75-24: 24 V for the PLC, the sensors and the ESP32 stations.",
+      "parent": "cabinet",
       "anchor": "bottom"
     },
     {
-      "id": "motorDrivers",
+      "id": "ethernetSwitch",
       "type": "electronics",
-      "labelKey": "part.motorDrivers",
+      "labelKey": "part.ethernetSwitch",
       "section": "cabinet",
       "subsection": null,
-      "status": "confirmed",
+      "status": "estimated",
       "installed": true,
       "position": [
-        1290,
-        150,
-        720
+        1010,
+        0,
+        700
       ],
       "rotationDeg": [
         0,
@@ -4247,13 +5017,77 @@
         "shape": "box",
         "size": [
           100,
-          20,
-          80
+          25,
+          70
         ]
       },
       "material": "electronics",
       "sensors": [],
-      "parent": "cabinet",
+      "notes": "TP-Link TL-SF1005D: the PLC, the Raspberry Pi and the laptop on Cat6 cables (parts list 2026-11-09). Next to the control cabinet (owner, step 17).",
+      "anchor": "bottom"
+    },
+    {
+      "id": "laptop",
+      "type": "computer",
+      "labelKey": "part.laptop",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1190,
+        0,
+        425
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          300,
+          18,
+          210
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "color": "#3A3F45",
+      "notes": "Runs the web app; its screen shows the 3D twin, so the panel has no screen of its own (parts list 2026-11-09; owner, step 17). In front of the control cabinet.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "laptopScreen",
+      "type": "computer",
+      "labelKey": "part.laptopScreen",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1190,
+        18,
+        527
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          300,
+          200,
+          6
+        ]
+      },
+      "material": "electronics",
+      "sensors": [],
+      "color": "#22272D",
+      "parent": "laptop",
       "anchor": "bottom"
     }
   ]

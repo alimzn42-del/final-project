@@ -36,7 +36,7 @@ describe('backend HTTP API: machine, locales, health', () => {
     expect(r.status).toBe(200);
     const body = r.body as { site: string; components: { anchor: string }[] };
     expect(body.site).toBe('lab');
-    expect(body.components).toHaveLength(103);
+    expect(body.components).toHaveLength(130);
     // Parsed, not just the raw file: defaults such as anchor are filled in.
     expect(body.components.every((c) => c.anchor === 'bottom' || c.anchor === 'center')).toBe(true);
   });

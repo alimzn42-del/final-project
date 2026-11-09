@@ -76,7 +76,7 @@ describe('recipes that need a pump not installed are skipped (owner, step 16)', 
   });
 
   it('a part that is designed but not decided ("pending") still runs: only `installed` counts', () => {
-    expect(realMachine().components.find((c) => c.id === 'dyeKTank')?.status).toBe('pending');
+    expect(realMachine().components.find((c) => c.id === 'mixerMotor')?.status).toBe('pending');
     expect(new Simulation(realMachine(), config, { startMs: 0 }).skipped).toEqual([]);
   });
 });

@@ -78,7 +78,7 @@ export function checkMachineRules(machine: Machine): Issue[] {
       if (hasParentCycle(c, components)) add(`${path}.parent`, 'parent chain loops back');
     }
 
-    const level = c.geometry.shape === 'cylinder' ? c.geometry.liquid?.levelSource : undefined;
+    const level = c.geometry.liquid?.levelSource;
     if (level) {
       const ref = sensors.get(level.sensor);
       if (!ref)

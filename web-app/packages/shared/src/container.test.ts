@@ -28,6 +28,11 @@ describe('the container (owner, step 17)', () => {
     }
   });
 
+  it('keeps the vessel bottom 50 mm above the container top (doc 02, confirmed)', () => {
+    const vessel = machine.components.find((c) => c.id === 'vessel');
+    expect(vessel?.position[1]).toBeCloseTo(machine.conveyor.surfaceY + spec.height + 50, 6);
+  });
+
   it('holds about the estimated 500 ml up to the lid', () => {
     expect(brimVolume(inside)).toBeGreaterThan(spec.capacityMl * 0.95);
     expect(brimVolume(inside)).toBeLessThan(spec.capacityMl * 1.05);

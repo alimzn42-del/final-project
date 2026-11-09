@@ -137,10 +137,10 @@ describe('machineStates roll-up (real machine.json + test limits)', () => {
   });
 
   it('shows the state of a pending part (pending is a look, not a state)', () => {
-    const st = machineStates(machine, readings({ 'check.mass': 330 }), NOW);
-    expect(machine.components.find((c) => c.id === 'checkPlatform')?.status).toBe('pending');
-    expect(st.components.get('checkPlatform')).toBe('warning');
-    expect(st.subsections.get('conveyor/checkCap')).toBe('warning');
+    const st = machineStates(machine, readings({ 'mixer.rpm': 260 }), NOW);
+    expect(machine.components.find((c) => c.id === 'mixerMotor')?.status).toBe('pending');
+    expect(st.components.get('mixerMotor')).toBe('warning');
+    expect(st.subsections.get('mixingColor/mixing')).toBe('warning');
     expect(st.line).toBe('warning');
   });
 
@@ -291,9 +291,18 @@ describe('a part that is not installed (owner, step 16)', () => {
   });
 
   it('every part is installed unless machine.json says otherwise', () => {
-    // Owner, step 17: the tray is not built yet.
+    // Owner, step 17: the customer camera, the tray and its station are not built yet.
     const notInstalled = realMachine.components.filter((c) => !c.installed).map((c) => c.id);
-    expect(notInstalled).toEqual(['batchTray']);
+    expect(notInstalled).toEqual([
+      'customerCameraMount',
+      'customerCamera',
+      'batchTray',
+      'trayRail',
+      'trayBelt',
+      'trayStepper',
+      'trayHomeSwitch',
+      'station4',
+    ]);
     const without = rawMachine();
     for (const c of without.components) delete (c as Record<string, unknown>).installed;
     expect(machineSchema.parse(without).components.every((c) => c.installed)).toBe(true);

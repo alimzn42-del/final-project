@@ -36,8 +36,8 @@ describe('translate', () => {
     const { en, ar } = rawLocales();
     const tank = component(rawMachine(), 'dyeCTank');
     const params = tank.labelParams as Record<string, string>;
-    expect(translate(en, tank.labelKey, params)).toBe('Cyan dye tank');
-    expect(translate(ar, tank.labelKey, params)).toBe('خزان الصبغة السماوي');
+    expect(translate(en, tank.labelKey, params)).toBe('Cyan dye bottle');
+    expect(translate(ar, tank.labelKey, params)).toBe('زجاجة الصبغة السماوي');
   });
 
   it('returns undefined when a key or a param is missing', () => {
@@ -181,9 +181,9 @@ describe('locale rules', () => {
     expectIssue(
       breakIt,
       'components[dyeMTank]',
-      /en name "Cyan dye tank" is also used by components\[dyeCTank\] on page mixingColor\/mixing/,
+      /en name "Cyan dye bottle" is also used by components\[dyeCTank\] on page mixingColor\/mixing/,
     );
-    expectIssue(breakIt, 'components[dyeMTank]', /ar name "خزان الصبغة السماوي"/);
+    expectIssue(breakIt, 'components[dyeMTank]', /ar name "زجاجة الصبغة السماوي"/);
   });
 
   it('reports a part whose name clashes with a subsection on the section page', () => {

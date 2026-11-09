@@ -87,7 +87,7 @@ describe('the line page in 3D', () => {
     }
   });
 
-  it('draws closed boxes as six walls (camera box, cabinet), opaque on the overview', async () => {
+  it('draws closed boxes as six walls (lighting box, cabinet), opaque on the overview', async () => {
     const { renderer } = await renderScene();
     for (const id of ['colorBox', 'cabinet']) {
       const walls = meshesOf(renderer, id);
@@ -113,8 +113,17 @@ describe('the line page in 3D', () => {
 
   it('a tank shows its liquid, in the liquid colour from machine.json', async () => {
     const { renderer } = await renderScene();
-    const [, liquid] = meshesOf(renderer, 'dyeCTank');
-    expect(liquid && `#${surface(liquid).color.getHexString()}`).toBe('#00b7eb');
+    const [, liquid] = meshesOf(renderer, 'bigTank');
+    expect(liquid && `#${surface(liquid).color.getHexString()}`).toBe('#cfe8f5');
+  });
+
+  it('the flow cell window shows the mix colour behind its glass (owner, step 17)', async () => {
+    const { renderer } = await renderScene();
+    const [glass, liquid] = meshesOf(renderer, 'flowCellWindow');
+    expect(glass && surface(glass).opacity).toBeLessThan(0.5);
+    expect(liquid && `#${surface(liquid).color.getHexString()}`).toBe(
+      machine.liquids.mix.hex.toLowerCase(),
+    );
   });
 
   it('hovering a part lights up its whole section, in the glow colour; nothing else', async () => {
@@ -254,22 +263,23 @@ describe('state colours in 3D (doc 03, plan step 14)', () => {
   });
 
   it('offline is grey and dimmed, and so is the liquid in a tank', async () => {
-    const { renderer } = await renderScene('', statesWith({ dyeCTank: 'offline', dyeMTank: 'ok' }));
-    const [cTank, cLiquid] = meshesOf(renderer, 'dyeCTank');
-    const [, mLiquid] = meshesOf(renderer, 'dyeMTank');
-    expect(cTank && hex(surface(cTank).color)).toBe(C.offline);
-    expect(cLiquid && mLiquid && surface(cLiquid).opacity).toBeLessThan(
-      mLiquid ? surface(mLiquid).opacity : 0,
+    const offline = await renderScene('', statesWith({ bigTank: 'offline' }));
+    const online = await renderScene('', statesWith({ bigTank: 'ok' }));
+    const [tank, dimmed] = meshesOf(offline.renderer, 'bigTank');
+    const [, liquid] = meshesOf(online.renderer, 'bigTank');
+    expect(tank && hex(surface(tank).color)).toBe(C.offline);
+    expect(dimmed && liquid && surface(dimmed).opacity).toBeLessThan(
+      liquid ? surface(liquid).opacity : 0,
     );
   });
 
   it('a pending part in fault stays a see-through placeholder and gets the fault outline', async () => {
-    const tank = machine.components.find((c) => c.id === 'dyeCTank');
-    expect(tank?.status).toBe('pending');
-    const { renderer } = await renderScene('', statesWith({ dyeCTank: 'fault' }));
-    const [outer] = meshesOf(renderer, 'dyeCTank');
+    const mixer = machine.components.find((c) => c.id === 'mixerMotor');
+    expect(mixer?.status).toBe('pending');
+    const { renderer } = await renderScene('', statesWith({ mixerMotor: 'fault' }));
+    const [outer] = meshesOf(renderer, 'mixerMotor');
     expect(outer && surface(outer).opacity).toBeLessThanOrEqual(PENDING_OPACITY);
-    expect(edgeColours(renderer, 'dyeCTank')).toEqual([C.fault]);
+    expect(edgeColours(renderer, 'mixerMotor')).toEqual([C.fault]);
   });
 
   it('a state change pulses once: brighter, then back (none at the start or the end)', () => {

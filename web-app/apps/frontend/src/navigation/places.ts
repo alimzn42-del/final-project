@@ -179,18 +179,41 @@ export function pageScene(machine: Machine, place: Place): PageScene {
   }
 
   // A closed box is see-through when the page offers its inside parts as separate things to
-  // open (or the page is about the box or one of its parts): owner, step 12.
+  // open (or the page is about the box or one of its parts): owner, step 12. Inside means a
+  // part of the box, or a part standing in it (owner, step 17: the vessel in the lighting box).
   const seeThrough = new Set<string>();
   const shownIds = new Set([...subject, ...context].map((c) => c.id));
   for (const box of components) {
     if (box.geometry.shape !== 'box' || !box.geometry.hollow || !shownIds.has(box.id)) continue;
-    const inside = components.filter((c) => c.parent === box.id && shownIds.has(c.id));
+    const inside = components.filter(
+      (c) => c.id !== box.id && shownIds.has(c.id) && (c.parent === box.id || standsIn(c, box)),
+    );
     const separate = inside.some((c) => targets.get(c.id)?.path !== targets.get(box.id)?.path);
     const aboutIt = place.level === 4 && (place.part.id === box.id || place.part.parent === box.id);
     if (aboutIt || (inside.length > 0 && separate)) seeThrough.add(box.id);
   }
 
   return { subject, context, targets, seeThrough };
+}
+
+/**
+ * Whether a part's anchor point lies inside a closed box's inner volume (machine.json, mm).
+ * Only the anchor is tested: a part standing in the box, not every corner of it.
+ */
+function standsIn(part: MachineComponent, box: MachineComponent): boolean {
+  const g = box.geometry;
+  if (g.shape !== 'box' || !g.hollow) return false;
+  const wall = g.wallThickness ?? 0;
+  const [w, h, d] = g.size;
+  const [x, y, z] = box.position;
+  const bottom = box.anchor === 'bottom' ? y : y - h / 2;
+  const [px, py, pz] = part.position;
+  return (
+    Math.abs(px - x) < w / 2 - wall &&
+    Math.abs(pz - z) < d / 2 - wall &&
+    py >= bottom + wall - 1e-6 &&
+    py < bottom + h - wall
+  );
 }
 
 /**

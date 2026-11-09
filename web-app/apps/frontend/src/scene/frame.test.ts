@@ -50,8 +50,8 @@ describe('from machine.json to the scene', () => {
 
   it('anchor "bottom": the part stands on its position (the vessel on its pedestal)', () => {
     const b = worldBox('vessel');
-    close(b.min.y, 0.21);
-    close(b.max.y, 0.21 + 0.23);
+    close(b.min.y, 0.227);
+    close(b.max.y, 0.227 + 0.23);
     close((b.min.x + b.max.x) / 2, 0.55);
     close((b.min.z + b.max.z) / 2, -0.6);
   });

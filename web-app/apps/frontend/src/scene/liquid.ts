@@ -9,7 +9,7 @@
 import { type LatestReading, labToHex, type Machine, type MachineComponent } from '@mixline/shared';
 
 type Readings = Readonly<Record<string, LatestReading>>;
-type Liquid = NonNullable<Extract<MachineComponent['geometry'], { shape: 'cylinder' }>['liquid']>;
+type Liquid = NonNullable<MachineComponent['geometry']['liquid']>;
 
 export function liveLevel(liquid: Liquid, readings: Readings): number {
   const source = liquid.levelSource;

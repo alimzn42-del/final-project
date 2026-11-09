@@ -8,7 +8,7 @@ describe('validateMachine', () => {
   it('accepts the real machine.json with both locale files', () => {
     const result = validateMachine(rawMachine(), rawLocales());
     expect(result.ok ? '' : formatIssues(result.issues)).toBe('');
-    expect(result.ok && result.machine.components.length).toBe(103);
+    expect(result.ok && result.machine.components.length).toBe(130);
   });
 
   it('reports problems from every rule set in one run', () => {
