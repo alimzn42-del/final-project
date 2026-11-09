@@ -209,6 +209,10 @@ function Surface({
   const seeThrough = look.opacity < 1;
   return (
     <meshStandardMaterial
+      // three.js fixes "solid or see-through" when it first compiles a material and does not
+      // compile it again when `transparent` changes, so a box that opens on the next page would
+      // stay solid (owner, step 17: the cabinet). A change makes a new material instead.
+      key={seeThrough ? 'see-through' : 'solid'}
       ref={(m: MeshStandardMaterial | null) => {
         if (!m) return;
         register.current.add(m);

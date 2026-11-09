@@ -209,6 +209,36 @@ describe('clicking in 3D (plan step 13)', () => {
     expect(() => renderer.scene.findByProps({ name: 'conveyorMotor' })).toThrow();
   });
 
+  it('a box that opens on the next page gets new, see-through walls (owner, step 17)', async () => {
+    // three.js bakes "solid" into a material when it first draws it: opening the cabinet after a
+    // click must swap its walls' materials, not only change their opacity.
+    fakeApi({ 'GET /api/auth/me': { status: 401 } });
+    const i18n = await createI18n();
+    await switchLanguage(i18n, 'en', () => Promise.resolve(en));
+    const scene = (path: string) => {
+      const place = placeFromPath(machine, path);
+      if (!place) throw new Error(`no page ${path}`);
+      return (
+        <AppProviders i18n={i18n}>
+          <SceneContent
+            machine={machine}
+            page={pageScene(machine, place)}
+            allTags={false}
+            glow={GLOW}
+            onNavigate={() => undefined}
+          />
+        </AppProviders>
+      );
+    };
+    const renderer = await ReactThreeTestRenderer.create(scene(''));
+    const solid = meshesOf(renderer, 'cabinet').map((w) => surface(w));
+    expect(solid.every((m) => !m.transparent)).toBe(true);
+    await renderer.update(scene('cabinet/part/cabinet'));
+    const open = meshesOf(renderer, 'cabinet').map((w) => surface(w));
+    expect(open.every((m) => m.transparent && m.opacity <= SEE_THROUGH_OPACITY)).toBe(true);
+    expect(open.some((m) => solid.includes(m))).toBe(false);
+  });
+
   it('see-through box: a click on a part inside goes through the box wall to that part', async () => {
     const { renderer, onNavigate } = await renderScene('mixingColor/color');
     const walls = meshesOf(renderer, 'colorBox');
