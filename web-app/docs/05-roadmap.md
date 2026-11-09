@@ -39,7 +39,7 @@ noted in the rows. Each step has its own branch and is merged into `main` after 
 | 14 | Live data in the UI: state colours and roll-up, values panel, trend charts, reserved twin slots, SIMULATION badge. **Brand:** state chips, Plex Mono numbers that do not jump, one pulse on a state change | Connects the UI to steps 9 and 10 | Values move; parts with no data turn grey (offline), visible from level 1. (Planned as "a fault value shows red"; phase 1 has no limits since the owner's step 6 decision.) | done (part of the badge check still open, below) |
 | 15 | Simulator v2: batch of about 4 minutes (owner, step 15; planned as 3), masses balance, state and batch messages. **Owner, step 15:** Beer–Lambert colour model and CIEDE2000, 5 recipes with the minimum dyes each (every pump in at least two) in a separate tuning file, recipes with a deferred dye skipped, about 1 cup in 20 rejected, refills between batches as their own `batch/refill` message, sensor table inside the simulator | Realism only matters once the UI can show it | Watch one full cycle; masses balance across scales | done (cycle check by eye still open, below) |
 | 16 | User management page (`/users`, managers only): create manager and worker accounts, manage departments, change a worker's department. **Owner, step 16:** staff only (customers later); new temporary password and disable / re-enable (no deleting, no role change), each ending all of that person's sessions; lockout protection in the backend (never disable yourself, never leave the line without an active manager); an append-only audit log of every account and department change (the backend's own database role may only add and read it, plus a database rule; viewer deferred); a checks account so automated checks never use a person's login. Then the phase 1 acceptance run: `docker compose up --build` from a clean clone, arm64 build check (built under emulation; the run on the Raspberry Pi 5 is pending), README | The phase 1 "done when" test | Walk through the done criteria together | done 2026-11-09 (owner: browser checks; users page and "Not installed" look still open, below) |
-| 17 | The container and the parts list. **Owner, step 17:** the real tub (bottom Ø79, top Ø113, height 77, black PP body, clear snap-on flat lid confirmed; capacity, weights, rim and nesting step estimated), drawn on the belt only while a station's sensor sees one; no fixed batch size: the order decides, until then the simulator picks 4 to 10 (350 g each, all estimated); `machine.json` from the owner's parts list of 2026-11-09 (the reference for the hardware since then): the mixer frame, no floats, no conveyor speed control, the infeed gate, the panel with the three ESP32s, the network and the power, the tray and the customer camera not installed; the pump tubes, RS485 and Ethernet cables in the scene; the colour model for the new flow cell. **Owner, after seeing it:** the vessel alone and the camera box apart (not one lighting box); no station boxes ("station 1" is the zone its ESP32 controls; the ESP32s in the panel); the containers slide along the belt (option b, the belt's speed in `machine.json`). The gateway is planned for the hardware phase (below), not built. Scene rule: as close to the real line as possible, smooth on a phone | The line and the twin match the real hardware before web control | Browser checks in `QUESTIONS.md`; `pnpm sim:check` and a full cycle (`--cycle`) on the rebuilt stack | in review |
+| 17 | The container and the parts list. **Owner, step 17:** the real tub (bottom Ø79, top Ø113, height 77, black PP body, clear snap-on flat lid confirmed; capacity, weights, rim and nesting step estimated), drawn on the belt only while a station's sensor sees one; no fixed batch size: the order decides, until then the simulator picks 4 to 10 (350 g each, all estimated); `machine.json` from the owner's parts list of 2026-11-09 (the reference for the hardware since then): the mixer frame, no floats, no conveyor speed control, the infeed gate, the panel with the three ESP32s, the network and the power, the tray and the customer camera not installed; the pump tubes, RS485 and Ethernet cables in the scene; the colour model for the new flow cell. **Owner, after seeing it:** the vessel alone and the camera box apart (not one lighting box); no station boxes ("station 1" is the zone its ESP32 controls; the ESP32s in the panel); the containers slide along the belt (option b, the belt's speed in `machine.json`). The gateway is planned for the hardware phase (below), not built. Scene rule: as close to the real line as possible, smooth on a phone | The line and the twin match the real hardware before web control | Browser checks in `QUESTIONS.md`; `pnpm sim:check` and a full cycle (`--cycle`) on the rebuilt stack | done 2026-11-09 (owner: the line, the camera box and the cabinet checked; the rest still open, below) |
 
 ## Phase 2 — first step (owner, step 16)
 
@@ -134,9 +134,9 @@ Revisit only if space becomes a real problem.
 
 ## Browser checks still open
 
-Moved from `QUESTIONS.md` at the step 16 merge (owner, 2026-11-09: merge, test these later). Each
-needs the owner's manager login on the running stack (http://localhost:8080). Claude runs any
-command a check needs; the owner only looks in the browser.
+Moved from `QUESTIONS.md` at the step 16 and step 17 merges (owner, 2026-11-09: merge, test these
+later). Each needs the owner's manager login on the running stack (http://localhost:8080). Claude
+runs any command a check needs; the owner only looks in the browser.
 
 - **SIMULATION badge, the rest** (step 14, task 8). Seen on 2026-11-09: violet in the dark theme,
   in Arabic, and still there with the simulator stopped. Still to see: the light theme, and
@@ -154,7 +154,27 @@ command a check needs; the owner only looks in the browser.
   dimmed in its own colours, never grey, with the "Not installed" tag; "Not installed" in the side
   panel and on its page; its section and the line not turned grey. Claude sets
   `"installed": false` on one dye pump in `config/machine.json` and restarts the backend and the
-  simulator; the owner looks at the Mixing page and the pump's page; then it is set back.
+  simulator; the owner looks at the Mixing page and the pump's page; then it is set back. Since
+  step 17 real parts are not installed (the tray, the customer camera): seen dimmed on the line
+  page; their side panel and their pages are still to see.
+- **Step 17, the parts' own pages** (rows 3 and 6). Mixing & Color › Color › Flow cell window,
+  then › Camera: each part alone, the camera box faint around it, "Estimated" in the side panel.
+  The pages of the water pump, the infeed gate, the magazine empty sensor, the end of belt sensor
+  and the press end switch: the water pump On during the rinses, the gate Open for a moment per
+  container, "Magazine empty: No", the end sensor Present while a container waits, the end switch
+  Pressed for a moment per lid.
+- **Step 17, the containers on the belt** (rows 4 and 5; owner's option b). On the Conveyor page
+  during a batch's filling (Claude says when): each container appears at the feeder and slides
+  with the belt; lifted at filling while the liquid rises in the batch colour; lifted and weighed
+  at check, its lid on once it passes; it waits once between the check and the end, then waits at
+  the end with its lid until it is taken away; the belt stops while one waits there; a reject now
+  and then disappears at check. Zoomed in: a tapered black tub with its rim, the liquid's surface
+  at about three quarters of the height, the clear lid.
+- **Step 17, two batches in a row** (row 9). A different number of containers each time, 4 to 10;
+  the colours darker than in step 15 (the 20 mm path of the new flow cell), navy almost black.
+- **Step 17 in Arabic and on a phone** (rows 10 and 11). Seen in Arabic: the line, the camera box
+  and the cabinet pages. Still to see: the containers on the belt in Arabic, and the line, the
+  camera box and the containers on a phone (smooth when turning and zooming).
 
 ## Known issues
 
