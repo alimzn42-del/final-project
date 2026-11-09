@@ -181,7 +181,9 @@ and the plate (estimated) the 5 kg cell carries about 4.6 kg. The mixer no longe
 
 Tubes entering through the lid: 4 dye lines, base line, water line, sample line, the flow cell's
 vent, drain suction, filling suction. All soft silicone with a slack loop, so they do not pull the
-weighed vessel.
+weighed vessel. All of them run at the back (owner, step 17): they enter the back half of the lid,
+and the base, water and drain pumps stand behind the pedestal (the sample pump behind the camera
+box); only the filling line comes round to the front, to its pump by the nozzle.
 
 ### Mixer
 | Item | Value | Status |
@@ -403,6 +405,7 @@ All paths estimated, in `machine.json` → `links`.
 |---|---|---|
 | PLC | Station 1, 2, 3 ESP32s | RS485: one daisy-chained twisted pair inside the panel, PLC → 1 → 2 → 3, 120 Ω at both ends |
 | PLC, Raspberry Pi, laptop | Ethernet switch | Ethernet (Cat6) |
+| (all tubes) | | Run at the back of the vessel (owner, step 17) |
 | Dye bottles (x4) | Mixing vessel | Peristaltic pump tubes |
 | Big tank | Mixing vessel | Base pump |
 | Rinse water container | Mixing vessel | Water pump |

@@ -905,9 +905,9 @@
       "status": "confirmed",
       "installed": true,
       "position": [
-        355,
+        455,
         0,
-        480
+        775
       ],
       "rotationDeg": [
         0,
@@ -956,7 +956,7 @@
           "labelKey": "sensor.base_pump_current"
         }
       ],
-      "notes": "R385 12 V diaphragm, big tank to vessel.",
+      "notes": "R385 12 V diaphragm, big tank to vessel. Behind the pedestal, so its tubes run at the back (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -968,9 +968,9 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        355,
+        560,
         0,
-        420
+        775
       ],
       "rotationDeg": [
         0,
@@ -1019,7 +1019,7 @@
           "labelKey": "sensor.water_pump_current"
         }
       ],
-      "notes": "R385 12 V diaphragm, rinse water container to vessel (parts list 2026-11-09). Size as the base pump, estimated.",
+      "notes": "R385 12 V diaphragm, rinse water container to vessel (parts list 2026-11-09). Size as the base pump, estimated. Behind the pedestal, so its tubes run at the back (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -1031,9 +1031,9 @@
       "status": "confirmed",
       "installed": true,
       "position": [
-        790,
+        665,
         0,
-        400
+        775
       ],
       "rotationDeg": [
         0,
@@ -1082,7 +1082,7 @@
           "labelKey": "sensor.drain_pump_current"
         }
       ],
-      "notes": "R385 12 V diaphragm, vessel to drain bucket.",
+      "notes": "R385 12 V diaphragm, vessel to drain bucket. Behind the pedestal, so its tubes run at the back (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -2937,9 +2937,9 @@
       "status": "confirmed",
       "installed": true,
       "position": [
-        800,
+        880,
         0,
-        500
+        745
       ],
       "rotationDeg": [
         0,
@@ -2992,7 +2992,7 @@
           }
         }
       ],
-      "notes": "DC pump, reversible (parts list 2026-11-09): forward fills the flow cell from the vessel through its bottom port, reverse returns the sample to the vessel.",
+      "notes": "DC pump, reversible (parts list 2026-11-09): forward fills the flow cell from the vessel through its bottom port, reverse returns the sample to the vessel. Behind the camera box, so its tubes run at the back (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -5140,18 +5140,28 @@
         ],
         [
           377.5,
-          600,
+          640,
           515
         ],
         [
-          505,
-          500,
+          377.5,
+          610,
           560
         ],
         [
-          505,
+          377.5,
+          610,
+          640
+        ],
+        [
+          510,
+          490,
+          668
+        ],
+        [
+          510,
           472,
-          560
+          668
         ]
       ]
     },
@@ -5177,18 +5187,28 @@
         ],
         [
           492.5,
-          600,
+          640,
           515
         ],
         [
-          530,
-          500,
-          545
+          492.5,
+          610,
+          560
         ],
         [
-          530,
+          492.5,
+          610,
+          640
+        ],
+        [
+          535,
+          490,
+          675
+        ],
+        [
+          535,
           472,
-          545
+          675
         ]
       ]
     },
@@ -5214,18 +5234,28 @@
         ],
         [
           607.5,
-          600,
+          640,
           515
         ],
         [
-          570,
-          500,
-          545
+          607.5,
+          610,
+          560
         ],
         [
-          570,
+          607.5,
+          610,
+          640
+        ],
+        [
+          565,
+          490,
+          675
+        ],
+        [
+          565,
           472,
-          545
+          675
         ]
       ]
     },
@@ -5251,18 +5281,28 @@
         ],
         [
           722.5,
-          600,
+          640,
           515
         ],
         [
-          595,
-          500,
+          722.5,
+          610,
           560
         ],
         [
-          595,
+          722.5,
+          610,
+          640
+        ],
+        [
+          590,
+          490,
+          668
+        ],
+        [
+          590,
           472,
-          560
+          668
         ]
       ]
     },
@@ -5282,34 +5322,39 @@
           620
         ],
         [
-          330,
+          370,
+          25,
+          640
+        ],
+        [
+          380,
+          20,
+          775
+        ],
+        [
+          455,
+          20,
+          775
+        ],
+        [
+          455,
           40,
-          620
+          780
         ],
         [
-          330,
-          20,
-          500
-        ],
-        [
-          375,
-          20,
-          455
-        ],
-        [
-          410,
-          200,
-          440
-        ],
-        [
+          470,
           490,
-          480,
-          560
+          700
         ],
         [
+          478,
           490,
+          625
+        ],
+        [
+          478,
           472,
-          560
+          625
         ]
       ]
     },
@@ -5329,37 +5374,37 @@
           650
         ],
         [
-          300,
+          560,
           -500,
-          420
+          770
         ],
         [
-          300,
-          20,
-          420
+          560,
+          0,
+          775
         ],
         [
-          400,
-          20,
-          420
+          560,
+          40,
+          780
         ],
         [
-          400,
-          200,
-          440
+          570,
+          490,
+          705
         ],
         [
-          480,
-          480,
-          590
+          490,
+          490,
+          655
         ],
         [
-          480,
+          490,
           472,
-          590
+          655
         ]
       ],
-      "notes": "Through a hole in the table to the pump."
+      "notes": "Up through a hole in the table into the pump."
     },
     {
       "id": "tubeDrain",
@@ -5372,39 +5417,34 @@
       "status": "estimated",
       "path": [
         [
-          610,
+          612,
           472,
           650
         ],
         [
-          610,
-          500,
-          650
+          612,
+          495,
+          660
         ],
         [
-          705,
-          480,
-          560
+          660,
+          490,
+          740
         ],
         [
-          705,
-          20,
-          560
+          665,
+          40,
+          780
         ],
         [
-          760,
-          20,
-          420
+          665,
+          0,
+          775
         ],
         [
-          835,
-          20,
-          400
-        ],
-        [
-          850,
+          665,
           -60,
-          400
+          775
         ],
         [
           1500,
@@ -5417,7 +5457,7 @@
           700
         ]
       ],
-      "notes": "Suction into the vessel still open (wall hole or rigid dip tube); through a hole in the table to the bucket."
+      "notes": "Suction into the vessel still open (wall hole or rigid dip tube); down through a hole in the table to the bucket."
     },
     {
       "id": "tubeFill",
@@ -5430,19 +5470,39 @@
       "status": "estimated",
       "path": [
         [
-          590,
+          575,
           472,
-          545
+          640
         ],
         [
-          590,
+          575,
           500,
-          545
+          660
         ],
         [
-          560,
-          300,
-          470
+          690,
+          490,
+          745
+        ],
+        [
+          715,
+          20,
+          765
+        ],
+        [
+          705,
+          20,
+          740
+        ],
+        [
+          705,
+          20,
+          430
+        ],
+        [
+          510,
+          20,
+          405
         ],
         [
           500,
@@ -5469,7 +5529,8 @@
           235,
           250
         ]
-      ]
+      ],
+      "notes": "Out of the back of the lid, down behind the pedestal and along its right side to the pump in front."
     },
     {
       "id": "tubeSample",
@@ -5484,37 +5545,37 @@
         [
           625,
           472,
-          610
+          630
         ],
         [
-          660,
+          640,
           500,
-          610
+          660
         ],
         [
           745,
-          300,
-          540
+          480,
+          745
         ],
         [
-          770,
+          850,
           25,
-          505
+          745
         ],
         [
-          830,
+          910,
           25,
-          505
+          745
         ],
         [
-          900,
+          940,
           12,
-          560
+          700
         ],
         [
           977,
           12,
-          598
+          652
         ]
       ],
       "notes": "Both ways: forward fills the flow cell through its bottom port, reverse returns the sample."
@@ -5533,23 +5594,33 @@
         ],
         [
           977,
-          160,
+          170,
           625
         ],
         [
-          700,
-          480,
-          630
+          930,
+          320,
+          740
+        ],
+        [
+          760,
+          490,
+          740
         ],
         [
           640,
-          480,
-          630
+          490,
+          660
         ],
         [
-          640,
+          605,
+          480,
+          625
+        ],
+        [
+          605,
           472,
-          630
+          625
         ]
       ],
       "notes": "The vent from the top of the flow cell back to the vessel lid stays (owner, step 17)."

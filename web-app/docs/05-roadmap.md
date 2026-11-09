@@ -171,8 +171,8 @@ command a check needs; the owner only looks in the browser.
   it can come close to 5 s. Possibly the same failure as above. Not changed: a longer time limit
   for this test is the likely fix, waiting for the owner. Seen a second time the same day (full
   run with the Docker stack running, 5.03 s; output saved); the next run passed (629 tests).
-  A third time later that day (5.2 s, the stack running again); the rerun passed. Under the load
-  of a full run with Docker up it now fails about one run in three.
+  A third and a fourth time later that day (5.2 s and 5.0 s, the stack running); each rerun
+  passed. Under the load of a full run with Docker up it now fails about one run in three.
 
 ## Open items (blocked on decisions or purchases)
 
