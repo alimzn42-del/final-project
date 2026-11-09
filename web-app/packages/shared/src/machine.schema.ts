@@ -230,6 +230,26 @@ const component = z
     path: ['anchor'],
   });
 
+// ---------- containers at the stations (owner, step 17) ----------
+
+/**
+ * How the scene shows a container at a conveyor station (owner, step 17: only while the
+ * station's sensor sees one). All are sensor ids:
+ * - present: the container is drawn while this digital sensor reads 1;
+ * - raised: drawn lifted (conveyor.liftMm) while this one reads 1;
+ * - mass: its fill (net g = ml), read while `massWhile` (default: `raised`) reads 1, and kept
+ *   until the next reading; `emptyOnArrival`: empty again when a new container arrives;
+ * - lid: on always, or while a sensor reads a code (the check result "pass").
+ */
+const stationContainer = z.strictObject({
+  present: id,
+  raised: id.optional(),
+  mass: id.optional(),
+  massWhile: id.optional(),
+  emptyOnArrival: z.boolean().optional(),
+  lid: z.union([z.literal('always'), z.strictObject({ sensor: id, code: z.int() })]).optional(),
+});
+
 // ---------- links: tubes and cables (owner, step 17) ----------
 
 export const LINK_KINDS = ['tube', 'rs485', 'ethernet'] as const;
@@ -370,7 +390,9 @@ export const machineSchema = z.strictObject({
       /** How high a weighing platform lifts a container off the belts (the scene shows it). */
       liftMm: positive,
       status,
-      stations: z.array(z.strictObject({ id, x: z.number() })),
+      stations: z.array(
+        z.strictObject({ id, x: z.number(), container: stationContainer.optional() }),
+      ),
     })
     .refine((c) => c.startX < c.endX, { message: 'startX must be below endX', path: ['endX'] }),
   sections: z.array(
@@ -392,6 +414,8 @@ export type Sensor = MachineComponent['sensors'][number];
 export type Geometry = MachineComponent['geometry'];
 export type Section = Machine['sections'][number];
 export type Link = Machine['links'][number];
+export type Station = Machine['conveyor']['stations'][number];
+export type StationContainer = NonNullable<Station['container']>;
 export type LinkKind = (typeof LINK_KINDS)[number];
 export type ContainerConfig = Machine['container'];
 /** The container with every field filled in (the schema guarantees each one is set once). */

@@ -339,4 +339,26 @@ describe('live liquids in 3D (plan step 14)', () => {
     const [, liquid] = meshesOf(renderer, 'vessel');
     expect(liquid && hex(surface(liquid).color)).toBe(machine.liquids.mix.hex.toLowerCase());
   });
+
+  it('a container at the filling station: lifted, filling in the mix colour (owner, step 17)', async () => {
+    const { renderer } = await renderScene('conveyor', undefined, {
+      'fillingArrival.present': reading(1),
+      'filling.platformUp': reading(1),
+      'filling.mass': reading(200),
+      'color.L': reading(53.2408),
+      'color.a': reading(80.0925),
+      'color.b': reading(67.2032),
+    });
+    const tub = renderer.scene.findByProps({ name: 'tub-filling' });
+    const { surfaceY, liftMm } = machine.conveyor;
+    expect((tub.instance as unknown as { position: { y: number } }).position.y).toBeCloseTo(
+      (surfaceY + liftMm) / 1000,
+      6,
+    );
+    const liquid = tub.findByProps({ name: 'liquid' });
+    expect(hex(surface(liquid.instance as unknown as Mesh).color)).toBe('#ff0000');
+    expect(tub.findAll((n) => n.props.name === 'lid')).toHaveLength(0);
+    // No other station sees a container, so none is drawn there.
+    expect(renderer.scene.findAll((n) => String(n.props.name).startsWith('tub-'))).toHaveLength(1);
+  });
 });

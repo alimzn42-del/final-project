@@ -115,8 +115,41 @@ export function checkMachineRules(machine: Machine): Issue[] {
 
   const stationIds = new Set<string>();
   for (const station of machine.conveyor.stations) {
-    if (stationIds.has(station.id)) add(`conveyor.stations[${station.id}]`, 'duplicate station id');
+    const path = `conveyor.stations[${station.id}]`;
+    if (stationIds.has(station.id)) add(path, 'duplicate station id');
     stationIds.add(station.id);
+    const view = station.container;
+    if (!view) continue;
+    // Which kind of sensor each role needs.
+    const roles: [string, string | undefined, 'digital' | 'mass'][] = [
+      ['present', view.present, 'digital'],
+      ['raised', view.raised, 'digital'],
+      ['massWhile', view.massWhile, 'digital'],
+      ['mass', view.mass, 'mass'],
+    ];
+    for (const [role, sensorId, need] of roles) {
+      if (sensorId === undefined) continue;
+      const ref = sensors.get(sensorId);
+      if (!ref) add(`${path}.container.${role}`, `unknown sensor "${sensorId}"`);
+      else if (need === 'digital' && ref.sensor.kind !== 'digital') {
+        add(`${path}.container.${role}`, `sensor "${sensorId}" is not digital`);
+      } else if (need === 'mass' && ref.sensor.unit !== 'g') {
+        add(`${path}.container.${role}`, `sensor "${sensorId}" is not a mass in g`);
+      }
+    }
+    if (view.massWhile !== undefined && view.mass === undefined) {
+      add(`${path}.container.massWhile`, 'massWhile needs a mass sensor');
+    }
+    if (view.lid && view.lid !== 'always') {
+      const ref = sensors.get(view.lid.sensor);
+      if (!ref) add(`${path}.container.lid.sensor`, `unknown sensor "${view.lid.sensor}"`);
+      else if (ref.sensor.valueLabels?.[String(view.lid.code)] === undefined) {
+        add(
+          `${path}.container.lid.code`,
+          `sensor "${view.lid.sensor}" has no code ${String(view.lid.code)}`,
+        );
+      }
+    }
   }
 
   return issues;

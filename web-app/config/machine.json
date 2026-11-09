@@ -70,19 +70,43 @@
     "stations": [
       {
         "id": "feeder",
-        "x": 250
+        "x": 250,
+        "container": {
+          "present": "feederArrival.present"
+        }
       },
       {
         "id": "filling",
-        "x": 550
+        "x": 550,
+        "container": {
+          "present": "fillingArrival.present",
+          "raised": "filling.platformUp",
+          "mass": "filling.mass",
+          "emptyOnArrival": true
+        }
       },
       {
         "id": "checkCap",
-        "x": 850
+        "x": 850,
+        "container": {
+          "present": "checkArrival.present",
+          "raised": "check.platformUp",
+          "mass": "check.mass",
+          "lid": {
+            "sensor": "check.decision",
+            "code": 1
+          }
+        }
       },
       {
         "id": "end",
-        "x": 1293.5
+        "x": 1293.5,
+        "container": {
+          "present": "beltEnd.present",
+          "mass": "check.mass",
+          "massWhile": "check.platformUp",
+          "lid": "always"
+        }
       },
       {
         "id": "tray",

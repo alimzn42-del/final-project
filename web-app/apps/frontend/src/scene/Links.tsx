@@ -35,15 +35,22 @@ export function segmentsOf(links: readonly Link[], kind: LinkKind): Segment[] {
 }
 
 export function Links({ links }: { links: readonly Link[] }) {
+  // Worked out once per page, not on every live update (they would redraw the scene).
+  const byKind = useMemo(
+    () =>
+      (Object.keys(LINK_LOOKS) as LinkKind[]).map(
+        (kind) => [kind, segmentsOf(links, kind)] as const,
+      ),
+    [links],
+  );
   return (
     <>
-      {(Object.keys(LINK_LOOKS) as LinkKind[]).map((kind) => {
-        const segments = segmentsOf(links, kind);
+      {byKind.map(([kind, segments]) =>
         // The instance count is fixed when the mesh is made, so a new count is a new mesh.
-        return segments.length > 0 ? (
+        segments.length > 0 ? (
           <KindMesh key={`${kind}-${String(segments.length)}`} kind={kind} segments={segments} />
-        ) : null;
-      })}
+        ) : null,
+      )}
     </>
   );
 }

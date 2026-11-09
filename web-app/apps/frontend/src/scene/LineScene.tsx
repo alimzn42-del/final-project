@@ -25,8 +25,11 @@ import { Links } from './Links';
 import { Part } from './Part';
 import { passesThrough } from './picking';
 import styles from './scene.module.css';
+import { Tubs } from './Tubs';
 import { useCssColor } from './useCssColor';
 import { clampTarget, DEFAULT_VIEW, FOV, GLIDE_MS, ORBIT_LIMITS, type View, viewFor } from './view';
+
+const NO_READINGS: Readonly<Record<string, LatestReading>> = {};
 
 /** A click after the pointer moved more than this (px) was a drag: it turned the view. */
 const DRAG_PX = 6;
@@ -66,6 +69,7 @@ export function SceneContent({
     undefined,
   );
   const lit = litOn?.page === page ? litOn : undefined;
+  const drawn = useMemo(() => new Set([...page.subject, ...page.context].map((c) => c.id)), [page]);
   const setLit = (next: { path: string; touch: boolean } | undefined) => {
     setLitOn(next && { page, ...next });
   };
@@ -142,6 +146,7 @@ export function SceneContent({
         <Part key={`context-${part.id}`} part={part} machine={machine} ghost />
       ))}
       <Links links={page.links} />
+      <Tubs machine={machine} readings={readings ?? NO_READINGS} states={states} drawn={drawn} />
       {litTarget && nameAt && (
         <Html center position={nameAt} zIndexRange={[30, 0]}>
           <span className={styles.name}>
