@@ -147,16 +147,17 @@ const checks = [
     async () => {
       const since = new Date().toISOString();
       const ahead = new Date(Date.now() + 3_600_000).toISOString();
+      // The big tank's level: a 1 Hz sensor (the cabinet temperature it used went in step 17).
       publish(
-        'lab/mixline/cabinet/sensors/ambient_temp',
-        JSON.stringify({ ts: ahead, value: 26, unit: 'C', source: 'hw' }),
+        'lab/mixline/supply/sensors/level_mm',
+        JSON.stringify({ ts: ahead, value: 220, unit: 'mm', source: 'hw' }),
       );
       await sleep(2500); // the simulator's next reading brings the clock back
       const logs = compose('logs', '--no-log-prefix', '--since', since, 'backend');
-      if (!/device clock of station "cabinet" is off by/.test(logs)) {
+      if (!/device clock of station "supply" is off by/.test(logs)) {
         throw new Error('no clock warning in the backend log');
       }
-      if (!/station "cabinet" is back within tolerance/.test(logs)) {
+      if (!/station "supply" is back within tolerance/.test(logs)) {
         throw new Error('no "back within tolerance" line');
       }
     },
