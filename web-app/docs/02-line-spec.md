@@ -21,8 +21,8 @@ Installed (owner, step 16): every part in `machine.json` also has `installed: tr
 `installed` says whether the part is built into the line yet. A part with `installed: false` sends
 no data: it is never offline and raises no warning, the scene and pages show it dimmed with a "not
 installed" label, and the simulator skips recipes that need its dye pump. Not installed since
-step 17: the batch tray with its rail, belt, stepper and home switch, station 4, and the customer
-camera with its mount.
+step 17: the batch tray with its rail, belt, stepper and home switch, and the customer camera
+with its mount.
 
 ## Coordinate system (for the scene)
 
@@ -35,7 +35,7 @@ camera with its mount.
     LED strips).
 - Rotation is applied about the anchor point, in degrees, order X then Y then Z.
 - Cylinders have their axis along `y` before rotation.
-- `hollow: true` boxes are drawn as walls of `wallThickness` (lighting box, cabinet). Child parts
+- `hollow: true` boxes are drawn as walls of `wallThickness` (camera box, cabinet). Child parts
   sit inside the inner volume.
 - "Front" = committee / viewer side (low `z`). "Back" = wall side (high `z`).
 
@@ -52,10 +52,10 @@ Defined in `machine.json` → `liquids`:
 ```
 z (back)
  800 +--------------------------------------------------------------------+
-     | [BIG TANK] [LIGHTING BOX: VESSEL + FLOW CELL] [ST2] [SW] [CABINET]   |  drain bucket on the
-     |             (dye shelf and station 1 above it,                      |  floor, back-right
-     |              the mixer frame over it)                               |
- 450 |                                       [ST3]   [LAPTOP]       tray  |
+     | [BIG TANK]  [PEDESTAL+VESSEL]  [CAMERA BOX]   [CABINET]              |  drain bucket on the
+     |             (dye shelf above it,                                    |  floor, back-right
+     |              the mixer frame over the vessel)                       |
+ 450 |                                       [SW]    [LAPTOP]       tray  |
  250 |==[FEEDER]=====[FILLING]=====[CHECK+CAP]=========end|          rail  |
      |  [customer camera]          [REJECT BIN]                      (z)   |
    0 +--------------------------------------------------------------------+
@@ -63,14 +63,15 @@ z (back)
 ```
 
 - Back row, left to right: big base tank (rinse water container on the floor under it), the
-  closed lighting box with the mixing vessel and the flow cell on a pedestal, the dye shelf above
-  it, station 2, the Ethernet switch, the control cabinet (right-back corner).
+  mixing vessel on a pedestal with the dye shelf above it and the mixer frame over it, the camera
+  box (touching the cabinet's left wall), the control cabinet (right-back corner). Owner, step 17:
+  the vessel and the camera box stand apart, as in the earlier design.
 - Front row: conveyor, left to right: feeder, filling, check+reject+cap, the end of the belt;
   the batch tray (not installed) after it.
 - Filling station sits directly in front of the mixing vessel (short filling hose).
 - Reject bin sits in front of the check station, on the viewer side.
 - Drain bucket sits on the floor, back-right.
-- The laptop stands in front of the cabinet; station 3 behind the check station.
+- The laptop stands in front of the cabinet, the Ethernet switch beside it.
 - All wood (MDF), all wood near liquids is varnished / waterproofed.
 
 | Item | Value | Status |
@@ -98,6 +99,11 @@ Owner, step 17: the container is chosen. Each field in `machine.json` → `conta
 Everything sized from the container (the magazine tube, the lid magazine, the weigh platforms,
 the nozzle height, the tray slots) is `estimated` and scaled from this tub. The belts stay as
 confirmed: the 79 mm base sits on their 90 mm span.
+
+In the scene (owner, step 17, option b) each container is followed along the belt: it appears
+where a station's sensor sees one, slides at the belt's speed while the belt runs (estimated,
+not measured), is put on the station exactly when its sensor sees it, and carries its fill and
+lid with it.
 
 ---
 
@@ -140,8 +146,8 @@ the conveyor. Its release (the infeed gate) belongs to the Conveyor / Feeder sta
 | Item | Value | Status |
 |---|---|---|
 | Purpose | Raise the vessel so its bottom is 50 mm above the container top | confirmed |
-| Size | 345 x 310 footprint (it carries the lighting box), height 172.3 (= 227 vessel bottom − 48.7 scale stack − 6 box floor) | estimated |
-| Position | x=572.5, z=595 | estimated |
+| Size | 300 x 300 footprint, height 178.3 (= 227 vessel bottom − 48.7 scale stack) | estimated |
+| Position | x=550, z=600 | estimated |
 
 The container top is at 177 (belt 100 + tub 77), so the vessel bottom is at 227.
 
@@ -167,7 +173,7 @@ and the plate (estimated) the 5 kg cell carries about 4.6 kg. The mixer no longe
 |---|---|---|
 | Shape | Clear plastic cylinder with screw lid | confirmed |
 | Size | Ø160 x H230 (about 4.6 L) | confirmed |
-| Mounting | Placed on the printed base plate, not fixed; inside the closed lighting box | confirmed |
+| Mounting | Placed on the printed base plate, not fixed; standing alone (owner, step 17: not in a box) | confirmed |
 | Anti-rotation | Pegs or rubber pad so mixer torque cannot turn it | pending |
 | Working batch | (containers x 350 g) + about 0.2 L heel: 1.6 to 3.7 L | estimated |
 | Lid | Used as a manifold: holes for all tubes and the mixer shaft | confirmed |
@@ -175,14 +181,14 @@ and the plate (estimated) the 5 kg cell carries about 4.6 kg. The mixer no longe
 
 Tubes entering through the lid: 4 dye lines, base line, water line, sample line, the flow cell's
 vent, drain suction, filling suction. All soft silicone with a slack loop, so they do not pull the
-weighed vessel. They come in through the lighting box's roof.
+weighed vessel.
 
 ### Mixer
 | Item | Value | Status |
 |---|---|---|
 | Concept | Overhead motor (5 V, or the motor with a speed sensor), stainless shaft, printed 3-blade propeller | confirmed |
-| Mounting | Hangs from a frame over the lighting box (owner, step 17), so the vessel scale does not carry it | confirmed |
-| Mixer frame | 20 x 20 aluminium beam on two posts beside the box | estimated |
+| Mounting | Hangs from a frame over the vessel (owner, step 17), so the vessel scale does not carry it | confirmed |
+| Mixer frame | 20 x 20 aluminium beam on two posts beside the pedestal | estimated |
 | Detailed design | Being designed by a teammate | pending |
 | Blade height | about 20 mm above the vessel bottom | estimated |
 | Rule | Stop mixing before weighing and before taking a sample | confirmed |
@@ -195,9 +201,8 @@ weighed vessel. They come in through the lighting box's roof.
 | Material | MDF 18 mm | confirmed |
 | Size | 480 x 200, on two posts at the back corners | estimated |
 | Dye positions | x = 377.5, 492.5, 607.5, 722.5 (115 mm pitch), z = 650 | estimated |
-| Height | Bottom of shelf about 100 mm above the mixer motor: 680 (the motor hangs above the box) | estimated |
+| Height | Bottom of shelf about 100 mm above the mixer motor: 680 (the motor hangs from its frame) | estimated |
 | Pumps | 4 dye pumps mounted under the front edge of the shelf | confirmed |
-| Station 1 | Hangs under the back of the shelf | estimated |
 
 ### Dye bottles (x4: cyan, magenta, yellow, black)
 | Item | Value | Status |
@@ -217,7 +222,7 @@ Black gives true black, greys and cleaner dark shades. White is not possible (ba
 | Item | Value | Status |
 |---|---|---|
 | Type | Peristaltic, 3D-printed head on NEMA17 stepper | confirmed |
-| Driver | TMC2209 (with a 100 µF capacitor), on station 1 | confirmed |
+| Driver | TMC2209 (with a 100 µF capacitor), with the station 1 ESP32 | confirmed |
 | Bearings | 695ZZ (5 x 13 x 4 mm), per the chosen printed design | confirmed |
 | Dosing | By volume: steps x calibrated grams-per-step | confirmed |
 | Signals | steps, speed, driver load, running | confirmed |
@@ -235,13 +240,15 @@ Third R385, vessel to drain bucket, runs until the vessel reads empty weight (wi
 Status: confirmed. The suction into the vessel is still open (a hole in the wall or a rigid dip
 tube; parts list).
 
-### Lighting box (parts list 2026-11-09; owner, step 17)
-One closed box around the mixing vessel and the flow cell, for stable light. Matte black inside.
-It stands on the pedestal; the mixer shaft and the tubes come in through its roof.
+### Camera box (owner, step 17)
+Closed box, matte black inside, next to the vessel, touching the control cabinet's left wall. The
+parts list puts one lighting box around the vessel and the flow cell; the owner chose, after
+seeing it in the scene, to keep the vessel alone and the camera box apart, as in the earlier
+design. Inside: the camera, the flow cell, its white patch and the LED strips.
 
 | Item | Value | Status |
 |---|---|---|
-| Box | outer 345 x 318 x 310, walls 6 mm MDF | estimated |
+| Box | outer 250 x 150 x 140, walls 6 mm MDF, inside about 238 x 138 x 128 | estimated |
 | Camera | Raspberry Pi Camera Module 3 on a printed mount, straight on at 90 degrees to the flow cell window, lens 120 mm from it; it looks at the flow cell only | confirmed |
 | Flow cell | Beside the vessel: printed white body, glass window toward the camera; inside 40 x 40 x 10 mm (16 ml), 10 mm of liquid between the glass and the white back | estimated |
 | Light path | The light crosses the liquid to the white back and back again: 20 mm | estimated |
@@ -279,16 +286,17 @@ On the floor, back-right, 10 L or more. No float (owner, step 17). Status: confi
 | Motor | JGB37-520 12 V gear motor, 60–100 rpm | confirmed |
 | Speed control | None: the PLC runs or stops it through a relay; no rotation sensor (parts list; owner, step 17) | confirmed |
 | Arrival sensor | One per station, and one at the end of the belt (E3F-DS30C4) | confirmed |
+| Speed | One speed, about 100 mm/s (60–100 rpm on the 30 mm roller); `machine.json` conveyor `speedMmPerS`, read by the scene and the simulator | estimated |
 | Lift | A weighing platform lifts the container about 8 mm off the belts | estimated |
 
-### Station 1: Feeder (x = 250)
+### Feeder (x = 250)
 - Vertical tube holding nested empty containers above the belt (see Supply).
 - Infeed gate: a push-pull 12 V solenoid at the bottom of the magazine releases one container
   (parts list 2026-11-09; it replaces the two-finger release). The PLC switches it through a relay.
 - The arrival sensor after the feeder counts containers (0 or 2 = fault).
 Status: concept confirmed, sizes estimated.
 
-### Station 2: Filling (x = 550, in front of the vessel)
+### Filling (x = 550, in front of the vessel)
 - Lift-and-weigh: a small platform in the gap between the belts, on a 1 kg load cell, lifted by an
   MG996R servo (rack and pinion), so the container leaves the belts while it is filled.
 - Nozzle above the container, fed by the filling pump drawing from the vessel.
@@ -302,7 +310,7 @@ Status: concept confirmed, sizes estimated.
 | Platform | 36 x 36 (fits through the 40 mm gap, under the 79 mm base) | estimated |
 | Nozzle | 10 mm above the lifted container's top | estimated |
 
-### Station 3: Check + Reject + Cap (x = 850)
+### Check + Reject + Cap (x = 850)
 Sequence (owner, step 17):
 1. Container arrives, belt stops.
 2. Platform lifts (MG996R servo), the weight settles and is read.
@@ -323,10 +331,10 @@ Until the tray is built (owner, step 17): each good container stops at the end o
 the end sensor sees it, the belt stops; a worker takes it away (the simulator: after a random 3
 to 8 s, estimated). Then the belt moves on.
 
-### Station 4: Batch tray (end of belt), not installed
+### Batch tray (end of belt), not installed
 - As in the parts list (owner, step 17): a 6-slot tray that slides sideways on a rail (MGN12H rail,
-  GT2 belt, pulley and idler), driven by a NEMA 17 stepper with a TMC2209, a KW12 home switch,
-  and its own station 4. All deferred: `installed: false`.
+  GT2 belt, pulley and idler), driven by a NEMA 17 stepper with a TMC2209 and a KW12 home switch,
+  run by the deferred station 4 ESP32. All deferred: `installed: false`.
 - Still open (doc 05): 6 slots are fewer than the largest batch (10), and the tray needs more
   travel than the 800 mm table gives (drawn at home with slot 1 at the belt, it sticks out
   behind the table).
@@ -358,7 +366,8 @@ Inside, on the back panel (positions estimated):
 - Contactor CJX2-0910Z (24 V DC coil): cuts the 12 V motor line on e-stop.
 - DIN rail, terminals and fuse holders.
 - Mean Well LRS-150-12 (the 12 V motor line, after the contactor) and LRS-75-24 (24 V for the
-  PLC, the sensors and the ESP32 stations).
+  PLC, the sensors and the ESP32s).
+- The three ESP32s on a second DIN rail (see Stations below).
 - Raspberry Pi 5 4 GB with its 27 W supply and an RTC battery (currently dead: repair or replace).
 
 Next to the cabinet (owner, step 17): the Ethernet switch (TP-Link TL-SF1005D) and the laptop that
@@ -368,19 +377,22 @@ Cabinet: outer 300 x 450 x 220, 18 mm walls, hollow.
 
 ---
 
-## Stations (ESP32 boxes), each next to its zone (owner, step 17)
+## Stations: the zones the ESP32s control (owner, step 17)
 
-Each: an ESP32 DevKit V1, a MAX3485 RS485 module, a terminal board and an LM2596 buck (24 to 5 V,
-stays on during an e-stop), in a printed DIN enclosure. Sizes and positions estimated.
+"Station 1" names a zone and the ESP32 that controls it, not a box at the line. The three ESP32s
+sit in the control panel on a second DIN rail (owner, step 17: option a). Each: an ESP32 DevKit
+V1, a MAX3485 RS485 module, a terminal board and an LM2596 buck (24 to 5 V, stays on during an
+e-stop), in a printed DIN enclosure. Sizes and positions estimated: the three fit beside the
+24 V supply only if each enclosure is about 48 mm wide (open item, doc 05).
 
-| Station | Where | What it runs |
+| Station | Zone | What its ESP32 runs |
 |---|---|---|
-| 1 | Under the back of the dye shelf | The 4 dye scales (HX711) and the 4 dye pumps (TMC2209) |
-| 2 | Beside the pedestal, right | The big tank's level sensor, the vessel and filling scales, the base, water, filling, drain and sample pumps (D4184 MOSFET modules, the sample pump's reversing driver), the mixer, the filling lift servo (XL4015 buck) |
-| 3 | Behind the check station | The check scale and lift servo, the reject pusher, the lid-drop servo, the lid press (2-channel relay), an XL4015 buck for the servos |
-| 4 | Beside the tray (not installed) | The tray stepper and its home switch |
+| 1 | Dyes (mixing & colour) | The 4 dye scales (HX711) and the 4 dye pumps (TMC2209) |
+| 2 | Tanks, mixing, filling | The big tank's level sensor, the vessel and filling scales, the base, water, filling, drain and sample pumps (D4184 MOSFET modules, the sample pump's reversing driver), the mixer, the filling lift servo (XL4015 buck) |
+| 3 | Check, reject, cap | The check scale and lift servo, the reject pusher, the lid-drop servo, the lid press (2-channel relay), an XL4015 buck for the servos |
+| 4 | Tray (deferred, not drawn) | The tray stepper and its home switch |
 
-HX711 boards stay next to their load cells, not in the stations.
+HX711 boards stay next to their load cells, not in the panel.
 
 ## Connections (drawn in the scene; owner, step 17)
 
@@ -388,7 +400,7 @@ All paths estimated, in `machine.json` → `links`.
 
 | From | To | Link |
 |---|---|---|
-| PLC | Stations 1, 2, 3 | RS485: one daisy-chained twisted pair, PLC → 1 → 2 → 3, 120 Ω at both ends |
+| PLC | Station 1, 2, 3 ESP32s | RS485: one daisy-chained twisted pair inside the panel, PLC → 1 → 2 → 3, 120 Ω at both ends |
 | PLC, Raspberry Pi, laptop | Ethernet switch | Ethernet (Cat6) |
 | Dye bottles (x4) | Mixing vessel | Peristaltic pump tubes |
 | Big tank | Mixing vessel | Base pump |

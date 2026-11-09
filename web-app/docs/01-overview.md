@@ -9,10 +9,10 @@ All tests use water and diluted food dye.
 Flow of material:
 
 ```
-big base tank --(base pump)--> mixing vessel (on a scale, in a closed lighting box)
+big base tank --(base pump)--> mixing vessel (on a scale)
 dye bottles C/M/Y/K (each on a scale) --(stepper peristaltic pumps, by volume)--> mixing vessel
 mixing vessel --(mixer, hung from a frame)--> mixed
-mixing vessel --(sample pump)--> flow cell beside it --(back)--> mixing vessel
+mixing vessel --(sample pump)--> flow cell in the camera box --(back)--> mixing vessel
 camera measures color against a white patch -> correct with more dye -> repeat
 mixing vessel --(filling pump)--> container on the conveyor (the vessel scale decides when to stop)
 container -> check weight -> bad: pushed to the reject bin / good: lid dropped, then pressed
@@ -54,9 +54,10 @@ newer than these docs: where it says something it wins, where it is silent the d
   app only reads and displays what the PLC reports; it never decides that a value is a warning or
   a fault on its own. Alarms per component are defined later, when the PLC program is designed
   (open item in `docs/05-roadmap.md`).
-- Three ESP32 stations (a fourth for the tray later), each next to its zone, handle the load
-  cells (HX711), the pump drivers and the servos. They talk to the PLC over one RS485 cable,
-  daisy-chained PLC -> station 1 -> 2 -> 3 (parts list 2026-11-09).
+- Three ESP32s (a fourth for the tray later) handle the load cells (HX711), the pump drivers
+  and the servos. "Station 1" names the zone an ESP32 controls, not a box at the line (owner,
+  step 17): the ESP32s sit in the control panel, in DIN enclosures, and talk to the PLC over one
+  RS485 cable, daisy-chained PLC -> station 1 -> 2 -> 3 (parts list 2026-11-09).
 - The PLC is on Ethernet, with the Raspberry Pi 5 and the laptop, through a small switch.
 - The Raspberry Pi 5 is the camera station (it reads the flow cell) and later runs the twin.
 - Data path (owner, step 17): a **gateway program** reads the PLC over Ethernet and publishes to

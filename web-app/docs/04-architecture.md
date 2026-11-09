@@ -503,13 +503,15 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
     `scene/Part.tsx`);
     liquid levels from `levelSource`, the mix colour from the camera's L\*a\*b\* with a D65 white
     (`scene/liquid.ts`). State chips in the list beside the view (`live/StateChip.tsx`).
-  - Step 17 (owner): containers on the belt while a station's sensor sees one
-    (`scene/onBelt.ts`, pure: which stations, lifted or not, the fill remembered from the last
-    weighing, the lid; `scene/Tubs.tsx`: the tub from machine.json's container with one shared
-    set of geometries, its liquid surface at the fill height from `shared/container.ts`). The
-    tubes and cables (`scene/Links.tsx`): one instanced mesh per kind, three draw calls in all.
-    A closed box is also see-through where a part standing in it leads to another page
-    (`navigation/places.ts`).
+  - Step 17 (owner, option b): the containers are followed along the belt (`scene/onBelt.ts`,
+    pure: they appear where a station's sensor sees one, slide at `conveyor.speedMmPerS` from
+    the times the running sensor turned on and off, are put on a station when its sensor sees
+    them, take their fill and lid there and carry them, and go when a sensor stops seeing them
+    with the belt still, or at once at the end stop). `scene/Tubs.tsx` draws them: the tub from
+    machine.json's container with one shared set of geometries, the liquid surface at the fill
+    height (`shared/container.ts`), and while the belt runs it moves them every frame on the
+    line's clock (the browser's plus the live clock offset). The tubes and cables
+    (`scene/Links.tsx`): one instanced mesh per kind, three draw calls in all.
   - Values on a part's page (`live/SensorValues.tsx`, rules in `live/format.ts`): Western digits,
     each analog sensor's `decimals`, no thousands separator; words for digital and enum codes;
     units as machine.json spells them, `C` shown as `°C`, none for `count`, `raw`, `bool` and
@@ -601,7 +603,9 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
     weighs it; a good one gets its lid while still lifted, the platform lowers, then the press
     snaps it on (its end switch closes); a bad one is pushed to the reject bin. Until the tray
     is built, each good container stops at the end of the belt: while the end sensor sees it
-    the belt stands still, and a worker takes it after 3 to 8 s (`outfeed`, estimated).
+    the belt stands still, and a worker takes it after 3 to 8 s (`outfeed`, estimated). The
+    belt's speed comes from `machine.json` (`conveyor.speedMmPerS`), the same number the scene
+    uses to slide the containers.
   - **Rejects** (owner): about 1 cup in 20 is filled short by 8 to 15 g, so the check station
     pushes it to the reject box. All random choices come from one seeded generator, so tests
     are repeatable.
@@ -741,11 +745,13 @@ section ever disagree, the file wins; update this section.
                 "liftMm",                                  // how high a platform lifts a container
                 "status",
                 "stations": [ { "id", "x",
-                  "container"?: {                          // owner, step 17: how the scene shows one
+                  "container"?: {                          // owner, step 17: its sensors, for the scene
                     "present": "sensor id",                // drawn while it reads 1
                     "raised"?: "sensor id",                // lifted while it reads 1
-                    "mass"?: "sensor id", "massWhile"?: "sensor id", "emptyOnArrival"?: true,
-                    "lid"?: "always" | { "sensor", "code" } } } ] },
+                    "mass"?: "sensor id",                   // its fill, while lifted
+                    "lid"?: "always" | { "sensor", "code" } } } ],
+                "speedMmPerS",                             // the belt's one speed (owner, step 17)
+                "runningSensor": "sensor id" },            // reads 1 while the belt runs
   "sections": [ { "id", "labelKey", "subsections": [ { "id", "labelKey" } ] } ],
   "components": [ {
     "id": "string, unique",

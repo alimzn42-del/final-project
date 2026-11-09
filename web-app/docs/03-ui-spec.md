@@ -93,21 +93,21 @@ Line
 │   └── Empty container magazine
 ├── Mixing & Color
 │   ├── Mixing      (vessel, scale, mixer and its frame, dye shelf, dye bottles + scales, dye pumps,
-│   │                base, water and drain pumps, stations 1 and 2)
-│   └── Color       (lighting box: camera, flow cell, window, white patch, LED strips; sample pump;
+│   │                base, water and drain pumps)
+│   └── Color       (camera box: camera, flow cell, window, white patch, LED strips; sample pump;
 │                    customer camera, not installed)
 ├── Conveyor
 │   ├── Feeder
 │   ├── Filling
-│   ├── Check + Reject + Cap   (with station 3)
-│   └── Batch tray             (not installed, with station 4)
-└── Control cabinet  (the panel: PLC, power, buttons, tower light; the switch and the laptop)
+│   ├── Check + Reject + Cap
+│   └── Batch tray             (not installed)
+└── Control cabinet  (the panel: PLC, ESP32s, power, buttons, tower light; the switch and the laptop)
 ```
 
 When a section has no sub-sections, level 3 is skipped and its components open directly.
 Components with `subsection: null` (for example conveyor rollers, belts and frame) are shown and
 clickable on their section page. The `table` has no section and is scene-only, not clickable.
-Components with a `parent` (for example the camera inside the lighting box) are drawn relative to the
+Components with a `parent` (for example the camera inside the camera box) are drawn relative to the
 same world coordinates but grouped under the parent on component lists.
 
 Suggested routes:
@@ -133,18 +133,22 @@ Suggested routes:
   things that repeat share their shapes, and the scene only redraws when something changes.
 - Simple primitives only. Clear tanks show their liquid level and color; opaque ones (the dye
   bottles, owner step 17) do not, since nothing shows through them.
-- Containers on the belt (owner, step 17, option a): a container shows at a station only while
-  that station's sensor sees one: the feeder, filling, check and end-of-belt sensors. It is the
-  real tub (tapered black body, rim, clear flat lid); lifted while its platform is up; its liquid
-  shows from above at the fill height, in the live mix colour, the fill read from the station's
-  scale while it weighs. The lid is on once the check passes, and at the end of the belt. Which
-  sensors a station uses is in `machine.json` (`conveyor.stations[].container`).
+- Containers on the belt (owner, step 17, option b): each container is followed along the belt.
+  It appears where a station's sensor (feeder, filling, check, end of belt) sees one; while the
+  belt runs it slides at the belt's speed (`conveyor.speedMmPerS`: estimated from the speed and
+  the times the belt started and stopped, not measured); when the belt stops, a station's sensor
+  puts it exactly on the station; it goes when a sensor stops seeing it with the belt standing
+  still (pushed to the reject bin, taken from the end). It is the real tub (tapered black body,
+  rim, clear flat lid); lifted while its platform is up; its liquid shows from above at the fill
+  height, in the live mix colour, the fill taken from the station's scale while it weighs. It
+  keeps its fill and lid on its way; the lid is on once the check passes. Which sensors a
+  station uses is in `machine.json` (`conveyor.stations[].container`, `conveyor.runningSensor`).
+  Frames are drawn continuously only while the belt runs.
 - Tubes and cables (owner, step 17): the pump tubes, the RS485 chain and the Ethernet cables are
   drawn as thin tubes along estimated paths (`machine.json` `links`), on the pages where both of
   their ends are shown. They are not clickable.
-- A closed box is see-through on a page where something inside it leads to another page (owner,
-  step 12): its own parts, or a part standing in it (step 17: the vessel in the lighting box, so
-  the lighting box is opaque on the line page and see-through from Mixing & Color down).
+- A closed box is see-through on a page where the parts inside it lead to another page (owner,
+  step 12): the camera box from the Color page down, the cabinet on its own page.
 - Orbit camera with limits (no going under the table). Each page frames its own subject.
 - Hover highlights an object and shows its name. Click navigates.
 - `pending` parts render as a translucent placeholder with a "pending" tag.
