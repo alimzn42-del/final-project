@@ -56,10 +56,10 @@ describe('valueState: generic limit logic (test limits)', () => {
   });
 
   it('applies warnBelow and warnAbove together (fill weight window)', () => {
-    const fill = sensor('filling.mass'); // warnBelow 291, warnAbove 309
-    expect(valueState(fill, 300)).toBe('ok');
-    expect(valueState(fill, 290)).toBe('warning');
-    expect(valueState(fill, 310)).toBe('warning');
+    const fill = sensor('filling.mass'); // warnBelow 341, warnAbove 359
+    expect(valueState(fill, 350)).toBe('ok');
+    expect(valueState(fill, 340)).toBe('warning');
+    expect(valueState(fill, 360)).toBe('warning');
   });
 
   it('uses faultWhen for digital sensors', () => {
@@ -137,7 +137,7 @@ describe('machineStates roll-up (real machine.json + test limits)', () => {
   });
 
   it('shows the state of a pending part (pending is a look, not a state)', () => {
-    const st = machineStates(machine, readings({ 'check.mass': 280 }), NOW);
+    const st = machineStates(machine, readings({ 'check.mass': 330 }), NOW);
     expect(machine.components.find((c) => c.id === 'checkPlatform')?.status).toBe('pending');
     expect(st.components.get('checkPlatform')).toBe('warning');
     expect(st.subsections.get('conveyor/checkCap')).toBe('warning');

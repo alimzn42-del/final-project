@@ -14,6 +14,8 @@ export const STATUSES = ['confirmed', 'estimated', 'pending'] as const;
 export const MATERIALS = [
   'wood',
   'clearPlastic',
+  /** Black opaque plastic: the container's body (owner, step 17). */
+  'blackPlastic',
   'plastic',
   'metal',
   'acrylic',
@@ -220,6 +222,83 @@ const component = z
     path: ['anchor'],
   });
 
+// ---------- the container (product) ----------
+
+/**
+ * Every field of the container (owner, step 17). Each one sits in `confirmed` or in `estimated`,
+ * never both, so moving a value between the two is how its status changes. Sizes in mm.
+ */
+const containerFields = {
+  shape: z.literal('taperedTub'),
+  /** Outer diameter at the bottom. */
+  baseDiameter: positive,
+  /** Outer diameter at the top, at the lid (the rim). */
+  topDiameter: positive,
+  /** Outer height of the closed tub, lid included. */
+  height: positive,
+  bodyMaterial: material,
+  lidMaterial: material,
+  /** How the lid closes, e.g. "snapOnFlat". */
+  lid: id,
+  capacityMl: positive,
+  /** The empty body: the filling and check scales are tared with it. */
+  bodyG: positive,
+  lidG: positive,
+  /** Wall and bottom thickness. */
+  wall: positive,
+  /** How far the rim sticks out beyond the body's wall at the top. */
+  rimOverhang: z.number().nonnegative(),
+  rimHeight: positive,
+  lidThickness: positive,
+  /** How much higher a stack gets with each tub nested into it. */
+  nestingStep: positive,
+};
+export const CONTAINER_FIELDS = Object.keys(containerFields) as (keyof typeof containerFields)[];
+const containerGroup = z.strictObject(containerFields).partial();
+
+const container = z
+  .strictObject({
+    confirmed: containerGroup,
+    estimated: containerGroup,
+    notes: z.string().optional(),
+  })
+  .superRefine((c, ctx) => {
+    const fail = (key: string, message: string) => {
+      ctx.addIssue({ code: 'custom', path: [key], message });
+    };
+    for (const key of CONTAINER_FIELDS) {
+      const confirmed = c.confirmed[key] !== undefined;
+      if (confirmed === (c.estimated[key] !== undefined)) {
+        fail(
+          key,
+          confirmed
+            ? `${key} is under both confirmed and estimated`
+            : `${key} is missing: put it under confirmed or estimated`,
+        );
+      }
+    }
+    const s = { ...c.confirmed, ...c.estimated };
+    const { baseDiameter, topDiameter, height, wall, rimOverhang, rimHeight, lidThickness } = s;
+    if (
+      baseDiameter === undefined ||
+      topDiameter === undefined ||
+      height === undefined ||
+      wall === undefined ||
+      rimOverhang === undefined ||
+      rimHeight === undefined ||
+      lidThickness === undefined
+    ) {
+      return;
+    }
+    if (topDiameter - 2 * rimOverhang <= baseDiameter) {
+      fail('topDiameter', 'a tapered tub is wider at the top (below the rim) than at the bottom');
+    }
+    if (2 * wall >= baseDiameter) fail('wall', 'the walls are thicker than the tub');
+    if (rimHeight + lidThickness + wall >= height) {
+      fail('height', 'the rim, the lid and the bottom leave no room inside');
+    }
+  });
+
 // ---------- the whole file ----------
 
 export const machineSchema = z.strictObject({
@@ -252,19 +331,7 @@ export const machineSchema = z.strictObject({
     heightToFloor: positive,
     status,
   }),
-  container: z.strictObject({
-    status,
-    shape: id,
-    topDiameter: positive,
-    baseDiameter: positive,
-    height: positive,
-    lid: id,
-    fillTargetG: positive,
-    perBatch: z.int().positive(),
-    material,
-    tareG: z.number().nonnegative(),
-    notes: z.string().optional(),
-  }),
+  container,
   conveyor: z
     .strictObject({
       centerlineZ: z.number(),
@@ -293,5 +360,10 @@ export type MachineComponent = Machine['components'][number];
 export type Sensor = MachineComponent['sensors'][number];
 export type Geometry = MachineComponent['geometry'];
 export type Section = Machine['sections'][number];
+export type ContainerConfig = Machine['container'];
+/** The container with every field filled in (the schema guarantees each one is set once). */
+export type ContainerSpec = {
+  [K in keyof typeof containerFields]: z.infer<(typeof containerFields)[K]>;
+};
 export type Status = (typeof STATUSES)[number];
 export type SensorKind = (typeof SENSOR_KINDS)[number];

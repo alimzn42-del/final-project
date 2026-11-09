@@ -50,8 +50,8 @@ export type SensorJson = Record<string, unknown> & { id: string };
 export const TEST_LIMITS: Record<string, Record<string, number>> = {
   'dyeC.mass': { warnBelow: 150, faultBelow: 60 },
   'conveyor.slip': { warnAbove: 5, faultAbove: 10 },
-  'filling.mass': { warnBelow: 291, warnAbove: 309 },
-  'check.mass': { warnBelow: 291, warnAbove: 309 },
+  'filling.mass': { warnBelow: 341, warnAbove: 359 },
+  'check.mass': { warnBelow: 341, warnAbove: 359 },
   'color.deltaE': { warnAbove: 3, faultAbove: 6 },
   'cabinet.estop': { faultWhen: 1 },
 };

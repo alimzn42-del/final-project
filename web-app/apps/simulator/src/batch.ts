@@ -5,7 +5,10 @@
  *
  *   wait (idle) → service (between batches) → baseFill → dyeDose → mix → sample
  *   → [correct → mix → sample] up to maxCorrections times → complete → mix → finalCheck
- *   → filling (6 cups: feeder, filling, check, cap or reject, tray) → rinse
+ *   → filling (the batch's containers: feeder, filling, check, cap or reject, out) → rinse
+ *
+ * How many containers a batch fills is the customer's order (owner, step 17); until orders
+ * exist, each batch draws a whole number between the limits in simulator.json `order`.
  *
  * It reads the scales and the camera the way a PLC would (with their noise) and switches the
  * plant's pumps, mixer, conveyor and servos. It reports what happens to an Outbox, which turns
@@ -25,7 +28,7 @@ import {
 import { dye as pureDye, water } from './ledger.js';
 import { type Cup, PLACE, type Plant, type Pump } from './plant.js';
 import { type Program, together, waitS, waitUntil } from './program.js';
-import { between, jitter, type Random } from './random.js';
+import { between, jitter, type Random, wholeBetween } from './random.js';
 import { DYES, type Dye, type Recipe, type SimConfig } from './simConfig.js';
 
 const WEIGH_PAUSE_S = 1;
@@ -59,12 +62,15 @@ export class BatchProgram {
       yield* waitS(this.plant, this.config.batch.pauseS);
       const recipe = recipes[n % recipes.length];
       if (!recipe) return;
-      yield* this.service(recipe);
-      yield* this.batch(recipe);
+      const { containersMin, containersMax } = this.config.order;
+      const containers = wholeBetween(this.random, containersMin, containersMax);
+      yield* this.service(recipe, containers);
+      yield* this.batch(recipe, containers);
     }
   }
 
-  *batch(recipe: Recipe): Program {
+  /** One batch that fills `containers` containers. */
+  *batch(recipe: Recipe, containers: number): Program {
     const { config, out, plant } = this;
     const target = recipeTarget(config, recipe);
     const b = config.batch;
@@ -103,7 +109,7 @@ export class BatchProgram {
 
     // complete: the rest of the batch, in the ratios the vessel now has.
     out.step('complete');
-    const totalG = this.line.container.perBatch * this.line.container.fillTargetG + b.heelG;
+    const totalG = containers * config.order.fillG + b.heelG;
     const perBaseG = DYES.reduce((sum, d) => sum + dosed.dyeG[d], 0) / dosed.baseG;
     const ratio = { ...dosed.dyeG };
     const baseBefore = dosed.baseG;
@@ -118,7 +124,7 @@ export class BatchProgram {
     yield* this.sample(target);
 
     out.step('filling');
-    yield* this.fillCups();
+    yield* this.fillCups(containers);
 
     out.step('rinse');
     yield* this.rinse();
@@ -201,9 +207,8 @@ export class BatchProgram {
    * An indexing belt: all stations work at once on the cups in front of them, then the belt
    * moves one pitch. Cups past the belt's end drop into the tray.
    */
-  private *fillCups(): Program {
+  private *fillCups(total: number): Program {
     const { plant, line } = this;
-    const total = line.container.perBatch;
     const startRejects = plant.rejects;
     const startTray = plant.trayCups;
     let released = 0;
@@ -246,11 +251,11 @@ export class BatchProgram {
 
   /** Lift and weigh, fill by weight (doc 02); about 1 cup in 20 stops short (owner, step 15). */
   private *fillCup(cup: Cup): Program {
-    const { plant, config, line, random } = this;
+    const { plant, config, random } = this;
     yield* this.platform('filling', cup, true);
     const c = config.check;
     const short = random() < c.shortFillChance ? between(random, ...c.shortFillG) : 0;
-    const grams = line.container.fillTargetG - short + jitter(random, config.noise.scaleG);
+    const grams = config.order.fillG - short + jitter(random, config.noise.scaleG);
     plant.pump('filling', PLACE.vessel, PLACE.cup(cup.id), grams);
     yield* this.untilStopped('filling');
     yield* this.settle();
@@ -259,11 +264,11 @@ export class BatchProgram {
 
   /** Weigh; bad weight: pusher to the reject box; good: lid drops and is pressed (doc 02). */
   private *checkCup(cup: Cup): Program {
-    const { plant, config, line } = this;
+    const { plant, config } = this;
     plant.decision = 0;
     yield* this.platform('check', cup, true);
     const net = this.read('checkMass');
-    const good = Math.abs(net - line.container.fillTargetG) <= config.check.toleranceG;
+    const good = Math.abs(net - config.order.fillG) <= config.check.toleranceG;
     plant.decision = good ? 1 : 2;
     // Interlock (doc 02): pressing is forbidden while the platform is up.
     yield* this.platform('check', cup, false);
@@ -289,14 +294,15 @@ export class BatchProgram {
 
   /**
    * As if by a worker (owner, step 15): take the full tray away, and refill or empty whatever
-   * cannot cover the next batch. One batch/refill message lists it all, by machine.json part id.
+   * cannot cover the next batch (its recipe and its number of containers). One batch/refill
+   * message lists it all, by machine.json part id.
    */
-  *service(next: Recipe): Program {
+  *service(next: Recipe, containers: number): Program {
     const { plant, config, line } = this;
     const s = config.supplies;
     const r = config.rinse;
     const ledger = plant.ledger;
-    const totalG = line.container.perBatch * line.container.fillTargetG + config.batch.heelG;
+    const totalG = containers * config.order.fillG + config.batch.heelG;
     const items: RefillItem[] = [];
     const apply: (() => void)[] = [];
     const item = (
@@ -332,13 +338,13 @@ export class BatchProgram {
         });
       }
     }
-    if (plant.cupsInMagazine < line.container.perBatch) {
+    if (plant.cupsInMagazine < containers) {
       item('cups', 'refilled', s.cupsFull - plant.cupsInMagazine, 'count');
       apply.push(() => {
         plant.cupsInMagazine = s.cupsFull;
       });
     }
-    if (plant.lids < line.container.perBatch) {
+    if (plant.lids < containers) {
       item('lids', 'refilled', s.lidsFull - plant.lids, 'count');
       apply.push(() => {
         plant.lids = s.lidsFull;
@@ -352,7 +358,7 @@ export class BatchProgram {
         ledger.takeAway(PLACE.drainBucket);
       });
     }
-    if (plant.rejects > 0 && plant.rejects + line.container.perBatch > s.rejectBoxFull) {
+    if (plant.rejects > 0 && plant.rejects + containers > s.rejectBoxFull) {
       item('rejectBox', 'emptied', plant.rejects, 'count');
       apply.push(() => {
         ledger.takeAway(PLACE.rejectBox);

@@ -19,6 +19,8 @@ export const MATERIAL_LOOKS: Record<Material, Look> = {
   wood: { color: '#c8a97e', opacity: 1, metalness: 0, roughness: 0.8 },
   // Tanks and the vessel: see-through, so the liquid shows.
   clearPlastic: { color: '#dcebf5', opacity: 0.22, metalness: 0, roughness: 0.1 },
+  // The container's body: black PP (owner, step 17).
+  blackPlastic: { color: '#1b1c1e', opacity: 1, metalness: 0, roughness: 0.45 },
   plastic: { color: '#e3e6ea', opacity: 1, metalness: 0, roughness: 0.5 },
   metal: { color: '#aeb6bf', opacity: 1, metalness: 0.8, roughness: 0.35 },
   // Sample cell and diffuser.

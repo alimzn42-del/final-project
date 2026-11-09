@@ -1,4 +1,4 @@
-import { machineSchema } from '@mixline/shared';
+import { brimVolume, machineSchema } from '@mixline/shared';
 import { describe, expect, it } from 'vitest';
 
 import { bindLine, PART_TABLE, SENSOR_TABLE } from './bindings.js';
@@ -19,7 +19,10 @@ describe('the sensor table against machine.json', () => {
     expect(line.sensors.vesselMass.id).toBe('vessel.mass');
     expect(line.sensors.cyanPumpSteps.id).toBe('dyeCPump.steps');
     expect(line.parts.cups.id).toBe('containerMagazine');
-    expect(line.container).toEqual({ fillTargetG: 300, perBatch: 6, tareG: 12 });
+    // Owner, step 17: the measured tub; its inside holds about the estimated 500 ml.
+    expect(line.container).toMatchObject({ baseDiameter: 79, topDiameter: 113, height: 77 });
+    expect(brimVolume(line.tub)).toBeGreaterThan(450);
+    expect(brimVolume(line.tub)).toBeLessThan(550);
     expect(line.stations).toEqual({
       feeder: 250,
       filling: 550,
@@ -76,6 +79,19 @@ describe('the sensor table against machine.json', () => {
     raw.supplies = { ...raw.supplies, cupsFull: 40, bigTankFullG: 20000 };
     expect(bind(rawMachine(), parseSimConfig(raw))).toThrow(
       /cupsFull: 40 is above magazine\.count's sim range[\s\S]*more than the big tank holds/,
+    );
+  });
+
+  it('refuses an order the vessel scale or the container cannot take (owner, step 17)', () => {
+    const raw = rawSimConfig();
+    raw.order = { ...raw.order, containersMax: 12 };
+    expect(bind(rawMachine(), parseSimConfig(raw))).toThrow(
+      /the largest batch \(12 containers and the heel\): 4400 is above vessel\.mass's sim range/,
+    );
+    const full = rawSimConfig();
+    full.order = { ...full.order, fillG: 600 };
+    expect(bind(rawMachine(), parseSimConfig(full))).toThrow(
+      /order\.fillG: 600 g is more than the container holds \(\d+ ml\)/,
     );
   });
 });

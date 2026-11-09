@@ -6,7 +6,7 @@
  * - `pnpm sim:check`: 12 s. Every sensor topic, every payload against machine.json, source "sim",
  *   the publishing intervals, the retained machine state, and the format of any batch message.
  * - `pnpm sim:check --cycle`: waits for the next batch to start and listens to it from start to
- *   finish (up to about 10 minutes), then checks the steps and that the masses balance across
+ *   finish (up to about 13 minutes), then checks the steps and that the masses balance across
  *   the scales, using only the published values (cycle.ts). No login needed: MQTT only.
  */
 import {
@@ -27,8 +27,11 @@ import { ANALOG_MS, FAST_MS, HEARTBEAT_MS } from './schedule.js';
 import { loadSimConfig } from './simConfig.js';
 
 const LISTEN_MS = 12_000;
-/** A batch takes about 4.5 minutes with the pause; this waits for one to start, then hears it all. */
-const CYCLE_LISTEN_MS = 11 * 60_000;
+/**
+ * A batch takes about 3.75 (4 containers) to 6 minutes (10 containers, owner step 17), plus the
+ * pause and the service: this waits for the next one to start, then hears it all.
+ */
+const CYCLE_LISTEN_MS = 14 * 60_000;
 /** Allowed lateness for a message, on top of its period (timers and network). */
 const SLACK_MS = 1_000;
 

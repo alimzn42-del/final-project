@@ -8,7 +8,16 @@
  * or has another kind, unit or value words. A sensor that is not in the table keeps simulator
  * v1's behaviour (its nominal value plus a little noise).
  */
-import type { Machine, MachineComponent, Sensor } from '@mixline/shared';
+import {
+  brimVolume,
+  type ContainerSpec,
+  containerSpec,
+  type Machine,
+  type MachineComponent,
+  type Sensor,
+  type TubInside,
+  tubInside,
+} from '@mixline/shared';
 
 import { DYES, type Dye, type SimConfig, STACK_LIGHT_CODES } from './simConfig.js';
 
@@ -121,7 +130,9 @@ const STATIONS = { feeder: 'feeder', filling: 'filling', check: 'checkCap' } as 
 export interface Line {
   sensors: Readonly<Record<Role, Sensor>>;
   parts: Readonly<Record<Part, MachineComponent>>;
-  container: { fillTargetG: number; perBatch: number; tareG: number };
+  /** The container (machine.json, owner step 17) and its inside. */
+  container: ContainerSpec;
+  tub: TubInside;
   /** Floor area of the big tank, from its diameter: turns litres into a level. */
   bigTankAreaMm2: number;
   bigTankHeightMm: number;
@@ -190,10 +201,22 @@ export function bindLine(machine: Machine, config: SimConfig): Line {
     tankFull: config.supplies.bigTankFullG,
     tankHolds: tank?.shape === 'cylinder' ? Math.PI * (tank.diameter / 2) ** 2 * tank.height : 0,
   };
-  const batchG = machine.container.perBatch * machine.container.fillTargetG + config.batch.heelG;
+  const container = containerSpec(machine.container);
+  const tub = tubInside(container);
+  const { order } = config;
+  // The largest batch the order settings allow, and the smallest (owner, step 17).
+  const largestG = order.containersMax * order.fillG + config.batch.heelG;
+  const smallestG = order.containersMin * order.fillG + config.batch.heelG;
   problems.push(
     ...rangeProblems([
-      [sensors.vesselMass, batchG, 'the batch (6 cups and the heel)'],
+      [
+        sensors.vesselMass,
+        largestG,
+        `the largest batch (${String(order.containersMax)} containers and the heel)`,
+      ],
+      [sensors.fillingMass, order.fillG, 'order.fillG'],
+      // The lid drops onto the check scale (owner, step 17).
+      [sensors.checkMass, order.fillG + container.lidG, 'order.fillG with the lid'],
       [sensors.magazineCount, config.supplies.cupsFull, 'supplies.cupsFull'],
       [sensors.lidCount, config.supplies.lidsFull, 'supplies.lidsFull'],
       [sensors.rejectCount, config.supplies.rejectBoxFull, 'supplies.rejectBoxFull'],
@@ -211,8 +234,14 @@ export function bindLine(machine: Machine, config: SimConfig): Line {
   if (sizes.tankHolds && sizes.tankFull * 1000 > sizes.tankHolds) {
     problems.push('supplies.bigTankFullG: more than the big tank holds');
   }
-  if (config.batch.firstPortionG >= batchG) {
-    problems.push('batch.firstPortionG: must be less than the whole batch');
+  if (config.batch.firstPortionG >= smallestG) {
+    problems.push('batch.firstPortionG: must be less than the smallest batch');
+  }
+  // 1 g of water is 1 ml.
+  if (order.fillG > brimVolume(tub)) {
+    problems.push(
+      `order.fillG: ${String(order.fillG)} g is more than the container holds (${brimVolume(tub).toFixed(0)} ml)`,
+    );
   }
 
   if (problems.length) {
@@ -224,11 +253,8 @@ export function bindLine(machine: Machine, config: SimConfig): Line {
   return {
     sensors: sensors as Record<Role, Sensor>,
     parts: parts as Record<Part, MachineComponent>,
-    container: {
-      fillTargetG: machine.container.fillTargetG,
-      perBatch: machine.container.perBatch,
-      tareG: machine.container.tareG,
-    },
+    container,
+    tub,
     bigTankAreaMm2: Math.PI * (cylinder.diameter / 2) ** 2,
     bigTankHeightMm: cylinder.height,
     stations,

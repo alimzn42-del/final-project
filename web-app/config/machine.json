@@ -38,17 +38,26 @@
     "status": "estimated"
   },
   "container": {
-    "status": "pending",
-    "shape": "taperedCup",
-    "topDiameter": 90,
-    "baseDiameter": 65,
-    "height": 60,
-    "lid": "pressOn",
-    "fillTargetG": 300,
-    "perBatch": 6,
-    "material": "clearPlastic",
-    "tareG": 12,
-    "notes": "Placeholder until the market search. Everything container-dependent reads from here."
+    "confirmed": {
+      "shape": "taperedTub",
+      "baseDiameter": 79,
+      "topDiameter": 113,
+      "height": 77,
+      "bodyMaterial": "blackPlastic",
+      "lidMaterial": "clearPlastic",
+      "lid": "snapOnFlat"
+    },
+    "estimated": {
+      "capacityMl": 500,
+      "bodyG": 16,
+      "lidG": 6,
+      "wall": 0.6,
+      "rimOverhang": 3,
+      "rimHeight": 3,
+      "lidThickness": 2,
+      "nestingStep": 10
+    },
+    "notes": "Owner, step 17: a tapered round tub, black opaque PP body, clear snap-on flat lid. Measured: bottom outer D79, top outer D113 at the lid, height 77 (taken as the closed tub, lid included). Every other number is an estimate until the tub is weighed and measured. How many tubs a batch fills and how much each holds belong to the order and the simulator (config/simulator.json \"order\"), not to the container."
   },
   "conveyor": {
     "centerlineZ": 250,
@@ -512,7 +521,7 @@
       "installed": true,
       "position": [
         580,
-        187.0,
+        187,
         600
       ],
       "rotationDeg": [
@@ -542,7 +551,7 @@
       "installed": true,
       "position": [
         550,
-        192.0,
+        192,
         600
       ],
       "rotationDeg": [
@@ -599,7 +608,7 @@
       "installed": true,
       "position": [
         550,
-        210.0,
+        210,
         600
       ],
       "rotationDeg": [
@@ -632,7 +641,7 @@
           "decimals": 1,
           "sim": {
             "min": 0,
-            "max": 2500,
+            "max": 4000,
             "nominal": 1800
           },
           "labelKey": "sensor.mass",
@@ -652,7 +661,7 @@
       "installed": true,
       "position": [
         550,
-        440.0,
+        440,
         600
       ],
       "rotationDeg": [
@@ -680,7 +689,7 @@
       "installed": true,
       "position": [
         550,
-        455.0,
+        455,
         600
       ],
       "rotationDeg": [
@@ -727,7 +736,7 @@
       "installed": true,
       "position": [
         550,
-        230.0,
+        230,
         600
       ],
       "rotationDeg": [
@@ -738,7 +747,7 @@
       "geometry": {
         "shape": "cylinder",
         "diameter": 6,
-        "height": 225.0
+        "height": 225
       },
       "material": "metal",
       "sensors": [],
@@ -755,7 +764,7 @@
       "installed": true,
       "position": [
         590,
-        390.0,
+        390,
         600
       ],
       "rotationDeg": [
@@ -1035,7 +1044,7 @@
         "shape": "box",
         "size": [
           40,
-          635.0,
+          635,
           40
         ]
       },
@@ -1065,7 +1074,7 @@
         "shape": "box",
         "size": [
           40,
-          635.0,
+          635,
           40
         ]
       },
@@ -1083,7 +1092,7 @@
       "installed": true,
       "position": [
         550,
-        635.0,
+        635,
         620
       ],
       "rotationDeg": [
@@ -1114,7 +1123,7 @@
       "installed": true,
       "position": [
         377.5,
-        653.0,
+        653,
         650
       ],
       "rotationDeg": [
@@ -1144,7 +1153,7 @@
       "installed": true,
       "position": [
         347.5,
-        671.0,
+        671,
         650
       ],
       "rotationDeg": [
@@ -1177,7 +1186,7 @@
       "installed": true,
       "position": [
         377.5,
-        676.0,
+        676,
         650
       ],
       "rotationDeg": [
@@ -1331,7 +1340,7 @@
       "installed": true,
       "position": [
         377.5,
-        653.0,
+        653,
         550
       ],
       "rotationDeg": [
@@ -1364,7 +1373,7 @@
       "installed": true,
       "position": [
         377.5,
-        575.0,
+        575,
         545
       ],
       "rotationDeg": [
@@ -1458,7 +1467,7 @@
       "installed": true,
       "position": [
         492.5,
-        653.0,
+        653,
         650
       ],
       "rotationDeg": [
@@ -1488,7 +1497,7 @@
       "installed": true,
       "position": [
         462.5,
-        671.0,
+        671,
         650
       ],
       "rotationDeg": [
@@ -1521,7 +1530,7 @@
       "installed": true,
       "position": [
         492.5,
-        676.0,
+        676,
         650
       ],
       "rotationDeg": [
@@ -1675,7 +1684,7 @@
       "installed": true,
       "position": [
         492.5,
-        653.0,
+        653,
         550
       ],
       "rotationDeg": [
@@ -1708,7 +1717,7 @@
       "installed": true,
       "position": [
         492.5,
-        575.0,
+        575,
         545
       ],
       "rotationDeg": [
@@ -1802,7 +1811,7 @@
       "installed": true,
       "position": [
         607.5,
-        653.0,
+        653,
         650
       ],
       "rotationDeg": [
@@ -1832,7 +1841,7 @@
       "installed": true,
       "position": [
         577.5,
-        671.0,
+        671,
         650
       ],
       "rotationDeg": [
@@ -1865,7 +1874,7 @@
       "installed": true,
       "position": [
         607.5,
-        676.0,
+        676,
         650
       ],
       "rotationDeg": [
@@ -2019,7 +2028,7 @@
       "installed": true,
       "position": [
         607.5,
-        653.0,
+        653,
         550
       ],
       "rotationDeg": [
@@ -2052,7 +2061,7 @@
       "installed": true,
       "position": [
         607.5,
-        575.0,
+        575,
         545
       ],
       "rotationDeg": [
@@ -2146,7 +2155,7 @@
       "installed": true,
       "position": [
         722.5,
-        653.0,
+        653,
         650
       ],
       "rotationDeg": [
@@ -2176,7 +2185,7 @@
       "installed": true,
       "position": [
         692.5,
-        671.0,
+        671,
         650
       ],
       "rotationDeg": [
@@ -2209,7 +2218,7 @@
       "installed": true,
       "position": [
         722.5,
-        676.0,
+        676,
         650
       ],
       "rotationDeg": [
@@ -2363,7 +2372,7 @@
       "installed": true,
       "position": [
         722.5,
-        653.0,
+        653,
         550
       ],
       "rotationDeg": [
@@ -2396,7 +2405,7 @@
       "installed": true,
       "position": [
         722.5,
-        575.0,
+        575,
         545
       ],
       "rotationDeg": [
@@ -2802,9 +2811,9 @@
           },
           "labelKey": "sensor.sample_pump_dir",
           "valueLabels": {
-            "-1": "value.reverse",
             "0": "value.stopped",
-            "1": "value.forward"
+            "1": "value.forward",
+            "-1": "value.reverse"
           }
         }
       ],
@@ -3370,8 +3379,8 @@
           "decimals": 1,
           "sim": {
             "min": 0,
-            "max": 400,
-            "nominal": 300
+            "max": 450,
+            "nominal": 350
           },
           "labelKey": "sensor.mass",
           "measures": "netLiquid"
@@ -3570,8 +3579,8 @@
           "decimals": 1,
           "sim": {
             "min": 0,
-            "max": 400,
-            "nominal": 300
+            "max": 450,
+            "nominal": 350
           },
           "labelKey": "sensor.mass",
           "measures": "netLiquid"

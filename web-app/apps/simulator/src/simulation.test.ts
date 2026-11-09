@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { PLACE } from './plant.js';
 import { seededRandom } from './random.js';
 import { TICK_MS } from './schedule.js';
+import type { SimConfig } from './simConfig.js';
 import { type Message, Simulation, type SimulationOptions } from './simulation.js';
 import { realMachine, realSimConfig } from './testing.js';
 
@@ -31,8 +32,13 @@ function run(
   batches: number,
   options: Partial<SimulationOptions> = {},
   check?: (sim: Simulation) => void,
+  settings: SimConfig = config,
 ): Run {
-  const sim = new Simulation(machine, config, { startMs: T0, random: seededRandom(1), ...options });
+  const sim = new Simulation(machine, settings, {
+    startMs: T0,
+    random: seededRandom(1),
+    ...options,
+  });
   const messages: Message[] = [];
   const at: number[] = [];
   let finished = 0;
@@ -64,6 +70,16 @@ const events = (r: Run) =>
   );
 const refills = (r: Run) =>
   batchMessages(r).flatMap((m) => (m.event === 'refill' ? [m.payload as RefillEventPayload] : []));
+/** How many containers each batch filled: its last count (the size is not published). */
+const sizes = (r: Run) =>
+  events(r)
+    .filter((e) => e.event === 'finished')
+    .map((e) => e.payload.containersDone);
+/** The tuning file with every batch the same size. */
+const fixedSize = (containers: number): SimConfig => ({
+  ...config,
+  order: { ...config.order, containersMin: containers, containersMax: containers },
+});
 
 describe('one batch, start to finish (doc 01 batch logic)', () => {
   const one = run(1);
@@ -78,20 +94,30 @@ describe('one batch, start to finish (doc 01 batch logic)', () => {
     );
   });
 
-  it('fills 6 cups, counting each one in the filling step', () => {
+  it("fills the batch's containers, counting each one in the filling step (owner, step 17)", () => {
     const counts = events(one)
       .filter((e) => e.payload.step === 'filling' && e.event === 'step')
       .map((e) => e.payload.containersDone);
-    expect(counts).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    const [size = 0] = sizes(one);
+    expect(size).toBeGreaterThanOrEqual(config.order.containersMin);
+    expect(size).toBeLessThanOrEqual(config.order.containersMax);
+    expect(counts).toEqual(Array.from({ length: size + 1 }, (_, i) => i));
     const done = one.sim.plant.trayCups + one.sim.plant.rejects;
-    expect(done).toBe(6);
+    expect(done).toBe(size);
   });
 
-  it('takes about 4 minutes (owner, step 15)', () => {
-    const e = events(one);
-    const minutes = ((e.at(-1)?.t ?? 0) - (e[0]?.t ?? 0)) / 60_000;
-    expect(minutes).toBeGreaterThan(3.5);
-    expect(minutes).toBeLessThan(4.5);
+  const minutes = (r: Run) => {
+    const e = events(r);
+    return ((e.at(-1)?.t ?? 0) - (e[0]?.t ?? 0)) / 60_000;
+  };
+
+  it('takes about 4 minutes with 6 containers (owner, step 15), longer with more', () => {
+    // About 4.5 since the fill grew from 300 to 350 g (owner, step 17): more base to pump.
+    const six = minutes(run(1, {}, undefined, fixedSize(6)));
+    expect(six).toBeGreaterThan(3.5);
+    expect(six).toBeLessThan(5);
+    const most = minutes(run(1, {}, undefined, fixedSize(config.order.containersMax)));
+    expect(most).toBeGreaterThan(six);
   });
 
   it('keeps one batch id from started to finished, and the machine state with it', () => {
@@ -199,6 +225,14 @@ describe('between batches: the service (owner, step 15)', () => {
     }
   });
 
+  it('draws the size of each batch between the order limits (owner, step 17)', () => {
+    const all = sizes(many);
+    expect(all).toHaveLength(20);
+    expect(Math.min(...all)).toBeGreaterThanOrEqual(config.order.containersMin);
+    expect(Math.max(...all)).toBeLessThanOrEqual(config.order.containersMax);
+    expect(new Set(all).size).toBeGreaterThan(3);
+  });
+
   it('rejects about 1 cup in 20, and the counts add up', () => {
     const p = many.sim.plant;
     const trayCounts = refills(many).flatMap((r) => r.items.filter((i) => i.component === tray));
@@ -207,9 +241,10 @@ describe('between batches: the service (owner, step 15)', () => {
       .flatMap((r) => r.items.filter((i) => i.component === 'rejectBox'))
       .reduce((s, i) => s + i.amount, 0);
     const rejected = emptiedRejects + p.rejects;
-    expect(good + rejected).toBe(120);
-    expect(rejected).toBeGreaterThanOrEqual(2);
-    expect(rejected).toBeLessThanOrEqual(14);
+    const filled = sizes(many).reduce((sum, n) => sum + n, 0);
+    expect(good + rejected).toBe(filled);
+    expect(rejected).toBeGreaterThanOrEqual(filled / 60);
+    expect(rejected).toBeLessThanOrEqual(filled / 8);
   });
 
   it('refills the big tank, cups and lids before they run out, and says how much', () => {

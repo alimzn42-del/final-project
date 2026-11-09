@@ -3,7 +3,8 @@
  * `pnpm sim:check --cycle`. It uses only what was published on MQTT, the way the backend or a
  * person with an MQTT client would see it, never the simulator's insides:
  *
- * - the batch steps arrive in order, 6 containers are counted, the final ΔE is within tolerance
+ * - the batch steps arrive in order; its containers are counted one by one, as many as were
+ *   filled and weighed, within the order limits (owner, step 17); the final ΔE is within tolerance
  *   and the rinse ends with clear water;
  * - every dye dose: the dye tank's scale drops by what the vessel's scale gains, and the dose's
  *   steps × calibrated grams per step agree;
@@ -117,11 +118,22 @@ export function checkCycle(
   const counted = inBatch
     .filter((b) => b.event === 'step' && b.p.step === 'filling')
     .map((b) => b.p.containersDone);
-  const perBatch = machine.container.perBatch;
-  const expected = Array.from({ length: perBatch + 1 }, (_, i) => i);
+  // The batch's size is not published (the order decides it): it is how far the count went.
+  const containers = counted.at(-1) ?? 0;
+  const { containersMin, containersMax } = config.order;
+  const expected = Array.from({ length: containers + 1 }, (_, i) => i);
+  const countProblems: string[] = [];
+  if (counted.join() !== expected.join()) {
+    countProblems.push(`containersDone went ${counted.join(', ')}`);
+  }
+  if (containers < containersMin || containers > containersMax) {
+    countProblems.push(
+      `${String(containers)} containers, outside ${String(containersMin)} to ${String(containersMax)}`,
+    );
+  }
   results.push([
-    `${String(perBatch)} containers are counted`,
-    counted.join() === expected.join() ? [] : [`containersDone went ${counted.join(', ')}`],
+    `the batch's ${String(containers)} containers are counted one by one`,
+    countProblems,
   ]);
 
   // Colour: within tolerance before filling; clear water at the end of the rinse.
@@ -218,7 +230,7 @@ export function checkCycle(
   });
   results.push([
     `every fill: vessel drop = cup on the filling scale = check scale (${String(filled.length)} cups)`,
-    cut(fillProblems, filled.length !== perBatch || weighed.length !== perBatch),
+    cut(fillProblems, filled.length !== containers || weighed.length !== containers),
   ]);
 
   // The big tank has no scale: its level follows the water it gave.

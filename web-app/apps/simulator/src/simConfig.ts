@@ -49,6 +49,18 @@ export const simConfigSchema = z.strictObject({
       }),
     notes,
   }),
+  /** Owner, step 17: until orders exist, each batch fills a random number of containers. */
+  order: z
+    .strictObject({
+      containersMin: z.int().positive(),
+      containersMax: z.int().positive(),
+      fillG: positive,
+      notes,
+    })
+    .refine((o) => o.containersMin <= o.containersMax, {
+      message: 'containersMin must not be above containersMax',
+      path: ['containersMax'],
+    }),
   batch: z.strictObject({
     firstPortionG: positive,
     heelG: atLeastZero,
