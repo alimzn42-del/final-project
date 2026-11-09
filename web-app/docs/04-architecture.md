@@ -28,11 +28,16 @@
   volumes are kept).
 
 ```
- ESP32 / Pi (later)  ─┐
-                      ├──MQTT──> mosquitto ──> backend ──WebSocket──> frontend
- simulator (now)    ──┘                           │
-                                                   └──> TimescaleDB
+ gateway (hardware phase) ─┐
+                           ├──MQTT──> mosquitto ──> backend ──WebSocket──> frontend
+ simulator (now)         ──┘                           │
+                                                        └──> TimescaleDB
 ```
+
+Later, on the real line (owner, step 17; built in the hardware phase, doc 05): the ESP32
+stations talk to the PLC over RS485, the PLC is on Ethernet, and a gateway program (on the
+laptop now, the Raspberry Pi later) reads the PLC and publishes to MQTT with exactly the same
+topics and messages as the simulator. Nothing after the broker changes.
 
 ## MQTT
 
@@ -65,12 +70,16 @@ Publishing rules (simulator now, hardware later):
   Simulator v2 (step 15): 5 Hz for the sensors the moving liquid changes, until 1 s after the
   pump stops: the vessel scale and the running dye pump's tank scale, steps, speed and load
   while dosing dye; the vessel scale, base pump current and big tank level while the base pump
-  runs; the vessel and filling scales while filling, and the check scale while its platform
-  is up. Everything else stays at 1 Hz (draining and sampling too).
+  runs; the vessel and the water pump current while the rinse water pump runs (step 17); the
+  vessel and filling scales while filling, and the check scale while its platform is up.
+  Everything else stays at 1 Hz (draining and sampling too).
 - Digital and enum sensors: on change, plus a heartbeat every 5 s.
 - A sensor with no message for 10 s is `offline`.
 - Scales publish **net liquid mass** in grams. The vessel and dye scales are tared with the empty
-  vessel/tank. Filling and check scales subtract `container.tareG`.
+  vessel/tank. Filling and check scales subtract the empty container (`container` `bodyG`); the
+  check scale also feels the lid once it drops on (owner, step 17), so it weighs before that.
+- Only what the hardware can measure is published (owner, step 17): no counts of containers or
+  lids left; `reject.count` stays, a counter the PLC keeps since it commands every reject.
 - `bigTank.level` is the liquid height above the tank bottom in mm.
 
 Machine-wide messages (published from simulator v2, step 15):
@@ -102,12 +111,14 @@ robot that takes the full tray, sends the same message.
 { "ts": "...", "batchId": null,
   "items": [
     { "component": "bigTank", "action": "refilled", "amount": 8367.7, "unit": "g" },
-    { "component": "containerMagazine", "action": "refilled", "amount": 24, "unit": "count" },
-    { "component": "drainBucket", "action": "emptied", "amount": 9850.4, "unit": "g" },
-    { "component": "batchTray", "action": "emptied", "amount": 6, "unit": "count" }
+    { "component": "waterContainer", "action": "refilled", "amount": 2400, "unit": "g" },
+    { "component": "containerMagazine", "action": "refilled", "amount": 17, "unit": "count" },
+    { "component": "drainBucket", "action": "emptied", "amount": 9850.4, "unit": "g" }
   ],
   "source": "sim" }
 ```
+Until the tray is built (owner, step 17), each full container is taken from the end of the belt
+during the batch, so no tray is emptied between batches.
 - `batchId` is always `null`.
 - `component`: the part's id in `machine.json`, checked against it (`decodeRefill()`), so another
   machine needs no change to the format. The web app names parts through each one's `labelKey`.
@@ -492,6 +503,13 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
     `scene/Part.tsx`);
     liquid levels from `levelSource`, the mix colour from the camera's L\*a\*b\* with a D65 white
     (`scene/liquid.ts`). State chips in the list beside the view (`live/StateChip.tsx`).
+  - Step 17 (owner): containers on the belt while a station's sensor sees one
+    (`scene/onBelt.ts`, pure: which stations, lifted or not, the fill remembered from the last
+    weighing, the lid; `scene/Tubs.tsx`: the tub from machine.json's container with one shared
+    set of geometries, its liquid surface at the fill height from `shared/container.ts`). The
+    tubes and cables (`scene/Links.tsx`): one instanced mesh per kind, three draw calls in all.
+    A closed box is also see-through where a part standing in it leads to another page
+    (`navigation/places.ts`).
   - Values on a part's page (`live/SensorValues.tsx`, rules in `live/format.ts`): Western digits,
     each analog sensor's `decimals`, no thousands separator; words for digital and enum codes;
     units as machine.json spells them, `C` shown as `°C`, none for `count`, `raw`, `bool` and
@@ -559,33 +577,54 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
     part is installed.
   - **Sensor table** (owner: option a, `bindings.ts`): which `machine.json` sensor and part plays
     which role in the process ("the vessel scale is `vessel.mass`"). Checked against
-    `machine.json` at start-up (kind, unit, value words, conveyor stations one equal pitch apart,
-    supplies inside the sim ranges); the simulator refuses to start and names every problem.
+    `machine.json` at start-up (kind, unit, value words, conveyor stations one equal pitch apart
+    and the end stop after them, supplies and the largest batch inside the sim ranges, the fill
+    inside the container); the simulator refuses to start and names every problem.
     Topics, units and ranges still come from `machine.json`. A sensor not in the table keeps v1.
   - **Mass record** (`ledger.ts`): where every gram is and what it is made of (water and each
-    dye): big tank, dye tanks, vessel, sample cell, each cup, tray, reject box, drain bucket.
+    dye): big tank, rinse water container, dye tanks, vessel, flow cell, each cup, reject box,
+    drain bucket.
     Liquid only moves from place to place; refills and emptying go through "outside". The sum
     over all places never changes, so the scales balance by construction.
   - **The batch** (`batch.ts`, a stand-in for the PLC sequence, doc 01): 800 g of base with 85%
     of the recipe's dye (light side first), mix, sample, up to 2 corrections, complete to
-    6 × 300 g + 200 g heel in the same ratios, mix, final check, fill 6 cups on the indexing belt
-    (feeder, filling by weight, check, lid or reject, tray), then drain and rinse twice until
-    the camera sees clear water. About 4 minutes (owner), plus a 5 s pause.
+    (containers × 350 g) + 200 g heel in the same ratios, mix, final check, fill the containers
+    on the indexing belt, then drain and rinse twice with water from the rinse water container
+    until the camera sees clear water.
+  - **Batch size** (owner, step 17): the customer's order decides it. Until orders exist, each
+    batch draws a whole number from 4 to 10 (`order` in `simulator.json`, both estimates), and
+    each container gets 350 g (estimated until a spill test). A batch takes about 4 minutes with
+    4 containers, 5 with 6 and 7 with 10 (was 4 with 6 in step 15), plus a 5 s pause.
+  - **The stations** (owner, step 17): the infeed gate (a solenoid) drops one container; the
+    filling platform lifts it and the filling pump runs until the vessel scale has dropped by
+    the fill (loss-in-weight; the platform scale cross-checks); the check platform lifts it and
+    weighs it; a good one gets its lid while still lifted, the platform lowers, then the press
+    snaps it on (its end switch closes); a bad one is pushed to the reject bin. Until the tray
+    is built, each good container stops at the end of the belt: while the end sensor sees it
+    the belt stands still, and a worker takes it after 3 to 8 s (`outfeed`, estimated).
   - **Rejects** (owner): about 1 cup in 20 is filled short by 8 to 15 g, so the check station
     pushes it to the reject box. All random choices come from one seeded generator, so tests
     are repeatable.
   - **Colour model** (owner): Beer–Lambert per red, green and blue channel (`shared/color.ts`),
-    white-balanced on clear water, converted to L*a*b* with white D65; ΔE is CIEDE2000, checked
-    against its published test data; tolerance ΔE00 ≤ 2.0. Each dye lot (every dye refill) is
-    up to 6% weaker or stronger than the model, so the first sample is never exactly right.
+    converted to L*a*b* with white D65; ΔE is CIEDE2000, checked against its published test
+    data; tolerance ΔE00 ≤ 2.0. Each dye lot (every dye refill) is up to 6% weaker or stronger
+    than the model, so the first sample is never exactly right.
+  - **The flow cell** (owner, step 17, all estimated): 10 mm of liquid between the glass window
+    and the white back, so the light crosses 20 mm of liquid (in and back out). Readings are
+    relative to the white patch beside the window (same white plastic): the light passes the
+    glass twice (0.96 each way), so clear water reads L* about 97, and the rinse compares with
+    that. Glare off the glass is in the model (`CellOptics`) and set to 0: the LED strips at 45
+    degrees keep it out of the camera. The cell holds 16 g. Since step 17 the same dye looks
+    darker than in step 15 (a 20 mm path instead of 15 mm); the recipes were not changed.
   - **Correction** (`correction.ts`): in absorbance, where dyes add up: the missing absorbance is
     covered with more of the recipe in its own ratios, then any hue left with the least extra
     dye of the recipe's own dyes (non-negative least squares); 95% of it is dosed, so the colour
     is approached from the light side.
-  - **Between batches** (owner): as if by a worker, the full tray is removed, and any supply that
-    cannot cover the next batch is refilled to full (big tank, dye tanks with a new lot, cups,
-    lids) or emptied (drain bucket, reject box). One `batch/refill` message lists it all. The
-    simulator never lets a supply run out, so it never trips a float: alarms belong to the PLC.
+  - **Between batches** (owner): as if by a worker, any supply that cannot cover the next batch
+    (its recipe and its size) is refilled to full (big tank, rinse water, dye tanks with a new
+    lot, containers, lids) or emptied (drain bucket, reject box). One `batch/refill` message
+    lists it all. The line has no floats (owner, step 17) and the simulator never lets a supply
+    run out (the magazine-empty sensor never reads yes): alarms belong to the PLC.
   - **Fault hook** (`Faults` in `plant.ts`): a worn dye pump (less per step), a weak dye, a
     drifting scale. Not used in phase 1; a test shows a worn pump needs more steps for the same
     colour while the vessel scale sees less than was commanded (the research idea, doc 01).
@@ -593,11 +632,12 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
     (green) and between batches (yellow) are set in `config/simulator.json` (`stackLight`),
     like the check station's ±5 g accept band (`check.toleranceG`). Both are estimates used only
     by the simulator: the backend and the web app never read them (the page shows the value
-    word from `machine.json`). Mode auto and e-stop released are fixed.
+    word from `machine.json`). Mode auto (in the state message) and e-stop released are fixed;
+    the panel has no auto/manual selector any more (owner, step 17).
 - Rates: analog 1 Hz, 5 Hz while dosing or filling (see the publishing rules above); digital and
   enum on change plus the 5 s heartbeat. The simulation steps every 200 ms, so short pulses (the
-  tray sensor, the feeder fingers) are never missed. About 47 readings a second on average
-  (measured on the stack).
+  infeed gate, the press end switch) are never missed. About 47 readings a second on average
+  with 60 sensors in step 15 (measured on the stack); 54 sensors since step 17.
 - MQTT: client id `mixline-simulator`, QoS 0 for readings (only the latest value matters; a lost
   reading is replaced a second later), QoS 1 for the state (retained) and batch messages,
   automatic reconnect every 2 s, and every sensor and the state are sent again right after a
@@ -607,16 +647,18 @@ Built in step 11. `apps/frontend`: Vite 8, React 19, React Router, i18next.
   `/config/...`, mounted read-only from `./config`).
 - `pnpm sim:check` listens 12 s and verifies all topics, payloads, source `sim`, intervals (at
   most 5 Hz), the retained machine state and the batch message formats.
-- `pnpm sim:check --cycle` waits for the next batch and hears it from start to finish (about
-  5 minutes, at most 11), then checks from the published values only: steps in order,
-  6 containers, final ΔE, clear rinse water, and that masses balance across the scales (dye
-  tank drop = vessel gain = steps × g/step; vessel drop = filling scale = check scale; big tank
-  level drop = vessel gain), and that the refill after it takes the cups that passed. MQTT only,
-  no login (`cycle.ts`).
+- `pnpm sim:check --cycle` waits for the next batch and hears it from start to finish (4 to
+  7 minutes, at most 16 with the wait), then checks from the published values only: steps in
+  order, the containers counted one by one (as many as were filled and weighed, within the
+  order limits), final ΔE, clear rinse water, and that masses balance across the scales (dye
+  tank drop = vessel gain = steps × g/step; vessel drop = filling scale = check scale before
+  the lid; big tank level drop = vessel gain), and that every container that passed reached the
+  end of the belt. MQTT only, no login (`cycle.ts`).
 - Tests: the tuning file, the sensor table against `machine.json`, the mass record, the colour
-  correction for every recipe, whole batches in fast time with a fixed seed (steps, 6 cups,
-  about 4 minutes, ΔE, formats, the mass balance at every step, refills and rejects over 20
-  batches, rates, the fault hook), and the cycle check on simulated batches and on tampered ones.
+  correction for every recipe and the flow cell, whole batches in fast time with a fixed seed
+  (steps, the containers counted, the duration for 6 and for 10, ΔE, formats, the mass balance
+  at every step, batch sizes, refills and rejects over 20 batches, the belt waiting at its end,
+  rates, the fault hook), and the cycle check on simulated batches and on tampered ones.
 
 ## Workspace packages and images
 
@@ -687,10 +729,23 @@ section ever disagree, the file wins; update this section.
   "units": { "length": "mm", "mass": "g" },
   "frame": { "origin", "x", "y", "z", "position", "cylinderAxis" },   // descriptive strings
   "table": { "width", "depth", "heightToFloor", "status" },
-  "container": { "status", "shape", "topDiameter", "baseDiameter", "height", "lid",
-                 "fillTargetG", "perBatch", "material", "tareG", "notes" },
-  "conveyor": { "centerlineZ", "surfaceY", "startX", "endX", "beltWidth", "beltGap", "status",
-                "stations": [ { "id", "x" } ] },
+  // Owner, step 17: every field once, under "confirmed" or "estimated" (moving it = its status).
+  // How many go in a batch and how much each holds are the order's (simulator.json "order").
+  "container": {
+    "confirmed": { "shape": "taperedTub", "baseDiameter", "topDiameter", "height",
+                   "bodyMaterial", "lidMaterial", "lid" },
+    "estimated": { "capacityMl", "bodyG", "lidG", "wall", "rimOverhang", "rimHeight",
+                   "lidThickness", "nestingStep" },
+    "notes" },
+  "conveyor": { "centerlineZ", "surfaceY", "startX", "endX", "beltWidth", "beltGap",
+                "liftMm",                                  // how high a platform lifts a container
+                "status",
+                "stations": [ { "id", "x",
+                  "container"?: {                          // owner, step 17: how the scene shows one
+                    "present": "sensor id",                // drawn while it reads 1
+                    "raised"?: "sensor id",                // lifted while it reads 1
+                    "mass"?: "sensor id", "massWhile"?: "sensor id", "emptyOnArrival"?: true,
+                    "lid"?: "always" | { "sensor", "code" } } } ] },
   "sections": [ { "id", "labelKey", "subsections": [ { "id", "labelKey" } ] } ],
   "components": [ {
     "id": "string, unique",
@@ -706,12 +761,13 @@ section ever disagree, the file wins; update this section.
     "position": [x, y, z],
     "rotationDeg": [x, y, z],
     "geometry":
-        { "shape": "box", "size": [x, y, z], "hollow"?: true, "wallThickness"?: number }
+        { "shape": "box", "size": [x, y, z], "hollow"?: true, "wallThickness"?: number,
+          "liquid"?: { ... } }                    // step 17: a solid box only (the flow cell window)
       | { "shape": "cylinder", "diameter", "height",
           "liquid"?: { ("colorRef": "base | mix") | ("colorHex": "#rrggbb"),
                        "level": 0..1,                                   // fallback
                        "levelSource": { "sensor", "min", "max" } } },   // level = clamp((v-min)/(max-min))
-    "material": "wood | clearPlastic | plastic | metal | acrylic | printed | electronics | rubber",
+    "material": "wood | clearPlastic | blackPlastic | plastic | metal | acrylic | glass | printed | electronics | rubber",
     "color": "#rrggbb",                                   // optional
     "notes": "string",                                    // optional
     "sensors": [ {
@@ -730,6 +786,16 @@ section ever disagree, the file wins; update this section.
         "warnWhen", "faultWhen"                                 // digital / enum value
       }
     } ]
+  } ],
+  // Owner, step 17: tubes and cables, drawn along their path (optional; default none).
+  "links": [ {
+    "id": "string, unique",
+    "kind": "tube | rs485 | ethernet",
+    "from": "component id", "to": "component id",
+    "via": ["component id"],                              // optional: a pump on a tube
+    "status": "confirmed | estimated | pending",
+    "path": [[x, y, z], ...],                             // at least two points, mm
+    "notes": "string"                                     // optional
   } ]
 }
 ```
