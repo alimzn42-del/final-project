@@ -5090,5 +5090,721 @@
       "parent": "laptop",
       "anchor": "bottom"
     }
+  ],
+  "links": [
+    {
+      "id": "tubeDyeC",
+      "kind": "tube",
+      "from": "dyeCTank",
+      "to": "vessel",
+      "via": [
+        "dyeCPump"
+      ],
+      "status": "estimated",
+      "path": [
+        [
+          377.5,
+          765,
+          605
+        ],
+        [
+          377.5,
+          765,
+          510
+        ],
+        [
+          377.5,
+          650,
+          510
+        ],
+        [
+          377.5,
+          650,
+          524
+        ],
+        [
+          377.5,
+          630,
+          510
+        ],
+        [
+          505,
+          510,
+          510
+        ],
+        [
+          505,
+          510,
+          560
+        ],
+        [
+          505,
+          472,
+          560
+        ]
+      ]
+    },
+    {
+      "id": "tubeDyeM",
+      "kind": "tube",
+      "from": "dyeMTank",
+      "to": "vessel",
+      "via": [
+        "dyeMPump"
+      ],
+      "status": "estimated",
+      "path": [
+        [
+          492.5,
+          765,
+          605
+        ],
+        [
+          492.5,
+          765,
+          510
+        ],
+        [
+          492.5,
+          650,
+          510
+        ],
+        [
+          492.5,
+          650,
+          524
+        ],
+        [
+          492.5,
+          630,
+          510
+        ],
+        [
+          530,
+          510,
+          510
+        ],
+        [
+          530,
+          510,
+          545
+        ],
+        [
+          530,
+          472,
+          545
+        ]
+      ]
+    },
+    {
+      "id": "tubeDyeY",
+      "kind": "tube",
+      "from": "dyeYTank",
+      "to": "vessel",
+      "via": [
+        "dyeYPump"
+      ],
+      "status": "estimated",
+      "path": [
+        [
+          607.5,
+          765,
+          605
+        ],
+        [
+          607.5,
+          765,
+          510
+        ],
+        [
+          607.5,
+          650,
+          510
+        ],
+        [
+          607.5,
+          650,
+          524
+        ],
+        [
+          607.5,
+          630,
+          510
+        ],
+        [
+          570,
+          510,
+          510
+        ],
+        [
+          570,
+          510,
+          545
+        ],
+        [
+          570,
+          472,
+          545
+        ]
+      ]
+    },
+    {
+      "id": "tubeDyeK",
+      "kind": "tube",
+      "from": "dyeKTank",
+      "to": "vessel",
+      "via": [
+        "dyeKPump"
+      ],
+      "status": "estimated",
+      "path": [
+        [
+          722.5,
+          765,
+          605
+        ],
+        [
+          722.5,
+          765,
+          510
+        ],
+        [
+          722.5,
+          650,
+          510
+        ],
+        [
+          722.5,
+          650,
+          524
+        ],
+        [
+          722.5,
+          630,
+          510
+        ],
+        [
+          595,
+          510,
+          510
+        ],
+        [
+          595,
+          510,
+          560
+        ],
+        [
+          595,
+          472,
+          560
+        ]
+      ]
+    },
+    {
+      "id": "tubeBase",
+      "kind": "tube",
+      "from": "bigTank",
+      "to": "vessel",
+      "via": [
+        "basePump"
+      ],
+      "status": "estimated",
+      "path": [
+        [
+          305,
+          40,
+          620
+        ],
+        [
+          330,
+          40,
+          620
+        ],
+        [
+          330,
+          20,
+          500
+        ],
+        [
+          400,
+          20,
+          470
+        ],
+        [
+          395,
+          25,
+          432
+        ],
+        [
+          395,
+          510,
+          432
+        ],
+        [
+          490,
+          510,
+          560
+        ],
+        [
+          490,
+          472,
+          560
+        ]
+      ]
+    },
+    {
+      "id": "tubeWater",
+      "kind": "tube",
+      "from": "waterContainer",
+      "to": "vessel",
+      "via": [
+        "waterPump"
+      ],
+      "status": "estimated",
+      "path": [
+        [
+          180,
+          -500,
+          650
+        ],
+        [
+          300,
+          -500,
+          420
+        ],
+        [
+          300,
+          20,
+          420
+        ],
+        [
+          400,
+          20,
+          420
+        ],
+        [
+          385,
+          25,
+          432
+        ],
+        [
+          385,
+          510,
+          432
+        ],
+        [
+          480,
+          510,
+          590
+        ],
+        [
+          480,
+          472,
+          590
+        ]
+      ],
+      "notes": "Through a hole in the table to the pump."
+    },
+    {
+      "id": "tubeDrain",
+      "kind": "tube",
+      "from": "vessel",
+      "to": "drainBucket",
+      "via": [
+        "drainPump"
+      ],
+      "status": "estimated",
+      "path": [
+        [
+          610,
+          472,
+          650
+        ],
+        [
+          610,
+          510,
+          650
+        ],
+        [
+          752,
+          510,
+          650
+        ],
+        [
+          752,
+          20,
+          650
+        ],
+        [
+          760,
+          20,
+          420
+        ],
+        [
+          835,
+          20,
+          400
+        ],
+        [
+          850,
+          -60,
+          400
+        ],
+        [
+          1500,
+          -60,
+          700
+        ],
+        [
+          1500,
+          -440,
+          700
+        ]
+      ],
+      "notes": "Suction into the vessel still open (wall hole or rigid dip tube); through a hole in the table to the bucket."
+    },
+    {
+      "id": "tubeFill",
+      "kind": "tube",
+      "from": "vessel",
+      "to": "fillingNozzle",
+      "via": [
+        "fillingPump"
+      ],
+      "status": "estimated",
+      "path": [
+        [
+          590,
+          472,
+          545
+        ],
+        [
+          590,
+          510,
+          545
+        ],
+        [
+          590,
+          510,
+          432
+        ],
+        [
+          520,
+          40,
+          420
+        ],
+        [
+          500,
+          20,
+          400
+        ],
+        [
+          480,
+          20,
+          360
+        ],
+        [
+          480,
+          260,
+          330
+        ],
+        [
+          550,
+          260,
+          250
+        ],
+        [
+          550,
+          235,
+          250
+        ]
+      ]
+    },
+    {
+      "id": "tubeSample",
+      "kind": "tube",
+      "from": "vessel",
+      "to": "flowCell",
+      "via": [
+        "samplePump"
+      ],
+      "status": "estimated",
+      "path": [
+        [
+          625,
+          472,
+          610
+        ],
+        [
+          625,
+          510,
+          610
+        ],
+        [
+          750,
+          510,
+          560
+        ],
+        [
+          750,
+          25,
+          520
+        ],
+        [
+          770,
+          25,
+          500
+        ],
+        [
+          770,
+          25,
+          485
+        ],
+        [
+          750,
+          25,
+          480
+        ],
+        [
+          750,
+          185,
+          580
+        ],
+        [
+          727,
+          185,
+          600
+        ]
+      ],
+      "notes": "Both ways: forward fills the flow cell through its bottom port, reverse returns the sample."
+    },
+    {
+      "id": "tubeVent",
+      "kind": "tube",
+      "from": "flowCell",
+      "to": "vessel",
+      "status": "estimated",
+      "path": [
+        [
+          703,
+          260.3,
+          605
+        ],
+        [
+          703,
+          300,
+          605
+        ],
+        [
+          640,
+          480,
+          630
+        ],
+        [
+          640,
+          472,
+          630
+        ]
+      ],
+      "notes": "The vent from the top of the flow cell back to the vessel lid stays (owner, step 17)."
+    },
+    {
+      "id": "rs485Station1",
+      "kind": "rs485",
+      "from": "plc",
+      "to": "station1",
+      "status": "estimated",
+      "path": [
+        [
+          1140,
+          470,
+          679
+        ],
+        [
+          1100,
+          130,
+          700
+        ],
+        [
+          1100,
+          100,
+          700
+        ],
+        [
+          1100,
+          60,
+          765
+        ],
+        [
+          700,
+          60,
+          765
+        ],
+        [
+          700,
+          645,
+          765
+        ],
+        [
+          690,
+          645,
+          715
+        ]
+      ],
+      "notes": "One daisy-chained twisted pair, PLC -> station 1 -> station 2 -> station 3, 120 ohm at both ends."
+    },
+    {
+      "id": "rs485Station2",
+      "kind": "rs485",
+      "from": "station1",
+      "to": "station2",
+      "status": "estimated",
+      "path": [
+        [
+          600,
+          640,
+          715
+        ],
+        [
+          600,
+          640,
+          768
+        ],
+        [
+          795,
+          640,
+          768
+        ],
+        [
+          795,
+          40,
+          768
+        ],
+        [
+          880,
+          40,
+          700
+        ],
+        [
+          880,
+          40,
+          660
+        ]
+      ]
+    },
+    {
+      "id": "rs485Station3",
+      "kind": "rs485",
+      "from": "station2",
+      "to": "station3",
+      "status": "estimated",
+      "path": [
+        [
+          880,
+          30,
+          560
+        ],
+        [
+          980,
+          30,
+          425
+        ]
+      ]
+    },
+    {
+      "id": "ethernetPlc",
+      "kind": "ethernet",
+      "from": "plc",
+      "to": "ethernetSwitch",
+      "status": "estimated",
+      "path": [
+        [
+          1120,
+          450,
+          679
+        ],
+        [
+          1085,
+          130,
+          690
+        ],
+        [
+          1085,
+          100,
+          690
+        ],
+        [
+          1075,
+          12,
+          700
+        ],
+        [
+          1060,
+          12,
+          700
+        ]
+      ],
+      "notes": "Cat6."
+    },
+    {
+      "id": "ethernetPi",
+      "kind": "ethernet",
+      "from": "raspberryPi",
+      "to": "ethernetSwitch",
+      "status": "estimated",
+      "path": [
+        [
+          1217.5,
+          360,
+          732
+        ],
+        [
+          1095,
+          130,
+          710
+        ],
+        [
+          1095,
+          100,
+          710
+        ],
+        [
+          1070,
+          12,
+          715
+        ],
+        [
+          1060,
+          12,
+          715
+        ]
+      ],
+      "notes": "Cat6."
+    },
+    {
+      "id": "ethernetLaptop",
+      "kind": "ethernet",
+      "from": "laptop",
+      "to": "ethernetSwitch",
+      "status": "estimated",
+      "path": [
+        [
+          1045,
+          9,
+          500
+        ],
+        [
+          1010,
+          9,
+          600
+        ],
+        [
+          1010,
+          12,
+          665
+        ]
+      ],
+      "notes": "Cat6."
+    }
   ]
 }

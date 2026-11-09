@@ -28,7 +28,10 @@ export interface MachineJson {
   [key: string]: unknown;
   sections: { id: string; labelKey: string; subsections: { id: string; labelKey: string }[] }[];
   components: ComponentJson[];
+  links?: LinkJson[];
 }
+
+export type LinkJson = Record<string, unknown> & { id: string; to: string; via?: string[] };
 
 export interface ComponentJson {
   [key: string]: unknown;

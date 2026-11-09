@@ -117,6 +117,24 @@ describe('the line page in 3D', () => {
     expect(liquid && `#${surface(liquid).color.getHexString()}`).toBe('#cfe8f5');
   });
 
+  it('draws the pump tubes, the RS485 chain and the Ethernet cables, one mesh per kind (owner, step 17)', async () => {
+    const { renderer } = await renderScene();
+    for (const kind of ['tube', 'rs485', 'ethernet'] as const) {
+      const [mesh] = renderer.scene.findAll((n) => n.props.name === `links-${kind}`);
+      const segments = machine.links
+        .filter((l) => l.kind === kind)
+        .reduce((sum, l) => sum + l.path.length - 1, 0);
+      expect(mesh, kind).toBeDefined();
+      expect((mesh?.instance as unknown as { count: number }).count, kind).toBe(segments);
+    }
+  });
+
+  it('draws a link only where both its ends are on the page', async () => {
+    const { renderer } = await renderScene('cabinet');
+    expect(renderer.scene.findAll((n) => n.props.name === 'links-ethernet')).toHaveLength(1);
+    expect(renderer.scene.findAll((n) => n.props.name === 'links-tube')).toHaveLength(0);
+  });
+
   it('the flow cell window shows the mix colour behind its glass (owner, step 17)', async () => {
     const { renderer } = await renderScene();
     const [glass, liquid] = meshesOf(renderer, 'flowCellWindow');

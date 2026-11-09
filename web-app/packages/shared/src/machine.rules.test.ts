@@ -127,6 +127,36 @@ describe('machine.json cross-reference rules', () => {
     );
   });
 
+  it('rejects a link to a part that does not exist, or through one (owner, step 17)', () => {
+    expectIssue(
+      (m) => {
+        const tube = m.links?.find((l) => l.id === 'tubeBase');
+        if (tube) tube.via = ['noSuchPump'];
+      },
+      'links[tubeBase].via[0]',
+      /unknown component "noSuchPump"/,
+    );
+    expectIssue(
+      (m) => {
+        const cable = m.links?.find((l) => l.id === 'ethernetPi');
+        if (cable) cable.to = 'nowhere';
+      },
+      'links[ethernetPi].to',
+      /unknown component "nowhere"/,
+    );
+  });
+
+  it('rejects two links with one id', () => {
+    expectIssue(
+      (m) => {
+        const first = m.links?.[0];
+        if (first) m.links?.push({ ...first });
+      },
+      'links[tubeDyeC]',
+      /duplicate link id/,
+    );
+  });
+
   it('rejects the reserved subsection id "part"', () => {
     expectIssue(
       (m) => {

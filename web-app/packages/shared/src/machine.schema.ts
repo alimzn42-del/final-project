@@ -230,6 +230,25 @@ const component = z
     path: ['anchor'],
   });
 
+// ---------- links: tubes and cables (owner, step 17) ----------
+
+export const LINK_KINDS = ['tube', 'rs485', 'ethernet'] as const;
+
+/**
+ * A tube or a cable between two parts, drawn along `path` (points in mm, machine.json's frame).
+ * `via`: the parts it passes through on the way (a pump on a tube).
+ */
+const link = z.strictObject({
+  id,
+  kind: z.enum(LINK_KINDS),
+  from: id,
+  to: id,
+  via: z.array(id).optional(),
+  status,
+  path: z.array(vec3).min(2),
+  notes: z.string().optional(),
+});
+
 // ---------- the container (product) ----------
 
 /**
@@ -362,6 +381,8 @@ export const machineSchema = z.strictObject({
     }),
   ),
   components: z.array(component),
+  /** Tubes and cables (owner, step 17); a machine may have none. */
+  links: z.array(link).default([]),
 });
 
 /** The machine after parsing (defaults applied, e.g. anchor). */
@@ -370,6 +391,8 @@ export type MachineComponent = Machine['components'][number];
 export type Sensor = MachineComponent['sensors'][number];
 export type Geometry = MachineComponent['geometry'];
 export type Section = Machine['sections'][number];
+export type Link = Machine['links'][number];
+export type LinkKind = (typeof LINK_KINDS)[number];
 export type ContainerConfig = Machine['container'];
 /** The container with every field filled in (the schema guarantees each one is set once). */
 export type ContainerSpec = {

@@ -97,6 +97,22 @@ export function checkMachineRules(machine: Machine): Issue[] {
     }
   });
 
+  // --- links: unique ids, and both ends and every part on the way exist ---
+  const linkIds = new Set<string>();
+  for (const l of machine.links) {
+    const path = `links[${l.id}]`;
+    if (linkIds.has(l.id)) add(path, 'duplicate link id');
+    linkIds.add(l.id);
+    for (const [key, ref] of [
+      ['from', l.from],
+      ['to', l.to],
+      ...(l.via ?? []).map((v, i) => [`via[${String(i)}]`, v] as const),
+    ] as const) {
+      if (!components.has(ref)) add(`${path}.${key}`, `unknown component "${ref}"`);
+    }
+    if (l.from === l.to) add(`${path}.to`, 'a link needs two different ends');
+  }
+
   const stationIds = new Set<string>();
   for (const station of machine.conveyor.stations) {
     if (stationIds.has(station.id)) add(`conveyor.stations[${station.id}]`, 'duplicate station id');

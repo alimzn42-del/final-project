@@ -21,6 +21,7 @@ import { useLabel } from '../navigation/useLabel';
 import { boundsOf, MM, type Vec3 } from './frame';
 import { useLive } from '../live/live';
 import type { StateColors } from './looks';
+import { Links } from './Links';
 import { Part } from './Part';
 import { passesThrough } from './picking';
 import styles from './scene.module.css';
@@ -140,6 +141,7 @@ export function SceneContent({
       {page.context.map((part) => (
         <Part key={`context-${part.id}`} part={part} machine={machine} ghost />
       ))}
+      <Links links={page.links} />
       {litTarget && nameAt && (
         <Html center position={nameAt} zIndexRange={[30, 0]}>
           <span className={styles.name}>

@@ -12,7 +12,7 @@
  * part leads, the breadcrumbs, and which closed boxes are see-through. It is
  * plain data, so every rule is tested without a 3D view.
  */
-import type { Machine, MachineComponent } from '@mixline/shared';
+import type { Link, Machine, MachineComponent } from '@mixline/shared';
 
 type Section = Machine['sections'][number];
 type Subsection = Section['subsections'][number];
@@ -113,6 +113,8 @@ export interface PageScene {
   targets: Map<string, Target>;
   /** Closed boxes drawn see-through on this page (owner, step 12). */
   seeThrough: Set<string>;
+  /** Tubes and cables whose two ends are both drawn on this page (owner, step 17). */
+  links: Link[];
 }
 
 /** What the page shows in 3D and where each part leads. */
@@ -193,7 +195,9 @@ export function pageScene(machine: Machine, place: Place): PageScene {
     if (aboutIt || (inside.length > 0 && separate)) seeThrough.add(box.id);
   }
 
-  return { subject, context, targets, seeThrough };
+  const links = machine.links.filter((l) => shownIds.has(l.from) && shownIds.has(l.to));
+
+  return { subject, context, targets, seeThrough, links };
 }
 
 /**
