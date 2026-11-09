@@ -130,6 +130,8 @@ export interface Line {
   /** Floor area of the big tank, from its diameter: turns litres into a level. */
   bigTankAreaMm2: number;
   bigTankHeightMm: number;
+  /** The belt's one speed (machine.json conveyor, owner step 17). */
+  beltMmPerS: number;
   /**
    * Conveyor positions (x, mm): stations one pitch apart; where a container stops at the end of
    * the belt (owner, step 17: until the tray is built), and the belt's end.
@@ -266,6 +268,7 @@ export function bindLine(machine: Machine, config: SimConfig): Line {
     tub,
     bigTankAreaMm2: Math.PI * (cylinder.diameter / 2) ** 2,
     bigTankHeightMm: cylinder.height,
+    beltMmPerS: machine.conveyor.speedMmPerS,
     stations,
     notInstalledDyes: new Set(
       DYES.filter((d) => !(parts as Record<Part, MachineComponent>)[dyePump(d)].installed),

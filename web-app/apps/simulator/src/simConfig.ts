@@ -108,8 +108,6 @@ export const simConfigSchema = z.strictObject({
     notes,
   }),
   mixer: z.strictObject({ rpm: positive, rampS: positive, runS: atLeastZero, notes }),
-  /** One speed: the belt only runs or stops (parts list 2026-11-09). */
-  conveyor: z.strictObject({ mmPerS: positive, notes }),
   stations: z.strictObject({ servoS: positive, settleS: atLeastZero, pressS: positive, notes }),
   /** Owner, step 17: a worker takes each container from the end of the belt. */
   outfeed: z.strictObject({

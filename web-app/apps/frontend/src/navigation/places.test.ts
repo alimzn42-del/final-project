@@ -116,7 +116,7 @@ describe('where a click leads, per level (doc 03)', () => {
   it('part: shows the parts grouped under it, which lead to their own pages', () => {
     const scene = pageScene(machine, at('/line/mixingColor/color/colorBox'));
     expect(scene.subject.map((c) => c.id)).toEqual(
-      expect.arrayContaining(['colorBox', 'camera', 'flowCell', 'whitePatch', 'ledStripLeft']),
+      expect.arrayContaining(['colorBox', 'camera', 'flowCell', 'whitePatch', 'ledStripFront']),
     );
     expect(scene.targets.get('camera')?.path).toBe('/line/mixingColor/color/camera');
     expect(scene.targets.has('colorBox')).toBe(false); // the page's own part
@@ -133,10 +133,9 @@ describe('where a click leads, per level (doc 03)', () => {
 describe('closed boxes are see-through when their inside is on the page (owner, step 12)', () => {
   const clear = (path: string, id: string) => pageScene(machine, at(path)).seeThrough.has(id);
 
-  it('the lighting box: opaque on the line, see-through from its section down', () => {
+  it('the camera box: opaque on the line and its section, see-through from its sub-section down', () => {
     expect(clear('/line', 'colorBox')).toBe(false);
-    // Owner, step 17: the vessel stands in it and leads to its own sub-section.
-    expect(clear('/line/mixingColor', 'colorBox')).toBe(true);
+    expect(clear('/line/mixingColor', 'colorBox')).toBe(false);
     expect(clear('/line/mixingColor/color', 'colorBox')).toBe(true);
     expect(clear('/line/mixingColor/color/colorBox', 'colorBox')).toBe(true);
     expect(clear('/line/mixingColor/color/camera', 'colorBox')).toBe(true);

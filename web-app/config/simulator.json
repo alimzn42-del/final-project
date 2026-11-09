@@ -67,10 +67,6 @@
     "notes": "Flow rates while running. Dye pumps dose by volume: steps x dyeGPerStep (doc 02), at dyeStepsPerS. currentA: the R385 pumps' current (base, water, drain). dyeLoad: the TMC2209 load reading while running."
   },
   "mixer": { "rpm": 180, "rampS": 1.5, "runS": 5 },
-  "conveyor": {
-    "mmPerS": 100,
-    "notes": "The belt's one speed: the motor only runs or stops, through a relay (parts list 2026-11-09). A JGB37-520 at 60-100 rpm on the 30 mm roller gives about 95-155 mm/s; 100 is an estimate."
-  },
   "stations": {
     "servoS": 0.5,
     "settleS": 0.5,

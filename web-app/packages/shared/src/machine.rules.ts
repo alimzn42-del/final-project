@@ -113,6 +113,13 @@ export function checkMachineRules(machine: Machine): Issue[] {
     if (l.from === l.to) add(`${path}.to`, 'a link needs two different ends');
   }
 
+  const running = sensors.get(machine.conveyor.runningSensor);
+  if (!running) {
+    add('conveyor.runningSensor', `unknown sensor "${machine.conveyor.runningSensor}"`);
+  } else if (running.sensor.kind !== 'digital') {
+    add('conveyor.runningSensor', `sensor "${machine.conveyor.runningSensor}" is not digital`);
+  }
+
   const stationIds = new Set<string>();
   for (const station of machine.conveyor.stations) {
     const path = `conveyor.stations[${station.id}]`;
@@ -124,7 +131,6 @@ export function checkMachineRules(machine: Machine): Issue[] {
     const roles: [string, string | undefined, 'digital' | 'mass'][] = [
       ['present', view.present, 'digital'],
       ['raised', view.raised, 'digital'],
-      ['massWhile', view.massWhile, 'digital'],
       ['mass', view.mass, 'mass'],
     ];
     for (const [role, sensorId, need] of roles) {
@@ -136,9 +142,6 @@ export function checkMachineRules(machine: Machine): Issue[] {
       } else if (need === 'mass' && ref.sensor.unit !== 'g') {
         add(`${path}.container.${role}`, `sensor "${sensorId}" is not a mass in g`);
       }
-    }
-    if (view.massWhile !== undefined && view.mass === undefined) {
-      add(`${path}.container.massWhile`, 'massWhile needs a mass sensor');
     }
     if (view.lid && view.lid !== 'always') {
       const ref = sensors.get(view.lid.sensor);

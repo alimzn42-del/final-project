@@ -3,9 +3,11 @@
  * black body with its rim and a clear flat lid. The body is opaque, so the liquid shows from
  * above only: its surface at the fill height, in the live mix colour, seen through the lid.
  *
+ * They slide along the belt while it runs (owner, step 17, option b; `onBelt.ts`).
+ *
  * Smooth on a phone (owner, step 17): every tub shares one set of geometries made once from
- * the container's sizes, with 32 sides; nothing animates, so the scene only redraws when a
- * reading changes it (frameloop "demand").
+ * the container's sizes, with 32 sides; frames are drawn only while the belt runs or a reading
+ * changes something (frameloop "demand").
  */
 import {
   containerSpec,
@@ -16,13 +18,14 @@ import {
   fillHeight,
   tubInside,
 } from '@mixline/shared';
-import { useEffect, useMemo, useState } from 'react';
-import { CircleGeometry, CylinderGeometry, DoubleSide, RingGeometry } from 'three';
+import { useFrame, useThree } from '@react-three/fiber';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { CircleGeometry, CylinderGeometry, DoubleSide, type Group, RingGeometry } from 'three';
 
 import { MM, toScene } from './frame';
 import { liveMixColour } from './liquid';
 import { MATERIAL_LOOKS } from './looks';
-import { remember, tubsOnBelt, type TubView } from './onBelt';
+import { EMPTY_BELT, follow, tubsOnBelt, type TubView, xAt } from './onBelt';
 
 const SIDES = 32;
 
@@ -32,36 +35,81 @@ export interface TubsProps {
   states?: StateSnapshot | undefined;
   /** Ids of the parts drawn on this page. */
   drawn: ReadonlySet<string>;
+  /** The server's clock minus the browser's, ms (live data): the belt's times are the line's. */
+  clockOffset?: number;
 }
 
-export function Tubs({ machine, readings, states, drawn }: TubsProps) {
+type Readings = TubsProps['readings'];
+
+/** The line's clock now: the browser's, corrected by the server's (live data). */
+const lineNow = (clockOffset: number) => Date.now() + clockOffset;
+
+/** The line's time of the newest reading: "now" as far as the readings know. */
+const newest = (readings: Readings) =>
+  Object.values(readings).reduce((t, r) => Math.max(t, Date.parse(r.ts)), 0);
+
+export function Tubs({ machine, readings, states, drawn, clockOffset = 0 }: TubsProps) {
   const shapes = useTubShapes(machine);
+  const invalidate = useThree((s) => s.invalidate);
   const partOf = useMemo(() => {
     const map = new Map<string, string>();
     for (const c of machine.components) for (const s of c.sensors) map.set(s.id, c.id);
     return map;
   }, [machine]);
-  // Each new set of readings updates the memory of fills (React: state that follows a prop).
+  // Each new set of readings moves the belt on (React: state that follows a prop).
   const [kept, setKept] = useState(() => ({
     readings,
-    memory: remember(machine, readings, new Map()),
+    belt: follow(machine, EMPTY_BELT, readings, newest(readings)),
   }));
-  let memory = kept.memory;
+  let belt = kept.belt;
   if (kept.readings !== readings) {
-    memory = remember(machine, readings, kept.memory);
-    setKept({ readings, memory });
+    belt = follow(machine, kept.belt, readings, newest(readings));
+    setKept({ readings, belt });
   }
+  const running = machine.conveyor.runningSensor;
   const visible = (sensorId: string) => {
     const part = partOf.get(sensorId);
-    return part !== undefined && drawn.has(part) && states?.sensors[sensorId] !== 'offline';
+    const live = (id: string) => states?.sensors[id] !== 'offline';
+    return part !== undefined && drawn.has(part) && live(sensorId) && live(running);
   };
-  const tubs = tubsOnBelt(machine, readings, memory, visible);
+  const tubs = tubsOnBelt(machine, belt, readings, newest(readings), visible);
   const colour = liveMixColour(machine, readings) ?? machine.liquids.mix.hex;
+
+  // While the belt runs, the containers slide every frame (only then: frameloop "demand").
+  const [groups] = useState(() => new Map<number, Group>());
+  /** Puts every container where the belt has taken it at `now` (the line's clock). */
+  const slide = (now: number) => {
+    for (const tub of belt.tubs) {
+      const group = groups.get(tub.id);
+      if (group) group.position.x = xAt(machine, belt, tub, now) * MM;
+    }
+  };
+  // After each render too, so a new reading never shows a container a step behind.
+  useLayoutEffect(() => {
+    slide(lineNow(clockOffset));
+  });
+  useFrame(() => {
+    if (belt.movingSince === null) return;
+    slide(lineNow(clockOffset));
+    invalidate();
+  });
+  useEffect(() => {
+    if (belt.movingSince !== null) invalidate();
+  }, [belt.movingSince, invalidate]);
 
   return (
     <>
       {tubs.map((tub) => (
-        <Tub key={tub.station} tub={tub} shapes={shapes} colour={colour} />
+        <Tub
+          key={tub.id}
+          tub={tub}
+          shapes={shapes}
+          colour={colour}
+          place={(group) => {
+            if (group) groups.set(tub.id, group);
+            else groups.delete(tub.id);
+          }}
+        />
       ))}
     </>
   );
@@ -131,9 +179,20 @@ const FLAT: [number, number, number] = [-Math.PI / 2, 0, 0];
 const black = MATERIAL_LOOKS.blackPlastic;
 const clear = MATERIAL_LOOKS.clearPlastic;
 
-function Tub({ tub, shapes, colour }: { tub: TubView; shapes: TubShapes; colour: string }) {
+function Tub({
+  tub,
+  shapes,
+  colour,
+  place,
+}: {
+  tub: TubView;
+  shapes: TubShapes;
+  colour: string;
+  /** Hands the tub's group to the belt, which slides it while the belt runs. */
+  place: (group: Group | null) => void;
+}) {
   const { inside, bodyTop, rimHeight, lidThickness } = shapes;
-  const level = fillHeight(inside, tub.fillMl);
+  const level = fillHeight(inside, tub.ml);
   const radius = radiusAt(inside, level) * MM;
   const blackSurface = (
     <meshStandardMaterial
@@ -144,7 +203,7 @@ function Tub({ tub, shapes, colour }: { tub: TubView; shapes: TubShapes; colour:
     />
   );
   return (
-    <group name={`tub-${tub.station}`} position={toScene(tub.position)}>
+    <group ref={place} name={`tub-${String(tub.id)}`} position={toScene(tub.position)}>
       <mesh geometry={shapes.body} position={[0, (bodyTop * MM) / 2, 0]} raycast={() => null}>
         {blackSurface}
       </mesh>

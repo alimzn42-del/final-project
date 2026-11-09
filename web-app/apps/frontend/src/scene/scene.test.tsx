@@ -87,7 +87,7 @@ describe('the line page in 3D', () => {
     }
   });
 
-  it('draws closed boxes as six walls (lighting box, cabinet), opaque on the overview', async () => {
+  it('draws closed boxes as six walls (camera box, cabinet), opaque on the overview', async () => {
     const { renderer } = await renderScene();
     for (const id of ['colorBox', 'cabinet']) {
       const walls = meshesOf(renderer, id);
@@ -349,7 +349,8 @@ describe('live liquids in 3D (plan step 14)', () => {
       'color.a': reading(80.0925),
       'color.b': reading(67.2032),
     });
-    const tub = renderer.scene.findByProps({ name: 'tub-filling' });
+    const [tub] = renderer.scene.findAll((n) => String(n.props.name).startsWith('tub-'));
+    if (!tub) throw new Error('no container drawn');
     const { surfaceY, liftMm } = machine.conveyor;
     expect((tub.instance as unknown as { position: { y: number } }).position.y).toBeCloseTo(
       (surfaceY + liftMm) / 1000,

@@ -291,7 +291,7 @@ describe('a part that is not installed (owner, step 16)', () => {
   });
 
   it('every part is installed unless machine.json says otherwise', () => {
-    // Owner, step 17: the customer camera, the tray and its station are not built yet.
+    // Owner, step 17: the customer camera and the tray are not built yet.
     const notInstalled = realMachine.components.filter((c) => !c.installed).map((c) => c.id);
     expect(notInstalled).toEqual([
       'customerCameraMount',
@@ -301,7 +301,6 @@ describe('a part that is not installed (owner, step 16)', () => {
       'trayBelt',
       'trayStepper',
       'trayHomeSwitch',
-      'station4',
     ]);
     const without = rawMachine();
     for (const c of without.components) delete (c as Record<string, unknown>).installed;

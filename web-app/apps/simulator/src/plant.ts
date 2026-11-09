@@ -260,7 +260,7 @@ export class Plant {
     const end = this.line.stations.end;
     const riding = this.cups.filter((c) => !c.lifted);
     const toEnd = Math.min(...riding.map((c) => end - c.x));
-    const mm = Math.min(this.config.conveyor.mmPerS * dtS, this.beltLeftMm, toEnd);
+    const mm = Math.min(this.line.beltMmPerS * dtS, this.beltLeftMm, toEnd);
     this.beltLeftMm -= mm;
     for (const cup of riding) cup.x = Math.min(end, cup.x + mm);
     if (this.beltLeftMm < 1e-9) this.beltLeftMm = 0;

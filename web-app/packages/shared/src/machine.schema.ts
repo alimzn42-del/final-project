@@ -233,20 +233,17 @@ const component = z
 // ---------- containers at the stations (owner, step 17) ----------
 
 /**
- * How the scene shows a container at a conveyor station (owner, step 17: only while the
- * station's sensor sees one). All are sensor ids:
- * - present: the container is drawn while this digital sensor reads 1;
- * - raised: drawn lifted (conveyor.liftMm) while this one reads 1;
- * - mass: its fill (net g = ml), read while `massWhile` (default: `raised`) reads 1, and kept
- *   until the next reading; `emptyOnArrival`: empty again when a new container arrives;
- * - lid: on always, or while a sensor reads a code (the check result "pass").
+ * What a conveyor station's sensors say about the container at it (owner, step 17; the scene
+ * follows each container along the belt). All are sensor ids:
+ * - present: a container is at the station while this digital sensor reads 1;
+ * - raised: it is lifted (conveyor.liftMm) while this one reads 1;
+ * - mass: while lifted, this scale gives its fill (net g = ml);
+ * - lid: the lid goes on here: always, or once a sensor reads a code (the check result "pass").
  */
 const stationContainer = z.strictObject({
   present: id,
   raised: id.optional(),
   mass: id.optional(),
-  massWhile: id.optional(),
-  emptyOnArrival: z.boolean().optional(),
   lid: z.union([z.literal('always'), z.strictObject({ sensor: id, code: z.int() })]).optional(),
 });
 
@@ -389,6 +386,10 @@ export const machineSchema = z.strictObject({
       beltGap: positive,
       /** How high a weighing platform lifts a container off the belts (the scene shows it). */
       liftMm: positive,
+      /** The belt's one speed: it only runs or stops (owner, step 17). */
+      speedMmPerS: positive,
+      /** The digital sensor that reads 1 while the belt runs. */
+      runningSensor: id,
       status,
       stations: z.array(
         z.strictObject({ id, x: z.number(), container: stationContainer.optional() }),

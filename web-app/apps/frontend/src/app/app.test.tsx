@@ -131,12 +131,12 @@ describe('live states in the list beside the view (plan step 14)', () => {
       live.send('snapshot', { readings: {}, states: statesFromServer });
     });
     const panel = within(screen.getByRole('complementary'));
-    expect(panel.getByRole('link', { name: /Lighting box/ })).not.toHaveTextContent(/OK|Fault/);
-    expect(panel.getByRole('link', { name: /^Camera(?! mount)/ })).toHaveTextContent('Fault');
+    expect(panel.getByRole('link', { name: /Camera box/ })).not.toHaveTextContent(/OK|Fault/);
+    expect(panel.getByRole('link', { name: /^Camera(?! box| mount)/ })).toHaveTextContent('Fault');
     act(() => {
       live.send('states', { components: { camera: 'ok' } });
     });
-    expect(panel.getByRole('link', { name: /^Camera(?! mount)/ })).toHaveTextContent('OK');
+    expect(panel.getByRole('link', { name: /^Camera(?! box| mount)/ })).toHaveTextContent('OK');
   });
 });
 
@@ -416,7 +416,7 @@ describe('navigation between the levels (plan step 13)', () => {
   it('a part inside a box links back to the box', async () => {
     fakeApi(as(USERS.manager));
     await renderApp('/line/mixingColor/color/camera');
-    const box = await panelLink('Lighting box');
+    const box = await panelLink('Camera box');
     expect(box).toHaveAttribute('href', '/line/mixingColor/color/colorBox');
   });
 

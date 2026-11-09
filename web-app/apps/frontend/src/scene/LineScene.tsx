@@ -46,6 +46,8 @@ export interface SceneContentProps {
   states?: StateSnapshot | undefined;
   /** Latest readings: tank levels and the mix colour follow them. */
   readings?: Readonly<Record<string, LatestReading>>;
+  /** The server's clock minus the browser's (live data), for the containers on the belt. */
+  clockOffset?: number;
   stateColors?: StateColors;
   onNavigate: (path: string) => void;
 }
@@ -59,6 +61,7 @@ export function SceneContent({
   outline,
   states,
   readings,
+  clockOffset = 0,
   stateColors,
   onNavigate,
 }: SceneContentProps) {
@@ -146,7 +149,13 @@ export function SceneContent({
         <Part key={`context-${part.id}`} part={part} machine={machine} ghost />
       ))}
       <Links links={page.links} />
-      <Tubs machine={machine} readings={readings ?? NO_READINGS} states={states} drawn={drawn} />
+      <Tubs
+        machine={machine}
+        readings={readings ?? NO_READINGS}
+        states={states}
+        drawn={drawn}
+        clockOffset={clockOffset}
+      />
       {litTarget && nameAt && (
         <Html center position={nameAt} zIndexRange={[30, 0]}>
           <span className={styles.name}>
@@ -295,6 +304,7 @@ export default function LineScene({
         glow={glow}
         states={live.states}
         readings={live.readings}
+        clockOffset={live.clockOffset}
         stateColors={stateColors}
         onNavigate={onNavigate}
       />

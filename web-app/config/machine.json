@@ -81,8 +81,7 @@
         "container": {
           "present": "fillingArrival.present",
           "raised": "filling.platformUp",
-          "mass": "filling.mass",
-          "emptyOnArrival": true
+          "mass": "filling.mass"
         }
       },
       {
@@ -103,8 +102,6 @@
         "x": 1293.5,
         "container": {
           "present": "beltEnd.present",
-          "mass": "check.mass",
-          "massWhile": "check.platformUp",
           "lid": "always"
         }
       },
@@ -113,7 +110,9 @@
         "x": 1430
       }
     ],
-    "liftMm": 8
+    "liftMm": 8,
+    "speedMmPerS": 100,
+    "runningSensor": "conveyor.on"
   },
   "sections": [
     {
@@ -450,9 +449,9 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        572.5,
+        550,
         0,
-        595
+        600
       ],
       "rotationDeg": [
         0,
@@ -462,14 +461,14 @@
       "geometry": {
         "shape": "box",
         "size": [
-          345,
-          172.3,
-          310
+          300,
+          178.3,
+          300
         ]
       },
       "material": "wood",
       "sensors": [],
-      "notes": "Carries the lighting box with the vessel and the flow cell (owner, step 17). Height derived: 227 vessel bottom (50 mm above the 177 mm container top) - 48.7 scale stack - 6 box floor = 172.3.",
+      "notes": "Raises the vessel so its bottom is 50 mm above the container top. Height derived: 227 vessel bottom (177 container top + 50) - 48.7 scale stack = 178.3.",
       "anchor": "bottom"
     },
     {
@@ -698,7 +697,7 @@
           "measures": "netLiquid"
         }
       ],
-      "notes": "Placed on the printed base plate, not fixed; inside the closed lighting box (parts list 2026-11-09). Screw lid used as manifold for the tubes and the mixer shaft.",
+      "notes": "Placed on the printed base plate, not fixed (owner, step 17: it stands alone again, the camera box apart from it). Screw lid used as manifold for the tubes and the mixer shaft.",
       "anchor": "bottom"
     },
     {
@@ -802,7 +801,7 @@
       "sensors": [],
       "parent": "mixerMotor",
       "anchor": "bottom",
-      "notes": "Through the lighting box roof and the vessel lid; the blades end about 20 mm above the vessel bottom (doc 02)."
+      "notes": "Through the vessel lid; the blades end about 20 mm above the vessel bottom (doc 02)."
     },
     {
       "id": "mixerFrame",
@@ -813,7 +812,7 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        572.5,
+        550,
         580,
         600
       ],
@@ -825,14 +824,14 @@
       "geometry": {
         "shape": "box",
         "size": [
-          405,
+          360,
           20,
           20
         ]
       },
       "material": "metal",
       "sensors": [],
-      "notes": "Owner, step 17: the mixer hangs from a frame (added, estimated): a 20 x 20 aluminium beam over the lighting box on two posts.",
+      "notes": "Owner, step 17: the mixer hangs from a frame (added, estimated): a 20 x 20 aluminium beam over the vessel on two posts.",
       "anchor": "bottom"
     },
     {
@@ -875,7 +874,7 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        765,
+        720,
         0,
         600
       ],
@@ -895,70 +894,6 @@
       "material": "metal",
       "sensors": [],
       "parent": "mixerFrame",
-      "anchor": "bottom"
-    },
-    {
-      "id": "station1",
-      "type": "station",
-      "labelKey": "part.station1",
-      "section": "mixingColor",
-      "subsection": "mixing",
-      "status": "estimated",
-      "installed": true,
-      "position": [
-        620,
-        615,
-        690
-      ],
-      "rotationDeg": [
-        0,
-        0,
-        0
-      ],
-      "geometry": {
-        "shape": "box",
-        "size": [
-          140,
-          60,
-          50
-        ]
-      },
-      "material": "printed",
-      "sensors": [],
-      "color": "#5B6770",
-      "notes": "Station 1: the four dye scales (HX711) and the four dye pumps (TMC2209 drivers). Hung under the back of the dye shelf. ESP32 DevKit V1 with a MAX3485 RS485 module, a terminal board and an LM2596 24 to 5 V buck, in a printed DIN enclosure (parts list 2026-11-09). Size and position estimated.",
-      "anchor": "bottom"
-    },
-    {
-      "id": "station2",
-      "type": "station",
-      "labelKey": "part.station2",
-      "section": "mixingColor",
-      "subsection": "mixing",
-      "status": "estimated",
-      "installed": true,
-      "position": [
-        880,
-        0,
-        610
-      ],
-      "rotationDeg": [
-        0,
-        0,
-        0
-      ],
-      "geometry": {
-        "shape": "box",
-        "size": [
-          160,
-          60,
-          100
-        ]
-      },
-      "material": "printed",
-      "sensors": [],
-      "color": "#5B6770",
-      "notes": "Station 2: the base tank level, the vessel and filling scales, the base, water, filling, drain and sample pumps (D4184 MOSFET modules, a reversing driver), the mixer and the filling lift servo (XL4015 buck). ESP32 DevKit V1 with a MAX3485 RS485 module, a terminal board and an LM2596 24 to 5 V buck, in a printed DIN enclosure (parts list 2026-11-09). Size and position estimated.",
       "anchor": "bottom"
     },
     {
@@ -1315,7 +1250,7 @@
       },
       "material": "wood",
       "sensors": [],
-      "notes": "Shelf bottom about 100 mm above the mixer motor (doc 02), now 680: the motor hangs from its frame above the lighting box (owner, step 17).",
+      "notes": "Shelf bottom about 100 mm above the mixer motor (doc 02), now 680: the motor hangs from its frame (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -2667,9 +2602,9 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        572.5,
-        172.3,
-        595
+        935,
+        0,
+        625
       ],
       "rotationDeg": [
         0,
@@ -2679,9 +2614,9 @@
       "geometry": {
         "shape": "box",
         "size": [
-          345,
-          318,
-          310
+          250,
+          150,
+          140
         ],
         "wallThickness": 6,
         "hollow": true
@@ -2689,7 +2624,7 @@
       "material": "wood",
       "sensors": [],
       "color": "#1E1E1E",
-      "notes": "Closed lighting box around the vessel and the flow cell, for stable light (parts list 2026-11-09; owner, step 17). Matte black inside. On the pedestal; the mixer shaft and the tubes come in through its roof. Size estimated.",
+      "notes": "Closed camera box, matte black inside, touching the control cabinet's left wall (owner, step 17: apart from the vessel again, as in the earlier design). Inside: the camera, the flow cell, its white patch and the two LED strips. Size estimated.",
       "anchor": "bottom"
     },
     {
@@ -2701,9 +2636,9 @@
       "status": "confirmed",
       "installed": true,
       "position": [
-        703,
-        200.3,
-        469
+        841,
+        28,
+        625
       ],
       "rotationDeg": [
         0,
@@ -2713,9 +2648,9 @@
       "geometry": {
         "shape": "box",
         "size": [
-          25,
+          12,
           24,
-          12
+          25
         ]
       },
       "material": "electronics",
@@ -2804,9 +2739,9 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        703,
-        178.3,
-        469
+        841,
+        6,
+        625
       ],
       "rotationDeg": [
         0,
@@ -2816,9 +2751,9 @@
       "geometry": {
         "shape": "box",
         "size": [
-          30,
+          20,
           22,
-          20
+          30
         ]
       },
       "material": "printed",
@@ -2835,9 +2770,9 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        703,
-        178.3,
-        605
+        977,
+        6,
+        625
       ],
       "rotationDeg": [
         0,
@@ -2847,9 +2782,9 @@
       "geometry": {
         "shape": "box",
         "size": [
-          48,
+          14,
           82,
-          14
+          48
         ]
       },
       "material": "printed",
@@ -2868,9 +2803,9 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        703,
-        192.3,
-        596.5
+        968.5,
+        20,
+        625
       ],
       "rotationDeg": [
         0,
@@ -2880,9 +2815,9 @@
       "geometry": {
         "shape": "box",
         "size": [
+          3,
           40,
-          40,
-          3
+          40
         ],
         "liquid": {
           "colorRef": "mix",
@@ -2904,9 +2839,9 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        703,
-        238.3,
-        597
+        969,
+        66,
+        625
       ],
       "rotationDeg": [
         0,
@@ -2916,9 +2851,9 @@
       "geometry": {
         "shape": "box",
         "size": [
+          2,
           18,
-          18,
-          2
+          18
         ]
       },
       "material": "printed",
@@ -2929,17 +2864,17 @@
       "anchor": "bottom"
     },
     {
-      "id": "ledStripLeft",
+      "id": "ledStripFront",
       "type": "led",
-      "labelKey": "part.ledStripLeft",
+      "labelKey": "part.ledStripFront",
       "section": "mixingColor",
       "subsection": "color",
       "status": "estimated",
       "installed": true,
       "position": [
-        674.7,
-        212.3,
-        566.7
+        935.2,
+        40,
+        593.2
       ],
       "rotationDeg": [
         0,
@@ -2962,17 +2897,17 @@
       "anchor": "center"
     },
     {
-      "id": "ledStripRight",
+      "id": "ledStripBack",
       "type": "led",
-      "labelKey": "part.ledStripRight",
+      "labelKey": "part.ledStripBack",
       "section": "mixingColor",
       "subsection": "color",
       "status": "estimated",
       "installed": true,
       "position": [
-        731.3,
-        212.3,
-        566.7
+        935.2,
+        40,
+        656.8
       ],
       "rotationDeg": [
         0,
@@ -4239,38 +4174,6 @@
       "anchor": "bottom"
     },
     {
-      "id": "station3",
-      "type": "station",
-      "labelKey": "part.station3",
-      "section": "conveyor",
-      "subsection": "checkCap",
-      "status": "estimated",
-      "installed": true,
-      "position": [
-        980,
-        0,
-        380
-      ],
-      "rotationDeg": [
-        0,
-        0,
-        0
-      ],
-      "geometry": {
-        "shape": "box",
-        "size": [
-          120,
-          60,
-          90
-        ]
-      },
-      "material": "printed",
-      "sensors": [],
-      "color": "#5B6770",
-      "notes": "Station 3: the check scale, the check lift servo, the reject pusher, the lid-drop servo and the lid press (2-channel relay), with an XL4015 buck for the servos. ESP32 DevKit V1 with a MAX3485 RS485 module, a terminal board and an LM2596 24 to 5 V buck, in a printed DIN enclosure (parts list 2026-11-09). Size and position estimated.",
-      "anchor": "bottom"
-    },
-    {
       "id": "rejectBox",
       "type": "box",
       "labelKey": "part.rejectBox",
@@ -4473,38 +4376,6 @@
       "sensors": [],
       "notes": "KW12 home switch.",
       "parent": "batchTray",
-      "anchor": "bottom"
-    },
-    {
-      "id": "station4",
-      "type": "station",
-      "labelKey": "part.station4",
-      "section": "conveyor",
-      "subsection": "tray",
-      "status": "estimated",
-      "installed": false,
-      "position": [
-        1560,
-        0,
-        400
-      ],
-      "rotationDeg": [
-        0,
-        0,
-        0
-      ],
-      "geometry": {
-        "shape": "box",
-        "size": [
-          120,
-          60,
-          90
-        ]
-      },
-      "material": "printed",
-      "sensors": [],
-      "color": "#5B6770",
-      "notes": "Station 4: the tray stepper and its home switch. Deferred. ESP32 DevKit V1 with a MAX3485 RS485 module, a terminal board and an LM2596 24 to 5 V buck, in a printed DIN enclosure (parts list 2026-11-09). Size and position estimated.",
       "anchor": "bottom"
     },
     {
@@ -5020,6 +4891,137 @@
       "anchor": "bottom"
     },
     {
+      "id": "dinRail2",
+      "type": "electronics",
+      "labelKey": "part.dinRail2",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1265,
+        147.5,
+        758
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          150,
+          35,
+          8
+        ]
+      },
+      "material": "metal",
+      "sensors": [],
+      "notes": "Second DIN rail, for the three ESP32 enclosures (owner, step 17).",
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "esp32Station1",
+      "type": "electronics",
+      "labelKey": "part.esp32Station1",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1214,
+        120,
+        724
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          48,
+          90,
+          60
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "color": "#5B6770",
+      "notes": "Station 1: the four dye scales (HX711) and the four dye pumps (TMC2209 drivers). An ESP32 DevKit V1 with a MAX3485 RS485 module, a terminal board and an LM2596 24 to 5 V buck (it stays on during an e-stop), in a printed DIN enclosure on the panel's second DIN rail (parts list 2026-11-09; owner, step 17: \"station 1\" is the zone it controls, not a box at the line). Size estimated: three fit beside the 24 V supply only if each is about 48 mm wide.",
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "esp32Station2",
+      "type": "electronics",
+      "labelKey": "part.esp32Station2",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1264,
+        120,
+        724
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          48,
+          90,
+          60
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "color": "#5B6770",
+      "notes": "Station 2: the big tank level, the vessel and filling scales, the base, water, filling, drain and sample pumps (D4184 MOSFET modules, the sample pump reversing driver), the mixer and the filling lift servo (XL4015 buck). An ESP32 DevKit V1 with a MAX3485 RS485 module, a terminal board and an LM2596 24 to 5 V buck (it stays on during an e-stop), in a printed DIN enclosure on the panel's second DIN rail (parts list 2026-11-09; owner, step 17: \"station 2\" is the zone it controls, not a box at the line). Size estimated: three fit beside the 24 V supply only if each is about 48 mm wide.",
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
+      "id": "esp32Station3",
+      "type": "electronics",
+      "labelKey": "part.esp32Station3",
+      "section": "cabinet",
+      "subsection": null,
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        1314,
+        120,
+        724
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          48,
+          90,
+          60
+        ]
+      },
+      "material": "printed",
+      "sensors": [],
+      "color": "#5B6770",
+      "notes": "Station 3: the check scale and lift servo, the reject pusher, the lid-drop servo and the lid press (2-channel relay), with an XL4015 buck for the servos. An ESP32 DevKit V1 with a MAX3485 RS485 module, a terminal board and an LM2596 24 to 5 V buck (it stays on during an e-stop), in a printed DIN enclosure on the panel's second DIN rail (parts list 2026-11-09; owner, step 17: \"station 3\" is the zone it controls, not a box at the line). Size estimated: three fit beside the 24 V supply only if each is about 48 mm wide.",
+      "parent": "cabinet",
+      "anchor": "bottom"
+    },
+    {
       "id": "ethernetSwitch",
       "type": "electronics",
       "labelKey": "part.ethernetSwitch",
@@ -5028,9 +5030,9 @@
       "status": "estimated",
       "installed": true,
       "position": [
-        1010,
+        980,
         0,
-        700
+        470
       ],
       "rotationDeg": [
         0,
@@ -5047,7 +5049,7 @@
       },
       "material": "electronics",
       "sensors": [],
-      "notes": "TP-Link TL-SF1005D: the PLC, the Raspberry Pi and the laptop on Cat6 cables (parts list 2026-11-09). Next to the control cabinet (owner, step 17).",
+      "notes": "TP-Link TL-SF1005D: the PLC, the Raspberry Pi and the laptop on Cat6 cables (parts list 2026-11-09). On the table by the control cabinet, beside the laptop (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -5134,31 +5136,16 @@
         [
           377.5,
           765,
-          510
+          515
         ],
         [
           377.5,
-          650,
-          510
-        ],
-        [
-          377.5,
-          650,
-          524
-        ],
-        [
-          377.5,
-          630,
-          510
+          600,
+          515
         ],
         [
           505,
-          510,
-          510
-        ],
-        [
-          505,
-          510,
+          500,
           560
         ],
         [
@@ -5186,31 +5173,16 @@
         [
           492.5,
           765,
-          510
+          515
         ],
         [
           492.5,
-          650,
-          510
-        ],
-        [
-          492.5,
-          650,
-          524
-        ],
-        [
-          492.5,
-          630,
-          510
+          600,
+          515
         ],
         [
           530,
-          510,
-          510
-        ],
-        [
-          530,
-          510,
+          500,
           545
         ],
         [
@@ -5238,31 +5210,16 @@
         [
           607.5,
           765,
-          510
+          515
         ],
         [
           607.5,
-          650,
-          510
-        ],
-        [
-          607.5,
-          650,
-          524
-        ],
-        [
-          607.5,
-          630,
-          510
+          600,
+          515
         ],
         [
           570,
-          510,
-          510
-        ],
-        [
-          570,
-          510,
+          500,
           545
         ],
         [
@@ -5290,31 +5247,16 @@
         [
           722.5,
           765,
-          510
+          515
         ],
         [
           722.5,
-          650,
-          510
-        ],
-        [
-          722.5,
-          650,
-          524
-        ],
-        [
-          722.5,
-          630,
-          510
+          600,
+          515
         ],
         [
           595,
-          510,
-          510
-        ],
-        [
-          595,
-          510,
+          500,
           560
         ],
         [
@@ -5350,23 +5292,18 @@
           500
         ],
         [
-          400,
+          375,
           20,
-          470
+          455
         ],
         [
-          395,
-          25,
-          432
-        ],
-        [
-          395,
-          510,
-          432
+          410,
+          200,
+          440
         ],
         [
           490,
-          510,
+          480,
           560
         ],
         [
@@ -5407,18 +5344,13 @@
           420
         ],
         [
-          385,
-          25,
-          432
-        ],
-        [
-          385,
-          510,
-          432
+          400,
+          200,
+          440
         ],
         [
           480,
-          510,
+          480,
           590
         ],
         [
@@ -5446,18 +5378,18 @@
         ],
         [
           610,
-          510,
+          500,
           650
         ],
         [
-          752,
-          510,
-          650
+          705,
+          480,
+          560
         ],
         [
-          752,
+          705,
           20,
-          650
+          560
         ],
         [
           760,
@@ -5504,18 +5436,13 @@
         ],
         [
           590,
-          510,
+          500,
           545
         ],
         [
-          590,
-          510,
-          432
-        ],
-        [
-          520,
-          40,
-          420
+          560,
+          300,
+          470
         ],
         [
           500,
@@ -5560,44 +5487,34 @@
           610
         ],
         [
-          625,
-          510,
+          660,
+          500,
           610
         ],
         [
-          750,
-          510,
+          745,
+          300,
+          540
+        ],
+        [
+          770,
+          25,
+          505
+        ],
+        [
+          830,
+          25,
+          505
+        ],
+        [
+          900,
+          12,
           560
         ],
         [
-          750,
-          25,
-          520
-        ],
-        [
-          770,
-          25,
-          500
-        ],
-        [
-          770,
-          25,
-          485
-        ],
-        [
-          750,
-          25,
-          480
-        ],
-        [
-          750,
-          185,
-          580
-        ],
-        [
-          727,
-          185,
-          600
+          977,
+          12,
+          598
         ]
       ],
       "notes": "Both ways: forward fills the flow cell through its bottom port, reverse returns the sample."
@@ -5610,14 +5527,19 @@
       "status": "estimated",
       "path": [
         [
-          703,
-          260.3,
-          605
+          977,
+          88,
+          625
         ],
         [
-          703,
-          300,
-          605
+          977,
+          160,
+          625
+        ],
+        [
+          700,
+          480,
+          630
         ],
         [
           640,
@@ -5636,102 +5558,77 @@
       "id": "rs485Station1",
       "kind": "rs485",
       "from": "plc",
-      "to": "station1",
+      "to": "esp32Station1",
       "status": "estimated",
       "path": [
         [
-          1140,
-          470,
+          1120,
+          450,
           679
         ],
         [
-          1100,
-          130,
+          1105,
+          240,
+          688
+        ],
+        [
+          1214,
+          214,
+          690
+        ],
+        [
+          1214,
+          210,
           700
-        ],
-        [
-          1100,
-          100,
-          700
-        ],
-        [
-          1100,
-          60,
-          765
-        ],
-        [
-          700,
-          60,
-          765
-        ],
-        [
-          700,
-          645,
-          765
-        ],
-        [
-          690,
-          645,
-          715
         ]
       ],
-      "notes": "One daisy-chained twisted pair, PLC -> station 1 -> station 2 -> station 3, 120 ohm at both ends."
+      "notes": "One daisy-chained twisted pair, PLC -> station 1 -> station 2 -> station 3 ESP32, 120 ohm at both ends."
     },
     {
       "id": "rs485Station2",
       "kind": "rs485",
-      "from": "station1",
-      "to": "station2",
+      "from": "esp32Station1",
+      "to": "esp32Station2",
       "status": "estimated",
       "path": [
         [
-          600,
-          640,
-          715
-        ],
-        [
-          600,
-          640,
-          768
-        ],
-        [
-          795,
-          640,
-          768
-        ],
-        [
-          795,
-          40,
-          768
-        ],
-        [
-          880,
-          40,
+          1214,
+          210,
           700
         ],
         [
-          880,
-          40,
-          660
+          1239,
+          218,
+          692
+        ],
+        [
+          1264,
+          210,
+          700
         ]
       ]
     },
     {
       "id": "rs485Station3",
       "kind": "rs485",
-      "from": "station2",
-      "to": "station3",
+      "from": "esp32Station2",
+      "to": "esp32Station3",
       "status": "estimated",
       "path": [
         [
-          880,
-          30,
-          560
+          1264,
+          210,
+          700
         ],
         [
-          980,
-          30,
-          425
+          1289,
+          218,
+          692
+        ],
+        [
+          1314,
+          210,
+          700
         ]
       ]
     },
@@ -5743,29 +5640,39 @@
       "status": "estimated",
       "path": [
         [
-          1120,
-          450,
+          1160,
+          440,
           679
         ],
         [
-          1085,
+          1090,
           130,
-          690
+          650
         ],
         [
           1085,
           100,
-          690
+          650
         ],
         [
-          1075,
-          12,
-          700
+          1085,
+          40,
+          545
         ],
         [
-          1060,
+          1035,
           12,
-          700
+          545
+        ],
+        [
+          1035,
+          12,
+          480
+        ],
+        [
+          1030,
+          12,
+          470
         ]
       ],
       "notes": "Cat6."
@@ -5779,28 +5686,38 @@
       "path": [
         [
           1217.5,
-          360,
+          362,
           732
         ],
         [
-          1095,
+          1100,
           130,
-          710
+          665
         ],
         [
           1095,
           100,
-          710
+          665
         ],
         [
-          1070,
-          12,
-          715
+          1095,
+          45,
+          548
         ],
         [
-          1060,
-          12,
-          715
+          1036,
+          14,
+          548
+        ],
+        [
+          1036,
+          14,
+          490
+        ],
+        [
+          1030,
+          14,
+          485
         ]
       ],
       "notes": "Cat6."
@@ -5813,19 +5730,14 @@
       "status": "estimated",
       "path": [
         [
-          1045,
+          1040,
           9,
-          500
+          455
         ],
         [
-          1010,
-          9,
-          600
-        ],
-        [
-          1010,
+          1030,
           12,
-          665
+          455
         ]
       ],
       "notes": "Cat6."
