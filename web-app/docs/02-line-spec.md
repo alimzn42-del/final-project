@@ -241,7 +241,7 @@ Status: confirmed. The suction into the vessel is still open (a hole in the wall
 tube; parts list).
 
 ### Camera box (owner, step 17)
-Closed box, white outside (owner, step 17), matte black inside, next to the vessel, touching the
+Closed box, matte black (owner, step 17: it stays black), next to the vessel, touching the
 control cabinet's left wall. The
 parts list puts one lighting box around the vessel and the flow cell; the owner chose, after
 seeing it in the scene, to keep the vessel alone and the camera box apart, as in the earlier
