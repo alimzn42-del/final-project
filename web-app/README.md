@@ -80,6 +80,10 @@ docker compose build frontend
 docker compose up -d --wait
 ```
 
+**Or on Windows: double-click `start-mixline.cmd`** (in `web-app/`). It starts Docker Desktop if it
+is not running, does step 3 (rebuilding only what changed) and opens the web app in your browser.
+`stop-mixline.cmd` stops it again; your data is kept.
+
 **4. Open it**
 
 Go to http://localhost:8080 and log in with `MANAGER_EMAIL` and `MANAGER_PASSWORD` from your `.env`.
@@ -93,8 +97,8 @@ recorded in an audit log that cannot be edited. The worker "Automated checks" is
 
 **Stopping and updating**
 
-- Stop: `docker compose down` (your data is kept).
-- Start again: `docker compose up -d --wait`.
+- Stop: `docker compose down` (your data is kept), or double-click `stop-mixline.cmd` on Windows.
+- Start again: `docker compose up -d --wait`, or double-click `start-mixline.cmd` on Windows.
 - After `git pull`: repeat step 3, because the images hold a copy of the code.
 - Raspberry Pi 5: the same commands. The images also build for its processor (arm64; checked under
   emulation on 2026-11-04, the run on the Pi itself is still to do).

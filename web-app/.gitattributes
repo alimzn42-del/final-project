@@ -1,5 +1,7 @@
 # Store text with LF line endings on every OS (the team uses Windows, the Pi uses Linux).
 * text=auto eol=lf
+# Windows command files (double-click to start or stop the web app) need CRLF to run reliably.
+*.cmd text eol=crlf
 
 *.jpg binary
 *.jpeg binary
