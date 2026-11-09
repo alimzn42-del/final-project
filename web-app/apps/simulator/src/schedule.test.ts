@@ -31,9 +31,9 @@ describe('values', () => {
 
   it('keeps counters as whole numbers without noise', () => {
     const steps = sensors.find((s) => s.id === 'dyeCPump.steps');
-    const lids = sensors.find((s) => s.id === 'check.lidCount');
+    const rejects = sensors.find((s) => s.id === 'reject.count');
     expect(steps && analogValue(steps, () => 0.9)).toBe(0);
-    expect(lids && analogValue(lids, () => 0.9)).toBe(20);
+    expect(rejects && analogValue(rejects, () => 0.9)).toBe(0);
   });
 
   it('adds noise to measured values', () => {
@@ -45,25 +45,32 @@ describe('values', () => {
 });
 
 describe('Schedule: doc 04 publishing rules', () => {
-  it('sends all 60 sensors on the first tick', () => {
+  it('sends every sensor on the first tick', () => {
     const out = new Schedule(machine).tick(T0);
-    expect(out).toHaveLength(60);
-    expect(new Set(out.map((m) => m.topic)).size).toBe(60);
+    expect(out).toHaveLength(sensors.length);
+    expect(new Set(out.map((m) => m.topic)).size).toBe(sensors.length);
   });
 
   it('sends analog sensors every second and digital/enum only on the 5 s heartbeat', () => {
     const schedule = new Schedule(machine);
     const counts = [0, 1, 2, 3, 4, 5].map((i) => schedule.tick(T0 + i * ANALOG_MS).length);
-    expect(counts).toEqual([60, analogCount, analogCount, analogCount, analogCount, 60]);
+    expect(counts).toEqual([
+      sensors.length,
+      analogCount,
+      analogCount,
+      analogCount,
+      analogCount,
+      sensors.length,
+    ]);
     expect(HEARTBEAT_MS).toBe(5 * ANALOG_MS);
-    expect(otherCount).toBe(24);
+    expect(otherCount).toBe(23);
   });
 
   it('sends everything again after reset (reconnect)', () => {
     const schedule = new Schedule(machine);
     schedule.tick(T0);
     schedule.reset();
-    expect(schedule.tick(T0 + TICK_MS)).toHaveLength(60);
+    expect(schedule.tick(T0 + TICK_MS)).toHaveLength(sensors.length);
   });
 
   it('publishes only messages the backend will accept, all "ok", from source sim', () => {

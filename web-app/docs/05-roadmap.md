@@ -39,10 +39,11 @@ noted in the rows. Each step has its own branch and is merged into `main` after 
 | 14 | Live data in the UI: state colours and roll-up, values panel, trend charts, reserved twin slots, SIMULATION badge. **Brand:** state chips, Plex Mono numbers that do not jump, one pulse on a state change | Connects the UI to steps 9 and 10 | Values move; parts with no data turn grey (offline), visible from level 1. (Planned as "a fault value shows red"; phase 1 has no limits since the owner's step 6 decision.) | done (part of the badge check still open, below) |
 | 15 | Simulator v2: batch of about 4 minutes (owner, step 15; planned as 3), masses balance, state and batch messages. **Owner, step 15:** Beer–Lambert colour model and CIEDE2000, 5 recipes with the minimum dyes each (every pump in at least two) in a separate tuning file, recipes with a deferred dye skipped, about 1 cup in 20 rejected, refills between batches as their own `batch/refill` message, sensor table inside the simulator | Realism only matters once the UI can show it | Watch one full cycle; masses balance across scales | done (cycle check by eye still open, below) |
 | 16 | User management page (`/users`, managers only): create manager and worker accounts, manage departments, change a worker's department. **Owner, step 16:** staff only (customers later); new temporary password and disable / re-enable (no deleting, no role change), each ending all of that person's sessions; lockout protection in the backend (never disable yourself, never leave the line without an active manager); an append-only audit log of every account and department change (the backend's own database role may only add and read it, plus a database rule; viewer deferred); a checks account so automated checks never use a person's login. Then the phase 1 acceptance run: `docker compose up --build` from a clean clone, arm64 build check (built under emulation; the run on the Raspberry Pi 5 is pending), README | The phase 1 "done when" test | Walk through the done criteria together | done 2026-11-09 (owner: browser checks; users page and "Not installed" look still open, below) |
+| 17 | The container and the parts list. **Owner, step 17:** the real tub (bottom Ø79, top Ø113, height 77, black PP body, clear snap-on flat lid confirmed; capacity, weights, rim and nesting step estimated), drawn on the belt only while a station's sensor sees one; no fixed batch size: the order decides, until then the simulator picks 4 to 10 (350 g each, all estimated); `machine.json` from the owner's parts list of 2026-11-09 (the reference for the hardware since then): the mixer frame, no floats, no conveyor speed control, the infeed gate, the panel with the three ESP32s, the network and the power, the tray and the customer camera not installed; the pump tubes, RS485 and Ethernet cables in the scene; the colour model for the new flow cell. **Owner, after seeing it:** the vessel alone and the camera box apart (not one lighting box); no station boxes ("station 1" is the zone its ESP32 controls; the ESP32s in the panel); the containers slide along the belt (option b, the belt's speed in `machine.json`). The gateway is planned for the hardware phase (below), not built. Scene rule: as close to the real line as possible, smooth on a phone | The line and the twin match the real hardware before web control | Browser checks in `QUESTIONS.md`; `pnpm sim:check` and a full cycle (`--cycle`) on the rebuilt stack | done 2026-11-09 (owner: the line, the camera box and the cabinet checked; the rest still open, below) |
 
 ## Phase 2 — first step (owner, step 16)
 
-Web control of the line, right after the phase 1 acceptance run (step 16). The owner gives its
+Web control of the line, after step 17 (the container and the parts list, owner). The owner gives its
 details then: which controls, who may use them, and how a command reaches the line (an MQTT
 command topic would change hard rule 3, so it needs the owner's approval). Until then the simulator
 runs its batches by itself and the web app only monitors.
@@ -87,7 +88,20 @@ repo already created). Commit and push after every finished task; see the git wo
 - Digital twin: predicted values, residuals, fault detection, health index, remaining useful life,
   what-if scenarios.
 - Alarms UI and acknowledgement from the web.
-- Real hardware: Raspberry Pi and ESP32 publishing instead of the simulator.
+- Real hardware: the PLC's data reaching MQTT instead of the simulator's.
+  - **The gateway program** (owner, step 17; do not build yet). The ESP32 stations talk to the
+    PLC over RS485, the PLC is on Ethernet. A gateway program reads the PLC (over Ethernet; the
+    protocol, for example Modbus TCP, to choose with the PLC program) and publishes to MQTT with
+    exactly the topics and messages the simulator uses now. It runs on the laptop for now and on
+    the Raspberry Pi later. The web app and the simulator must not change because of it.
+  - To decide with it: the clock (owner, step 17). The ESP32s are on RS485 now, not on the
+    network, so the plan that the Pi serves them time over NTP no longer works. Likely the
+    gateway stamps each reading when it reads the PLC (the backend also records when it receives
+    each reading).
+  - To decide with it: how the camera's readings (L\*a\*b\*, ΔE, white patch) reach MQTT: the Pi
+    publishes them itself, or hands them to the gateway.
+  - To decide with it: what the PLC publishes for the machine state and the batch messages
+    (`state`, `batch/<event>`), the same formats as the simulator's.
   - Rejection counting (owner, step 9: not before, since the simulator never sends invalid data,
     so the counts would always be zero). Starting draft:
     - count dropped messages per station (the station segment of the topic), plus one "unknown"
@@ -120,13 +134,13 @@ Revisit only if space becomes a real problem.
 
 ## Browser checks still open
 
-Moved from `QUESTIONS.md` at the step 16 merge (owner, 2026-11-09: merge, test these later). Each
-needs the owner's manager login on the running stack (http://localhost:8080). Claude runs any
-command a check needs; the owner only looks in the browser.
+Moved from `QUESTIONS.md` at the step 16 and step 17 merges (owner, 2026-11-09: merge, test these
+later). Each needs the owner's manager login on the running stack (http://localhost:8080). Claude
+runs any command a check needs; the owner only looks in the browser.
 
 - **SIMULATION badge, the rest** (step 14, task 8). Seen on 2026-11-09: violet in the dark theme,
   in Arabic, and still there with the simulator stopped. Still to see: the light theme, and
-  "60/60" at phone width.
+  "54/54" at phone width (60 before step 17).
 - **Step 15 acceptance** (doc 05 step 15). Watch one full cycle, about 5 minutes, on the line page,
   then the Mixing and Conveyor pages: the vessel fills and changes colour after each sample, the
   dye tanks drop, the pumps and the mixer switch on and off on the timelines, every container of
@@ -140,7 +154,27 @@ command a check needs; the owner only looks in the browser.
   dimmed in its own colours, never grey, with the "Not installed" tag; "Not installed" in the side
   panel and on its page; its section and the line not turned grey. Claude sets
   `"installed": false` on one dye pump in `config/machine.json` and restarts the backend and the
-  simulator; the owner looks at the Mixing page and the pump's page; then it is set back.
+  simulator; the owner looks at the Mixing page and the pump's page; then it is set back. Since
+  step 17 real parts are not installed (the tray, the customer camera): seen dimmed on the line
+  page; their side panel and their pages are still to see.
+- **Step 17, the parts' own pages** (rows 3 and 6). Mixing & Color › Color › Flow cell window,
+  then › Camera: each part alone, the camera box faint around it, "Estimated" in the side panel.
+  The pages of the water pump, the infeed gate, the magazine empty sensor, the end of belt sensor
+  and the press end switch: the water pump On during the rinses, the gate Open for a moment per
+  container, "Magazine empty: No", the end sensor Present while a container waits, the end switch
+  Pressed for a moment per lid.
+- **Step 17, the containers on the belt** (rows 4 and 5; owner's option b). On the Conveyor page
+  during a batch's filling (Claude says when): each container appears at the feeder and slides
+  with the belt; lifted at filling while the liquid rises in the batch colour; lifted and weighed
+  at check, its lid on once it passes; it waits once between the check and the end, then waits at
+  the end with its lid until it is taken away; the belt stops while one waits there; a reject now
+  and then disappears at check. Zoomed in: a tapered black tub with its rim, the liquid's surface
+  at about three quarters of the height, the clear lid.
+- **Step 17, two batches in a row** (row 9). A different number of containers each time, 4 to 10;
+  the colours darker than in step 15 (the 20 mm path of the new flow cell), navy almost black.
+- **Step 17 in Arabic and on a phone** (rows 10 and 11). Seen in Arabic: the line, the camera box
+  and the cabinet pages. Still to see: the containers on the belt in Arabic, and the line, the
+  camera box and the containers on a phone (smooth when turning and zooming).
 
 ## Known issues
 
@@ -149,18 +183,29 @@ command a check needs; the owner only looks in the browser.
   not saved, so it is unexplained. It has not come back in 31 full runs since (25 of them in a
   row). If any test fails again with no code change: save the full output before running again,
   and add the test's name here.
+- **A login-limit test timed out once in a full run** (step 17, 2026-11-09). `apps/backend`
+  `auth/proxy.http.test.ts`, "behind nginx (TRUST_PROXY=1): each client has its own limit", took
+  5.0 s and hit Vitest's 5 s limit during task 5, in an area step 17 did not touch. The next full
+  run passed (620 tests, output saved), and alone it takes about 0.7 s (3 runs). It makes 12
+  wrong logins, each a slow password check on purpose, so under the load of a full parallel run
+  it can come close to 5 s. Possibly the same failure as above. Not changed: a longer time limit
+  for this test is the likely fix, waiting for the owner. Seen a second time the same day (full
+  run with the Docker stack running, 5.03 s; output saved); the next run passed (629 tests).
+  A third and a fourth time later that day (5.2 s and 5.0 s, the stack running); each rerun
+  passed. Under the load of a full run with Docker up it now fails about one run in three.
 
 ## Open items (blocked on decisions or purchases)
 
 | Item | Blocks |
 |---|---|
-| Container choice (market search) | belt width, feeder, lid magazine, press, pusher, platforms, nozzle height, tray slots |
-| Dye tank size (700 ml vs 1 L) | dye tank geometry, load cell rating |
-| Filling pump type | filling station geometry |
-| Mixer design (teammate) | mixer geometry, shelf height |
-| Batch tray mechanism (6-slot linear tray does not fit the table) | tray geometry and sensors |
+| Mixer design (teammate): the plain 5 V motor or the one with a speed sensor | mixer geometry, the `mixer.rpm` sensor, shelf height |
+| Batch tray (owner, step 17: 6 slots on a rail with a stepper, as in the parts list, not installed): 6 slots are fewer than the largest batch (10), and the 800 mm table is too short for its travel | tray layout, its station and sensors |
+| Container magazine tube (owner, step 17: 110 mm is an assumption): a 110 mm PVC pipe is about 103 mm inside, less than the 113 mm tub top | magazine size, the infeed gate |
+| Reject bin (140 x 100 x 110, confirmed): 100 mm deep, narrower than the 113 mm tub top | reject bin size or the pusher's travel |
+| Drain suction into the vessel (parts list: a hole in the wall or a rigid dip tube) | drain tube route |
+| Sample pump driver (parts list: an H-bridge or a 2-channel relay) | station 2 wiring |
+| Room for the ESP32s in the control panel (owner, step 17: in the panel, on a DIN rail): three fit beside the 24 V supply only at about 48 mm per enclosure; the fourth (tray, deferred) is not drawn | panel layout, enclosure size |
 | Vessel anti-rotation | small parts under the vessel |
-| PLC model (supervisor) | cabinet interior |
 | Worker departments: which sections each department can open (now every worker can open every section) | per-department access in the backend and the navigation |
 | PLC alarm list, message-format rules, and how alarms reach the web app | warning / fault states, alarm display, the `alarms` table, limits in `machine.json` |
 | How customers reach the app from the internet (hosting, tunnel, or cloud server for ordering only) | customer ordering from phones |

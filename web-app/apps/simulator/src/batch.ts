@@ -5,7 +5,10 @@
  *
  *   wait (idle) → service (between batches) → baseFill → dyeDose → mix → sample
  *   → [correct → mix → sample] up to maxCorrections times → complete → mix → finalCheck
- *   → filling (6 cups: feeder, filling, check, cap or reject, tray) → rinse
+ *   → filling (the batch's containers: feeder, filling, check, lid or reject, end of belt) → rinse
+ *
+ * How many containers a batch fills is the customer's order (owner, step 17); until orders
+ * exist, each batch draws a whole number between the limits in simulator.json `order`.
  *
  * It reads the scales and the camera the way a PLC would (with their noise) and switches the
  * plant's pumps, mixer, conveyor and servos. It reports what happens to an Outbox, which turns
@@ -14,18 +17,11 @@
 import type { BatchStep, Lab, RefillItem } from '@mixline/shared';
 
 import { type Line, PART_TABLE } from './bindings.js';
-import {
-  CLEAR_WATER,
-  deltaE,
-  missingDye,
-  NO_DYE,
-  type PerDye,
-  recipeTarget,
-} from './correction.js';
+import { clearWater, deltaE, missingDye, NO_DYE, type PerDye, recipeTarget } from './correction.js';
 import { dye as pureDye, water } from './ledger.js';
 import { type Cup, PLACE, type Plant, type Pump } from './plant.js';
 import { type Program, together, waitS, waitUntil } from './program.js';
-import { between, jitter, type Random } from './random.js';
+import { between, jitter, type Random, wholeBetween } from './random.js';
 import { DYES, type Dye, type Recipe, type SimConfig } from './simConfig.js';
 
 const WEIGH_PAUSE_S = 1;
@@ -59,12 +55,15 @@ export class BatchProgram {
       yield* waitS(this.plant, this.config.batch.pauseS);
       const recipe = recipes[n % recipes.length];
       if (!recipe) return;
-      yield* this.service(recipe);
-      yield* this.batch(recipe);
+      const { containersMin, containersMax } = this.config.order;
+      const containers = wholeBetween(this.random, containersMin, containersMax);
+      yield* this.service(recipe, containers);
+      yield* this.batch(recipe, containers);
     }
   }
 
-  *batch(recipe: Recipe): Program {
+  /** One batch that fills `containers` containers. */
+  *batch(recipe: Recipe, containers: number): Program {
     const { config, out, plant } = this;
     const target = recipeTarget(config, recipe);
     const b = config.batch;
@@ -103,7 +102,7 @@ export class BatchProgram {
 
     // complete: the rest of the batch, in the ratios the vessel now has.
     out.step('complete');
-    const totalG = this.line.container.perBatch * this.line.container.fillTargetG + b.heelG;
+    const totalG = containers * config.order.fillG + b.heelG;
     const perBaseG = DYES.reduce((sum, d) => sum + dosed.dyeG[d], 0) / dosed.baseG;
     const ratio = { ...dosed.dyeG };
     const baseBefore = dosed.baseG;
@@ -118,7 +117,7 @@ export class BatchProgram {
     yield* this.sample(target);
 
     out.step('filling');
-    yield* this.fillCups();
+    yield* this.fillCups(containers);
 
     out.step('rinse');
     yield* this.rinse();
@@ -135,6 +134,13 @@ export class BatchProgram {
     yield* this.untilStopped('base');
     yield* this.settle();
     return this.read('vesselMass') - before;
+  }
+
+  /** Rinse water: the water pump from the rinse water container (parts list 2026-11-09). */
+  private *addWater(grams: number): Program {
+    this.plant.pump('water', PLACE.waterContainer, PLACE.vessel, grams);
+    yield* this.untilStopped('water');
+    yield* this.settle();
   }
 
   /** A dye pump doses by volume: steps × calibrated grams per step (doc 02). Returns the grams. */
@@ -185,10 +191,10 @@ export class BatchProgram {
     const r = this.config.rinse;
     yield* this.drain();
     for (let time = 1; ; time++) {
-      yield* this.addBase(r.waterG);
+      yield* this.addWater(r.waterG);
       yield* this.mix(r.mixS);
       const last = time >= r.times;
-      const clear = last && (yield* this.sample(CLEAR_WATER)).deltaE <= r.clearDeltaE;
+      const clear = last && (yield* this.sample(clearWater(this.config))).deltaE <= r.clearDeltaE;
       yield* this.drain();
       // Two more rinses at most if the water is not clear yet.
       if (clear || time >= r.times + 2) return;
@@ -199,16 +205,16 @@ export class BatchProgram {
 
   /**
    * An indexing belt: all stations work at once on the cups in front of them, then the belt
-   * moves one pitch. Cups past the belt's end drop into the tray.
+   * moves one pitch. A cup that passed rides on to the end of the belt, where it waits until a
+   * worker takes it (owner, step 17: until the tray is built); the belt waits with it.
    */
-  private *fillCups(): Program {
+  private *fillCups(total: number): Program {
     const { plant, line } = this;
-    const total = line.container.perBatch;
     const startRejects = plant.rejects;
-    const startTray = plant.trayCups;
+    const startDelivered = plant.delivered;
     let released = 0;
     let reported = 0;
-    const done = () => plant.rejects - startRejects + (plant.trayCups - startTray);
+    const done = () => plant.rejects - startRejects + (plant.delivered - startDelivered);
     const report = () => {
       while (reported < done()) this.out.containersDone(++reported);
     };
@@ -235,45 +241,69 @@ export class BatchProgram {
     report();
   }
 
+  /** The infeed gate (a solenoid) opens and lets one cup drop onto the belt. */
   private *releaseCup(): Program {
     const { plant } = this;
-    plant.fingersReleasing = true;
+    plant.gateOpen = true;
     yield* waitS(plant, this.config.stations.servoS);
     plant.releaseCup();
-    plant.fingersReleasing = false;
+    plant.gateOpen = false;
     yield* waitS(plant, this.config.stations.servoS);
   }
 
-  /** Lift and weigh, fill by weight (doc 02); about 1 cup in 20 stops short (owner, step 15). */
+  /**
+   * Lift the cup off the belt and fill it. Loss-in-weight (owner, step 17): the filling pump
+   * runs until the vessel scale has dropped by the fill weight (within the scale's noise); the
+   * platform scale under the cup cross-checks. About 1 cup in 20 stops short (owner, step 15).
+   */
   private *fillCup(cup: Cup): Program {
-    const { plant, config, line, random } = this;
+    const { plant, config, random } = this;
     yield* this.platform('filling', cup, true);
     const c = config.check;
     const short = random() < c.shortFillChance ? between(random, ...c.shortFillG) : 0;
-    const grams = line.container.fillTargetG - short + jitter(random, config.noise.scaleG);
+    const grams = config.order.fillG - short + jitter(random, config.noise.scaleG);
     plant.pump('filling', PLACE.vessel, PLACE.cup(cup.id), grams);
     yield* this.untilStopped('filling');
     yield* this.settle();
     yield* this.platform('filling', cup, false);
   }
 
-  /** Weigh; bad weight: pusher to the reject box; good: lid drops and is pressed (doc 02). */
+  /**
+   * Lift and weigh. Good weight: the lid drops while the cup is still lifted, the platform
+   * lowers, then the press snaps the lid on (owner, step 17). Bad weight: the platform lowers
+   * and the pusher sends the cup to the reject box (doc 02).
+   */
   private *checkCup(cup: Cup): Program {
-    const { plant, config, line } = this;
+    const { plant, config } = this;
     plant.decision = 0;
     yield* this.platform('check', cup, true);
     const net = this.read('checkMass');
-    const good = Math.abs(net - line.container.fillTargetG) <= config.check.toleranceG;
+    const good = Math.abs(net - config.order.fillG) <= config.check.toleranceG;
     plant.decision = good ? 1 : 2;
-    // Interlock (doc 02): pressing is forbidden while the platform is up.
+    if (good) {
+      // The lid-drop servo lets one lid fall onto the lifted cup (the check scale feels it).
+      yield* waitS(plant, config.stations.servoS);
+      plant.dropLid(cup);
+      yield* this.settle();
+    }
+    // Interlock (doc 02): the press works only after the platform has lowered.
     yield* this.platform('check', cup, false);
-    yield* waitS(plant, config.stations.servoS);
     if (!good) {
+      yield* waitS(plant, config.stations.servoS);
       plant.reject(cup);
       return;
     }
-    plant.lids--;
-    yield* waitS(plant, config.stations.servoS);
+    yield* this.press();
+  }
+
+  /** The lid press goes down until its end switch closes, then back up. */
+  private *press(): Program {
+    const { plant, config } = this;
+    yield* waitS(plant, config.stations.pressS);
+    plant.pressAtEnd = true;
+    yield* this.settle();
+    plant.pressAtEnd = false;
+    yield* waitS(plant, config.stations.pressS);
   }
 
   private *platform(station: 'filling' | 'check', cup: Cup, up: boolean): Program {
@@ -288,15 +318,16 @@ export class BatchProgram {
   // ---- between batches ----
 
   /**
-   * As if by a worker (owner, step 15): take the full tray away, and refill or empty whatever
-   * cannot cover the next batch. One batch/refill message lists it all, by machine.json part id.
+   * As if by a worker (owner, step 15): refill or empty whatever cannot cover the next batch
+   * (its recipe and its number of containers). One batch/refill message lists it all, by
+   * machine.json part id. The full containers were already taken from the end of the belt.
    */
-  *service(next: Recipe): Program {
-    const { plant, config, line } = this;
+  *service(next: Recipe, containers: number): Program {
+    const { plant, config } = this;
     const s = config.supplies;
     const r = config.rinse;
     const ledger = plant.ledger;
-    const totalG = line.container.perBatch * line.container.fillTargetG + config.batch.heelG;
+    const totalG = containers * config.order.fillG + config.batch.heelG;
     const items: RefillItem[] = [];
     const apply: (() => void)[] = [];
     const item = (
@@ -309,14 +340,22 @@ export class BatchProgram {
       if (rounded > 0) items.push({ component: PART_TABLE[part], action, amount: rounded, unit });
     };
 
-    // Big tank: the whole batch plus its rinse water, and stay above the low float.
+    // Big tank: the whole batch, and keep some so its pump never runs dry (no float).
     const tankG = ledger.mass(PLACE.bigTank);
-    const floatG = (s.bigTankLowFloatMm * line.bigTankAreaMm2) / 1000;
-    if (tankG - totalG - r.waterG * (r.times + 2) < floatG * 2) {
+    if (tankG - totalG < s.bigTankKeepG) {
       const add = s.bigTankFullG - tankG;
       item('bigTank', 'refilled', add, 'g');
       apply.push(() => {
         ledger.bring(PLACE.bigTank, water(add));
+      });
+    }
+    // Rinse water: every rinse the next batch may need (up to two extra ones).
+    const rinseG = ledger.mass(PLACE.waterContainer);
+    if (rinseG < r.waterG * (r.times + 2)) {
+      const add = s.waterContainerFullG - rinseG;
+      item('waterContainer', 'refilled', add, 'g');
+      apply.push(() => {
+        ledger.bring(PLACE.waterContainer, water(add));
       });
     }
     // Dye tanks: the recipe with room for corrections, and never run the pump dry.
@@ -332,13 +371,14 @@ export class BatchProgram {
         });
       }
     }
-    if (plant.cupsInMagazine < line.container.perBatch) {
+    // Never empty: the magazine-empty sensor would see it (the alarm belongs to the PLC).
+    if (plant.cupsInMagazine <= containers) {
       item('cups', 'refilled', s.cupsFull - plant.cupsInMagazine, 'count');
       apply.push(() => {
         plant.cupsInMagazine = s.cupsFull;
       });
     }
-    if (plant.lids < line.container.perBatch) {
+    if (plant.lids < containers) {
       item('lids', 'refilled', s.lidsFull - plant.lids, 'count');
       apply.push(() => {
         plant.lids = s.lidsFull;
@@ -352,18 +392,11 @@ export class BatchProgram {
         ledger.takeAway(PLACE.drainBucket);
       });
     }
-    if (plant.rejects > 0 && plant.rejects + line.container.perBatch > s.rejectBoxFull) {
+    if (plant.rejects > 0 && plant.rejects + containers > s.rejectBoxFull) {
       item('rejectBox', 'emptied', plant.rejects, 'count');
       apply.push(() => {
         ledger.takeAway(PLACE.rejectBox);
         plant.rejects = 0;
-      });
-    }
-    if (plant.trayCups > 0) {
-      item('tray', 'emptied', plant.trayCups, 'count');
-      apply.push(() => {
-        ledger.takeAway(PLACE.tray);
-        plant.trayCups = 0;
       });
     }
 

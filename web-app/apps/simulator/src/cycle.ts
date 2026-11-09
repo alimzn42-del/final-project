@@ -3,14 +3,16 @@
  * `pnpm sim:check --cycle`. It uses only what was published on MQTT, the way the backend or a
  * person with an MQTT client would see it, never the simulator's insides:
  *
- * - the batch steps arrive in order, 6 containers are counted, the final ΔE is within tolerance
+ * - the batch steps arrive in order; its containers are counted one by one, as many as were
+ *   filled and weighed, within the order limits (owner, step 17); the final ΔE is within tolerance
  *   and the rinse ends with clear water;
  * - every dye dose: the dye tank's scale drops by what the vessel's scale gains, and the dose's
  *   steps × calibrated grams per step agree;
  * - every fill: the vessel drops by what the cup on the filling scale gains, and the check scale
- *   reads the same cup again;
+ *   reads the same cup again (before its lid drops on, owner step 17);
  * - every base pump run: the big tank's level (no scale) falls by what the vessel gains;
- * - the refill message after the batch removes as many cups from the tray as passed the check.
+ * - every cup that passed the check reaches the end of the belt, where a worker takes it away
+ *   (owner, step 17: until the tray is built).
  *
  * Pure analysis of a list of messages, so tests feed it a simulated batch.
  */
@@ -19,7 +21,6 @@ import {
   decodeBatchMessage,
   type Machine,
   parseTopic,
-  type RefillEventPayload,
   sensorsByTopic,
 } from '@mixline/shared';
 
@@ -47,6 +48,7 @@ interface Point {
 const id = (role: Role) => SENSOR_TABLE[role].id;
 const PUMPS_ON: Role[] = [
   'basePumpOn',
+  'waterPumpOn',
   'drainPumpOn',
   'fillingPumpOn',
   'samplePumpOn',
@@ -61,7 +63,6 @@ export function checkCycle(
   const byTopic = sensorsByTopic(machine);
   const series = new Map<string, Point[]>();
   const batch: { event: string; p: BatchEventPayload; t: number }[] = [];
-  const refills: { p: RefillEventPayload; t: number }[] = [];
   const invalid: string[] = [];
 
   for (const { topic, payload } of heard) {
@@ -79,9 +80,10 @@ export function checkCycle(
         invalid.push(decoded.error);
         continue;
       }
+      // Refills only need their format checked: the cups leave at the end of the belt now.
+      if (decoded.value.event === 'refill') continue;
       const t = Date.parse(decoded.value.payload.ts);
-      if (decoded.value.event === 'refill') refills.push({ p: decoded.value.payload, t });
-      else batch.push({ event: decoded.value.event, p: decoded.value.payload, t });
+      batch.push({ event: decoded.value.event, p: decoded.value.payload, t });
     }
   }
   for (const list of series.values()) list.sort((a, b) => a.t - b.t);
@@ -117,11 +119,22 @@ export function checkCycle(
   const counted = inBatch
     .filter((b) => b.event === 'step' && b.p.step === 'filling')
     .map((b) => b.p.containersDone);
-  const perBatch = machine.container.perBatch;
-  const expected = Array.from({ length: perBatch + 1 }, (_, i) => i);
+  // The batch's size is not published (the order decides it): it is how far the count went.
+  const containers = counted.at(-1) ?? 0;
+  const { containersMin, containersMax } = config.order;
+  const expected = Array.from({ length: containers + 1 }, (_, i) => i);
+  const countProblems: string[] = [];
+  if (counted.join() !== expected.join()) {
+    countProblems.push(`containersDone went ${counted.join(', ')}`);
+  }
+  if (containers < containersMin || containers > containersMax) {
+    countProblems.push(
+      `${String(containers)} containers, outside ${String(containersMin)} to ${String(containersMax)}`,
+    );
+  }
   results.push([
-    `${String(perBatch)} containers are counted`,
-    counted.join() === expected.join() ? [] : [`containersDone went ${counted.join(', ')}`],
+    `the batch's ${String(containers)} containers are counted one by one`,
+    countProblems,
   ]);
 
   // Colour: within tolerance before filling; clear water at the end of the rinse.
@@ -203,14 +216,17 @@ export function checkCycle(
       fillProblems.push(`fill at ${at(on)}: cup ${g(cup)}, vessel dropped ${g(vesselDrop)}`);
     }
   }
-  const weighed = runs('checkPlatformUp').map(([up, down]) => ({
-    weight: within(id('checkMass'))
-      .filter((p) => p.t > up && p.t < down)
-      .at(-1)?.v,
-    decision: within(id('checkDecision'))
-      .filter((p) => p.t <= down)
-      .at(-1)?.v,
-  }));
+  // The check scale's weight when the decision was made: a good cup's lid drops on after it.
+  const weighed = runs('checkPlatformUp').map(([up, down]) => {
+    const decided = within(id('checkDecision')).find((p) => p.t >= up && p.t <= down && p.v !== 0);
+    const until = decided?.t ?? down;
+    return {
+      weight: within(id('checkMass'))
+        .filter((p) => p.t > up && p.t <= until)
+        .at(-1)?.v,
+      decision: decided?.v,
+    };
+  });
   weighed.forEach(({ weight }, i) => {
     if (differ(weight, filled[i], SCALE_TOLERANCE_G)) {
       fillProblems.push(`cup ${String(i + 1)}: check scale ${g(weight)}, filled ${g(filled[i])}`);
@@ -218,7 +234,7 @@ export function checkCycle(
   });
   results.push([
     `every fill: vessel drop = cup on the filling scale = check scale (${String(filled.length)} cups)`,
-    cut(fillProblems, filled.length !== perBatch || weighed.length !== perBatch),
+    cut(fillProblems, filled.length !== containers || weighed.length !== containers),
   ]);
 
   // The big tank has no scale: its level follows the water it gave.
@@ -241,17 +257,12 @@ export function checkCycle(
     cut(levelProblems, baseRuns.length === 0),
   ]);
 
-  // The tray leaves with the cups that passed.
+  // Every cup that passed waits at the end of the belt until a worker takes it (owner, step 17).
   const passed = weighed.filter((w) => w.decision === 1).length;
-  const nextRefill = refills.find((r) => r.t > end.t);
-  const trayItem = nextRefill?.p.items.find((i) => i.component === PART_TABLE.tray);
+  const arrived = runs('beltEndPresent').length;
   results.push([
-    'the refill after the batch takes the tray with the cups that passed',
-    !nextRefill
-      ? ['no refill message after the batch (listen longer)']
-      : trayItem?.amount === passed
-        ? []
-        : [`tray ${String(trayItem?.amount)}, passed ${String(passed)}`],
+    `every cup that passed is taken from the end of the belt (${String(passed)} cups)`,
+    arrived === passed ? [] : [`${String(arrived)} reached the end, ${String(passed)} passed`],
   ]);
   return results;
 }

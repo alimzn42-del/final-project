@@ -1,4 +1,4 @@
-import { machineSchema } from '@mixline/shared';
+import { brimVolume, machineSchema } from '@mixline/shared';
 import { describe, expect, it } from 'vitest';
 
 import { bindLine, PART_TABLE, SENSOR_TABLE } from './bindings.js';
@@ -19,22 +19,28 @@ describe('the sensor table against machine.json', () => {
     expect(line.sensors.vesselMass.id).toBe('vessel.mass');
     expect(line.sensors.cyanPumpSteps.id).toBe('dyeCPump.steps');
     expect(line.parts.cups.id).toBe('containerMagazine');
-    expect(line.container).toEqual({ fillTargetG: 300, perBatch: 6, tareG: 12 });
+    // Owner, step 17: the measured tub; its inside holds about the estimated 500 ml.
+    expect(line.container).toMatchObject({ baseDiameter: 79, topDiameter: 113, height: 77 });
+    expect(brimVolume(line.tub)).toBeGreaterThan(450);
+    expect(brimVolume(line.tub)).toBeLessThan(550);
+    // The end stop: one container radius before the belt's end (owner, step 17).
     expect(line.stations).toEqual({
       feeder: 250,
       filling: 550,
       check: 850,
+      end: 1293.5,
       beltEnd: 1350,
       pitch: 300,
     });
+    expect(line.parts.waterContainer.id).toBe('waterContainer');
     // Ø250: 1 L of water stands 20.4 mm high.
     expect(1e6 / line.bigTankAreaMm2).toBeCloseTo(20.37, 2);
   });
 
-  it('covers all 60 sensors of this line, so none falls back to simulator v1', () => {
+  it('covers all 54 sensors of this line, so none falls back to simulator v1', () => {
     const ids = new Set(Object.values(SENSOR_TABLE).map((s) => s.id));
     const all = realMachine().components.flatMap((c) => c.sensors.map((s) => s.id));
-    expect(all).toHaveLength(60);
+    expect(all).toHaveLength(54);
     expect(all.filter((id) => !ids.has(id))).toEqual([]);
     expect(ids.size).toBe(Object.keys(SENSOR_TABLE).length);
     expect(new Set(Object.values(PART_TABLE)).size).toBe(Object.keys(PART_TABLE).length);
@@ -73,9 +79,22 @@ describe('the sensor table against machine.json', () => {
 
   it("refuses supplies that would leave a sensor's sim range", () => {
     const raw = rawSimConfig();
-    raw.supplies = { ...raw.supplies, cupsFull: 40, bigTankFullG: 20000 };
+    raw.supplies = { ...raw.supplies, rejectBoxFull: 40, bigTankFullG: 20000 };
     expect(bind(rawMachine(), parseSimConfig(raw))).toThrow(
-      /cupsFull: 40 is above magazine\.count's sim range[\s\S]*more than the big tank holds/,
+      /rejectBoxFull: 40 is above reject\.count's sim range[\s\S]*more than the big tank holds/,
+    );
+  });
+
+  it('refuses an order the vessel scale or the container cannot take (owner, step 17)', () => {
+    const raw = rawSimConfig();
+    raw.order = { ...raw.order, containersMax: 12 };
+    expect(bind(rawMachine(), parseSimConfig(raw))).toThrow(
+      /the largest batch \(12 containers and the heel\): 4400 is above vessel\.mass's sim range/,
+    );
+    const full = rawSimConfig();
+    full.order = { ...full.order, fillG: 600 };
+    expect(bind(rawMachine(), parseSimConfig(full))).toThrow(
+      /order\.fillG: 600 g is more than the container holds \(\d+ ml\)/,
     );
   });
 });

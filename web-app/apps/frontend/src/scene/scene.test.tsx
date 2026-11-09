@@ -113,8 +113,35 @@ describe('the line page in 3D', () => {
 
   it('a tank shows its liquid, in the liquid colour from machine.json', async () => {
     const { renderer } = await renderScene();
-    const [, liquid] = meshesOf(renderer, 'dyeCTank');
-    expect(liquid && `#${surface(liquid).color.getHexString()}`).toBe('#00b7eb');
+    const [, liquid] = meshesOf(renderer, 'bigTank');
+    expect(liquid && `#${surface(liquid).color.getHexString()}`).toBe('#cfe8f5');
+  });
+
+  it('draws the pump tubes, the RS485 chain and the Ethernet cables, one mesh per kind (owner, step 17)', async () => {
+    const { renderer } = await renderScene();
+    for (const kind of ['tube', 'rs485', 'ethernet'] as const) {
+      const [mesh] = renderer.scene.findAll((n) => n.props.name === `links-${kind}`);
+      const segments = machine.links
+        .filter((l) => l.kind === kind)
+        .reduce((sum, l) => sum + l.path.length - 1, 0);
+      expect(mesh, kind).toBeDefined();
+      expect((mesh?.instance as unknown as { count: number }).count, kind).toBe(segments);
+    }
+  });
+
+  it('draws a link only where both its ends are on the page', async () => {
+    const { renderer } = await renderScene('cabinet');
+    expect(renderer.scene.findAll((n) => n.props.name === 'links-ethernet')).toHaveLength(1);
+    expect(renderer.scene.findAll((n) => n.props.name === 'links-tube')).toHaveLength(0);
+  });
+
+  it('the flow cell window shows the mix colour behind its glass (owner, step 17)', async () => {
+    const { renderer } = await renderScene();
+    const [glass, liquid] = meshesOf(renderer, 'flowCellWindow');
+    expect(glass && surface(glass).opacity).toBeLessThan(0.5);
+    expect(liquid && `#${surface(liquid).color.getHexString()}`).toBe(
+      machine.liquids.mix.hex.toLowerCase(),
+    );
   });
 
   it('hovering a part lights up its whole section, in the glow colour; nothing else', async () => {
@@ -167,6 +194,10 @@ describe('clicking in 3D (plan step 13)', () => {
 
   it('a section page leads on to sub-sections; the table is only a faint context', async () => {
     const { renderer, onNavigate } = await renderScene('mixingColor');
+    // Owner, step 17: the camera box opens at the first click, like the cabinet.
+    expect(
+      meshesOf(renderer, 'colorBox').every((w) => surface(w).opacity <= SEE_THROUGH_OPACITY),
+    ).toBe(true);
     await renderer.fireEvent(renderer.scene.findByProps({ name: 'camera' }), 'onClick', pointer());
     expect(onNavigate).toHaveBeenCalledWith('/line/mixingColor/color');
     const table = renderer.scene.findByProps({ name: 'table' });
@@ -176,6 +207,36 @@ describe('clicking in 3D (plan step 13)', () => {
     );
     // Other sections are not drawn on a section page.
     expect(() => renderer.scene.findByProps({ name: 'conveyorMotor' })).toThrow();
+  });
+
+  it('a box that opens on the next page gets new, see-through walls (owner, step 17)', async () => {
+    // three.js bakes "solid" into a material when it first draws it: opening the cabinet after a
+    // click must swap its walls' materials, not only change their opacity.
+    fakeApi({ 'GET /api/auth/me': { status: 401 } });
+    const i18n = await createI18n();
+    await switchLanguage(i18n, 'en', () => Promise.resolve(en));
+    const scene = (path: string) => {
+      const place = placeFromPath(machine, path);
+      if (!place) throw new Error(`no page ${path}`);
+      return (
+        <AppProviders i18n={i18n}>
+          <SceneContent
+            machine={machine}
+            page={pageScene(machine, place)}
+            allTags={false}
+            glow={GLOW}
+            onNavigate={() => undefined}
+          />
+        </AppProviders>
+      );
+    };
+    const renderer = await ReactThreeTestRenderer.create(scene(''));
+    const solid = meshesOf(renderer, 'cabinet').map((w) => surface(w));
+    expect(solid.every((m) => !m.transparent)).toBe(true);
+    await renderer.update(scene('cabinet/part/cabinet'));
+    const open = meshesOf(renderer, 'cabinet').map((w) => surface(w));
+    expect(open.every((m) => m.transparent && m.opacity <= SEE_THROUGH_OPACITY)).toBe(true);
+    expect(open.some((m) => solid.includes(m))).toBe(false);
   });
 
   it('see-through box: a click on a part inside goes through the box wall to that part', async () => {
@@ -254,22 +315,23 @@ describe('state colours in 3D (doc 03, plan step 14)', () => {
   });
 
   it('offline is grey and dimmed, and so is the liquid in a tank', async () => {
-    const { renderer } = await renderScene('', statesWith({ dyeCTank: 'offline', dyeMTank: 'ok' }));
-    const [cTank, cLiquid] = meshesOf(renderer, 'dyeCTank');
-    const [, mLiquid] = meshesOf(renderer, 'dyeMTank');
-    expect(cTank && hex(surface(cTank).color)).toBe(C.offline);
-    expect(cLiquid && mLiquid && surface(cLiquid).opacity).toBeLessThan(
-      mLiquid ? surface(mLiquid).opacity : 0,
+    const offline = await renderScene('', statesWith({ bigTank: 'offline' }));
+    const online = await renderScene('', statesWith({ bigTank: 'ok' }));
+    const [tank, dimmed] = meshesOf(offline.renderer, 'bigTank');
+    const [, liquid] = meshesOf(online.renderer, 'bigTank');
+    expect(tank && hex(surface(tank).color)).toBe(C.offline);
+    expect(dimmed && liquid && surface(dimmed).opacity).toBeLessThan(
+      liquid ? surface(liquid).opacity : 0,
     );
   });
 
   it('a pending part in fault stays a see-through placeholder and gets the fault outline', async () => {
-    const tank = machine.components.find((c) => c.id === 'dyeCTank');
-    expect(tank?.status).toBe('pending');
-    const { renderer } = await renderScene('', statesWith({ dyeCTank: 'fault' }));
-    const [outer] = meshesOf(renderer, 'dyeCTank');
+    const mixer = machine.components.find((c) => c.id === 'mixerMotor');
+    expect(mixer?.status).toBe('pending');
+    const { renderer } = await renderScene('', statesWith({ mixerMotor: 'fault' }));
+    const [outer] = meshesOf(renderer, 'mixerMotor');
     expect(outer && surface(outer).opacity).toBeLessThanOrEqual(PENDING_OPACITY);
-    expect(edgeColours(renderer, 'dyeCTank')).toEqual([C.fault]);
+    expect(edgeColours(renderer, 'mixerMotor')).toEqual([C.fault]);
   });
 
   it('a state change pulses once: brighter, then back (none at the start or the end)', () => {
@@ -310,5 +372,28 @@ describe('live liquids in 3D (plan step 14)', () => {
     const { renderer } = await renderScene();
     const [, liquid] = meshesOf(renderer, 'vessel');
     expect(liquid && hex(surface(liquid).color)).toBe(machine.liquids.mix.hex.toLowerCase());
+  });
+
+  it('a container at the filling station: lifted, filling in the mix colour (owner, step 17)', async () => {
+    const { renderer } = await renderScene('conveyor', undefined, {
+      'fillingArrival.present': reading(1),
+      'filling.platformUp': reading(1),
+      'filling.mass': reading(200),
+      'color.L': reading(53.2408),
+      'color.a': reading(80.0925),
+      'color.b': reading(67.2032),
+    });
+    const [tub] = renderer.scene.findAll((n) => String(n.props.name).startsWith('tub-'));
+    if (!tub) throw new Error('no container drawn');
+    const { surfaceY, liftMm } = machine.conveyor;
+    expect((tub.instance as unknown as { position: { y: number } }).position.y).toBeCloseTo(
+      (surfaceY + liftMm) / 1000,
+      6,
+    );
+    const liquid = tub.findByProps({ name: 'liquid' });
+    expect(hex(surface(liquid.instance as unknown as Mesh).color)).toBe('#ff0000');
+    expect(tub.findAll((n) => n.props.name === 'lid')).toHaveLength(0);
+    // No other station sees a container, so none is drawn there.
+    expect(renderer.scene.findAll((n) => String(n.props.name).startsWith('tub-'))).toHaveLength(1);
   });
 });

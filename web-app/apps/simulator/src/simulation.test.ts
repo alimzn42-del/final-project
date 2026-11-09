@@ -8,9 +8,12 @@ import {
 } from '@mixline/shared';
 import { describe, expect, it } from 'vitest';
 
+import { clearWater } from './correction.js';
+import { OUTSIDE } from './ledger.js';
 import { PLACE } from './plant.js';
 import { seededRandom } from './random.js';
 import { TICK_MS } from './schedule.js';
+import type { SimConfig } from './simConfig.js';
 import { type Message, Simulation, type SimulationOptions } from './simulation.js';
 import { realMachine, realSimConfig } from './testing.js';
 
@@ -31,8 +34,13 @@ function run(
   batches: number,
   options: Partial<SimulationOptions> = {},
   check?: (sim: Simulation) => void,
+  settings: SimConfig = config,
 ): Run {
-  const sim = new Simulation(machine, config, { startMs: T0, random: seededRandom(1), ...options });
+  const sim = new Simulation(machine, settings, {
+    startMs: T0,
+    random: seededRandom(1),
+    ...options,
+  });
   const messages: Message[] = [];
   const at: number[] = [];
   let finished = 0;
@@ -64,6 +72,16 @@ const events = (r: Run) =>
   );
 const refills = (r: Run) =>
   batchMessages(r).flatMap((m) => (m.event === 'refill' ? [m.payload as RefillEventPayload] : []));
+/** How many containers each batch filled: its last count (the size is not published). */
+const sizes = (r: Run) =>
+  events(r)
+    .filter((e) => e.event === 'finished')
+    .map((e) => e.payload.containersDone);
+/** The tuning file with every batch the same size. */
+const fixedSize = (containers: number): SimConfig => ({
+  ...config,
+  order: { ...config.order, containersMin: containers, containersMax: containers },
+});
 
 describe('one batch, start to finish (doc 01 batch logic)', () => {
   const one = run(1);
@@ -78,20 +96,31 @@ describe('one batch, start to finish (doc 01 batch logic)', () => {
     );
   });
 
-  it('fills 6 cups, counting each one in the filling step', () => {
+  it("fills the batch's containers, counting each one in the filling step (owner, step 17)", () => {
     const counts = events(one)
       .filter((e) => e.payload.step === 'filling' && e.event === 'step')
       .map((e) => e.payload.containersDone);
-    expect(counts).toEqual([0, 1, 2, 3, 4, 5, 6]);
-    const done = one.sim.plant.trayCups + one.sim.plant.rejects;
-    expect(done).toBe(6);
+    const [size = 0] = sizes(one);
+    expect(size).toBeGreaterThanOrEqual(config.order.containersMin);
+    expect(size).toBeLessThanOrEqual(config.order.containersMax);
+    expect(counts).toEqual(Array.from({ length: size + 1 }, (_, i) => i));
+    const done = one.sim.plant.delivered + one.sim.plant.rejects;
+    expect(done).toBe(size);
   });
 
-  it('takes about 4 minutes (owner, step 15)', () => {
-    const e = events(one);
-    const minutes = ((e.at(-1)?.t ?? 0) - (e[0]?.t ?? 0)) / 60_000;
-    expect(minutes).toBeGreaterThan(3.5);
-    expect(minutes).toBeLessThan(4.5);
+  const minutes = (r: Run) => {
+    const e = events(r);
+    return ((e.at(-1)?.t ?? 0) - (e[0]?.t ?? 0)) / 60_000;
+  };
+
+  it('takes about 5 minutes with 6 containers, longer with more', () => {
+    // About 4 in step 15 (owner); about 5 since step 17: 350 g instead of 300 g per container,
+    // and the belt waits at its end until a worker takes each container.
+    const six = minutes(run(1, {}, undefined, fixedSize(6)));
+    expect(six).toBeGreaterThan(4.5);
+    expect(six).toBeLessThan(5.8);
+    const most = minutes(run(1, {}, undefined, fixedSize(config.order.containersMax)));
+    expect(most).toBeGreaterThan(six);
   });
 
   it('keeps one batch id from started to finished, and the machine state with it', () => {
@@ -135,8 +164,9 @@ describe('one batch, start to finish (doc 01 batch logic)', () => {
       .filter((r) => r.t <= filling)
       .at(-1);
     expect(atFill?.v).toBeLessThanOrEqual(config.batch.toleranceDeltaE);
+    // Clear water in the flow cell reads a little below the white patch (owner, step 17).
     const finalL = readings('color.L').at(-1)?.v ?? 0;
-    expect(finalL).toBeGreaterThan(99);
+    expect(finalL).toBeGreaterThan(clearWater(config)[0] - 1);
     expect(rinse).toBeGreaterThan(filling);
   });
 });
@@ -160,7 +190,8 @@ describe('masses balance (step 15 acceptance)', () => {
         0,
       ),
       cups: sim.plant.cups.reduce((s, c) => s + sim.plant.cupMass(c), 0),
-      tray: ledger.mass(PLACE.tray),
+      // Cups a worker took from the end of the belt (owner, step 17).
+      away: ledger.mass(OUTSIDE),
       rejects: ledger.mass(PLACE.rejectBox),
       cell: ledger.mass(PLACE.cell),
     });
@@ -175,11 +206,11 @@ describe('masses balance (step 15 acceptance)', () => {
         // With only dye and filling pumps moving, the vessel's change is exactly their sum.
         const dyeIn = before.tanks - now.tanks;
         const toCups =
-          now.cups + now.tray + now.rejects - (before.cups + before.tray + before.rejects);
+          now.cups + now.away + now.rejects - (before.cups + before.away + before.rejects);
         expect(now.vessel - before.vessel).toBeCloseTo(dyeIn - toCups, 6);
         if (dyeIn > 0 || toCups > 0) checked++;
       }
-      quiet = !(['base', 'drain', 'sample'] as const).some((p) => sim.plant.isRunning(p));
+      quiet = !(['base', 'water', 'drain', 'sample'] as const).some((p) => sim.plant.isRunning(p));
       before = now;
     }
     expect(checked).toBeGreaterThan(50);
@@ -187,51 +218,72 @@ describe('masses balance (step 15 acceptance)', () => {
 });
 
 describe('between batches: the service (owner, step 15)', () => {
-  const many = run(20, { random: seededRandom(11) });
-  const tray = machine.components.find((c) => c.id === 'batchTray')?.id;
+  // While a cup waits at the end of the belt, the belt stands still (owner, step 17).
+  let waitedAtEnd = 0;
+  const many = run(20, { random: seededRandom(11) }, (sim) => {
+    if (sim.plant.cupAtEnd() === undefined) return;
+    waitedAtEnd++;
+    expect(sim.plant.motorOn).toBe(false);
+  });
 
-  it('removes the full tray after every batch, in one refill message with batchId null', () => {
+  it('sends each refill in one message with batchId null', () => {
     const list = refills(many);
-    expect(list).toHaveLength(19);
-    for (const r of list) {
-      expect(r.batchId).toBeNull();
-      expect(r.items.find((i) => i.component === tray)?.unit).toBe('count');
-    }
+    expect(list.length).toBeGreaterThan(3);
+    for (const r of list) expect(r.batchId).toBeNull();
+  });
+
+  it('stops the belt while a cup waits at its end, until a worker takes it (owner, step 17)', () => {
+    expect(waitedAtEnd).toBeGreaterThan(100);
+    const [low, high] = config.outfeed.takeAwayS;
+    const ticks = (s: number) => (s * 1000) / TICK_MS;
+    const cups = many.sim.plant.delivered;
+    expect(waitedAtEnd).toBeGreaterThanOrEqual(cups * ticks(low) - cups);
+    expect(waitedAtEnd).toBeLessThanOrEqual(cups * ticks(high) + cups);
+  });
+
+  it('draws the size of each batch between the order limits (owner, step 17)', () => {
+    const all = sizes(many);
+    expect(all).toHaveLength(20);
+    expect(Math.min(...all)).toBeGreaterThanOrEqual(config.order.containersMin);
+    expect(Math.max(...all)).toBeLessThanOrEqual(config.order.containersMax);
+    expect(new Set(all).size).toBeGreaterThan(3);
   });
 
   it('rejects about 1 cup in 20, and the counts add up', () => {
     const p = many.sim.plant;
-    const trayCounts = refills(many).flatMap((r) => r.items.filter((i) => i.component === tray));
-    const good = trayCounts.reduce((s, i) => s + i.amount, 0) + p.trayCups;
+    const good = p.delivered;
     const emptiedRejects = refills(many)
       .flatMap((r) => r.items.filter((i) => i.component === 'rejectBox'))
       .reduce((s, i) => s + i.amount, 0);
     const rejected = emptiedRejects + p.rejects;
-    expect(good + rejected).toBe(120);
-    expect(rejected).toBeGreaterThanOrEqual(2);
-    expect(rejected).toBeLessThanOrEqual(14);
+    const filled = sizes(many).reduce((sum, n) => sum + n, 0);
+    expect(good + rejected).toBe(filled);
+    expect(rejected).toBeGreaterThanOrEqual(filled / 60);
+    expect(rejected).toBeLessThanOrEqual(filled / 8);
   });
 
-  it('refills the big tank, cups and lids before they run out, and says how much', () => {
+  it('refills the big tank, the rinse water, cups and lids before they run out, and says how much', () => {
     const items = refills(many).flatMap((r) => r.items);
     const tank = items.filter((i) => i.component === 'bigTank');
     expect(tank.length).toBeGreaterThan(2);
     for (const i of tank) expect(i).toMatchObject({ action: 'refilled', unit: 'g' });
+    const rinse = items.filter((i) => i.component === 'waterContainer');
+    expect(rinse.length).toBeGreaterThan(1);
+    for (const i of rinse) expect(i).toMatchObject({ action: 'refilled', unit: 'g' });
     expect(items.some((i) => i.component === 'containerMagazine' && i.unit === 'count')).toBe(true);
     expect(items.some((i) => i.component === 'lidMagazine')).toBe(true);
     expect(items.some((i) => i.component === 'drainBucket' && i.action === 'emptied')).toBe(true);
   });
 
-  it('never lets a supply run out, so no float ever trips (alarms belong to the PLC)', () => {
-    const tripped = many.messages.filter(
+  it('never lets the container magazine run empty (alarms belong to the PLC)', () => {
+    const empty = many.messages.filter(
       (m) =>
         m.kind === 'reading' &&
-        ['bigTank.lowFloat', 'drainBucket.full', 'vessel.overflow'].includes(
-          byTopic.get(m.topic)?.id ?? '',
-        ) &&
+        byTopic.get(m.topic)?.id === 'magazine.empty' &&
         m.payload.value !== 0,
     );
-    expect(tripped).toEqual([]);
+    expect(empty).toEqual([]);
+    expect(many.sim.plant.ledger.mass(PLACE.waterContainer)).toBeGreaterThan(0);
   });
 
   it('the big tank rises by exactly the grams the message names', () => {
@@ -322,7 +374,9 @@ describe('connection and clock', () => {
     sim.advanceTo(T0 + 10_000);
     sim.reset();
     const again = sim.advanceTo(T0 + 10_000 + TICK_MS);
-    expect(again.filter((m) => m.kind === 'reading')).toHaveLength(60);
+    expect(again.filter((m) => m.kind === 'reading')).toHaveLength(
+      machine.components.flatMap((c) => c.sensors).length,
+    );
     expect(again.filter((m) => m.kind === 'state')).toHaveLength(1);
   });
 

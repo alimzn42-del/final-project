@@ -49,17 +49,17 @@ describe('valueState: generic limit logic (test limits)', () => {
   });
 
   it('treats "above" as strictly above', () => {
-    const slip = sensor('conveyor.slip'); // warnAbove 5, faultAbove 10
-    expect(valueState(slip, 5)).toBe('ok');
-    expect(valueState(slip, 5.1)).toBe('warning');
-    expect(valueState(slip, 10.1)).toBe('fault');
+    const rpm = sensor('mixer.rpm'); // warnAbove 250, faultAbove 280
+    expect(valueState(rpm, 250)).toBe('ok');
+    expect(valueState(rpm, 250.1)).toBe('warning');
+    expect(valueState(rpm, 280.1)).toBe('fault');
   });
 
   it('applies warnBelow and warnAbove together (fill weight window)', () => {
-    const fill = sensor('filling.mass'); // warnBelow 291, warnAbove 309
-    expect(valueState(fill, 300)).toBe('ok');
-    expect(valueState(fill, 290)).toBe('warning');
-    expect(valueState(fill, 310)).toBe('warning');
+    const fill = sensor('filling.mass'); // warnBelow 341, warnAbove 359
+    expect(valueState(fill, 350)).toBe('ok');
+    expect(valueState(fill, 340)).toBe('warning');
+    expect(valueState(fill, 360)).toBe('warning');
   });
 
   it('uses faultWhen for digital sensors', () => {
@@ -74,7 +74,7 @@ describe('valueState: generic limit logic (test limits)', () => {
   });
 
   it('is OK for a sensor without limits', () => {
-    expect(valueState(sensor('mixer.rpm'), 9999)).toBe('ok');
+    expect(valueState(sensor('basePump.current'), 9999)).toBe('ok');
   });
 });
 
@@ -137,15 +137,15 @@ describe('machineStates roll-up (real machine.json + test limits)', () => {
   });
 
   it('shows the state of a pending part (pending is a look, not a state)', () => {
-    const st = machineStates(machine, readings({ 'check.mass': 280 }), NOW);
-    expect(machine.components.find((c) => c.id === 'checkPlatform')?.status).toBe('pending');
-    expect(st.components.get('checkPlatform')).toBe('warning');
-    expect(st.subsections.get('conveyor/checkCap')).toBe('warning');
+    const st = machineStates(machine, readings({ 'mixer.rpm': 260 }), NOW);
+    expect(machine.components.find((c) => c.id === 'mixerMotor')?.status).toBe('pending');
+    expect(st.components.get('mixerMotor')).toBe('warning');
+    expect(st.subsections.get('mixingColor/mixing')).toBe('warning');
     expect(st.line).toBe('warning');
   });
 
   it('counts parts without a subsection in their section (conveyor motor)', () => {
-    const st = machineStates(machine, readings({ 'conveyor.slip': 12 }), NOW);
+    const st = machineStates(machine, readings({ 'conveyor.on': 1 }), NOW);
     expect(st.components.get('conveyorMotor')).toBe('fault');
     expect([...st.subsections.entries()].filter(([k]) => k.startsWith('conveyor/'))).toEqual(
       expect.arrayContaining([['conveyor/feeder', 'ok']]),
@@ -214,13 +214,13 @@ describe('stateChanges: only what changed, for the live push', () => {
   it('leaves out the line and the groups that did not change', () => {
     const latest = readings({ 'cabinet.estop': 1 });
     const prev = toStateSnapshot(machineStates(machine, latest, NOW));
-    latest.set('conveyor.slip', { value: 12, receivedAt: NOW });
+    latest.set('conveyor.on', { value: 1, receivedAt: NOW });
     const next = toStateSnapshot(machineStates(machine, latest, NOW));
     const changes = stateChanges(prev, next);
     expect(changes).toEqual({
       sections: { conveyor: 'fault' },
       components: { conveyorMotor: 'fault' },
-      sensors: { 'conveyor.slip': 'fault' },
+      sensors: { 'conveyor.on': 'fault' },
     });
     expect(changes).not.toHaveProperty('line');
     expect(changes).not.toHaveProperty('subsections');
@@ -291,7 +291,17 @@ describe('a part that is not installed (owner, step 16)', () => {
   });
 
   it('every part is installed unless machine.json says otherwise', () => {
-    expect(realMachine.components.every((c) => c.installed)).toBe(true);
+    // Owner, step 17: the customer camera and the tray are not built yet.
+    const notInstalled = realMachine.components.filter((c) => !c.installed).map((c) => c.id);
+    expect(notInstalled).toEqual([
+      'customerCameraMount',
+      'customerCamera',
+      'batchTray',
+      'trayRail',
+      'trayBelt',
+      'trayStepper',
+      'trayHomeSwitch',
+    ]);
     const without = rawMachine();
     for (const c of without.components) delete (c as Record<string, unknown>).installed;
     expect(machineSchema.parse(without).components.every((c) => c.installed)).toBe(true);

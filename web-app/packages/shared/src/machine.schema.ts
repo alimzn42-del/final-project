@@ -14,9 +14,13 @@ export const STATUSES = ['confirmed', 'estimated', 'pending'] as const;
 export const MATERIALS = [
   'wood',
   'clearPlastic',
+  /** Black opaque plastic: the container's body (owner, step 17). */
+  'blackPlastic',
   'plastic',
   'metal',
   'acrylic',
+  /** The flow cell's window (owner, step 17). */
+  'glass',
   'printed',
   'electronics',
   'rubber',
@@ -63,6 +67,8 @@ const boxGeometry = z
     size: z.tuple([positive, positive, positive]),
     hollow: z.literal(true).optional(),
     wallThickness: positive.optional(),
+    /** A liquid seen in the box (the flow cell's window, owner step 17). */
+    liquid: liquid.optional(),
   })
   .refine((g) => !g.hollow || g.wallThickness !== undefined, {
     message: 'a hollow box needs wallThickness',
@@ -71,6 +77,10 @@ const boxGeometry = z
   .refine((g) => g.wallThickness === undefined || 2 * g.wallThickness < Math.min(...g.size), {
     message: 'walls are thicker than the box',
     path: ['wallThickness'],
+  })
+  .refine((g) => !(g.hollow && g.liquid), {
+    message: 'a hollow box cannot hold a liquid of its own',
+    path: ['liquid'],
   });
 
 const cylinderGeometry = z.strictObject({
@@ -220,6 +230,119 @@ const component = z
     path: ['anchor'],
   });
 
+// ---------- containers at the stations (owner, step 17) ----------
+
+/**
+ * What a conveyor station's sensors say about the container at it (owner, step 17; the scene
+ * follows each container along the belt). All are sensor ids:
+ * - present: a container is at the station while this digital sensor reads 1;
+ * - raised: it is lifted (conveyor.liftMm) while this one reads 1;
+ * - mass: while lifted, this scale gives its fill (net g = ml);
+ * - lid: the lid goes on here: always, or once a sensor reads a code (the check result "pass").
+ */
+const stationContainer = z.strictObject({
+  present: id,
+  raised: id.optional(),
+  mass: id.optional(),
+  lid: z.union([z.literal('always'), z.strictObject({ sensor: id, code: z.int() })]).optional(),
+});
+
+// ---------- links: tubes and cables (owner, step 17) ----------
+
+export const LINK_KINDS = ['tube', 'rs485', 'ethernet'] as const;
+
+/**
+ * A tube or a cable between two parts, drawn along `path` (points in mm, machine.json's frame).
+ * `via`: the parts it passes through on the way (a pump on a tube).
+ */
+const link = z.strictObject({
+  id,
+  kind: z.enum(LINK_KINDS),
+  from: id,
+  to: id,
+  via: z.array(id).optional(),
+  status,
+  path: z.array(vec3).min(2),
+  notes: z.string().optional(),
+});
+
+// ---------- the container (product) ----------
+
+/**
+ * Every field of the container (owner, step 17). Each one sits in `confirmed` or in `estimated`,
+ * never both, so moving a value between the two is how its status changes. Sizes in mm.
+ */
+const containerFields = {
+  shape: z.literal('taperedTub'),
+  /** Outer diameter at the bottom. */
+  baseDiameter: positive,
+  /** Outer diameter at the top, at the lid (the rim). */
+  topDiameter: positive,
+  /** Outer height of the closed tub, lid included. */
+  height: positive,
+  bodyMaterial: material,
+  lidMaterial: material,
+  /** How the lid closes, e.g. "snapOnFlat". */
+  lid: id,
+  capacityMl: positive,
+  /** The empty body: the filling and check scales are tared with it. */
+  bodyG: positive,
+  lidG: positive,
+  /** Wall and bottom thickness. */
+  wall: positive,
+  /** How far the rim sticks out beyond the body's wall at the top. */
+  rimOverhang: z.number().nonnegative(),
+  rimHeight: positive,
+  lidThickness: positive,
+  /** How much higher a stack gets with each tub nested into it. */
+  nestingStep: positive,
+};
+export const CONTAINER_FIELDS = Object.keys(containerFields) as (keyof typeof containerFields)[];
+const containerGroup = z.strictObject(containerFields).partial();
+
+const container = z
+  .strictObject({
+    confirmed: containerGroup,
+    estimated: containerGroup,
+    notes: z.string().optional(),
+  })
+  .superRefine((c, ctx) => {
+    const fail = (key: string, message: string) => {
+      ctx.addIssue({ code: 'custom', path: [key], message });
+    };
+    for (const key of CONTAINER_FIELDS) {
+      const confirmed = c.confirmed[key] !== undefined;
+      if (confirmed === (c.estimated[key] !== undefined)) {
+        fail(
+          key,
+          confirmed
+            ? `${key} is under both confirmed and estimated`
+            : `${key} is missing: put it under confirmed or estimated`,
+        );
+      }
+    }
+    const s = { ...c.confirmed, ...c.estimated };
+    const { baseDiameter, topDiameter, height, wall, rimOverhang, rimHeight, lidThickness } = s;
+    if (
+      baseDiameter === undefined ||
+      topDiameter === undefined ||
+      height === undefined ||
+      wall === undefined ||
+      rimOverhang === undefined ||
+      rimHeight === undefined ||
+      lidThickness === undefined
+    ) {
+      return;
+    }
+    if (topDiameter - 2 * rimOverhang <= baseDiameter) {
+      fail('topDiameter', 'a tapered tub is wider at the top (below the rim) than at the bottom');
+    }
+    if (2 * wall >= baseDiameter) fail('wall', 'the walls are thicker than the tub');
+    if (rimHeight + lidThickness + wall >= height) {
+      fail('height', 'the rim, the lid and the bottom leave no room inside');
+    }
+  });
+
 // ---------- the whole file ----------
 
 export const machineSchema = z.strictObject({
@@ -252,19 +375,7 @@ export const machineSchema = z.strictObject({
     heightToFloor: positive,
     status,
   }),
-  container: z.strictObject({
-    status,
-    shape: id,
-    topDiameter: positive,
-    baseDiameter: positive,
-    height: positive,
-    lid: id,
-    fillTargetG: positive,
-    perBatch: z.int().positive(),
-    material,
-    tareG: z.number().nonnegative(),
-    notes: z.string().optional(),
-  }),
+  container,
   conveyor: z
     .strictObject({
       centerlineZ: z.number(),
@@ -273,8 +384,16 @@ export const machineSchema = z.strictObject({
       endX: z.number(),
       beltWidth: positive,
       beltGap: positive,
+      /** How high a weighing platform lifts a container off the belts (the scene shows it). */
+      liftMm: positive,
+      /** The belt's one speed: it only runs or stops (owner, step 17). */
+      speedMmPerS: positive,
+      /** The digital sensor that reads 1 while the belt runs. */
+      runningSensor: id,
       status,
-      stations: z.array(z.strictObject({ id, x: z.number() })),
+      stations: z.array(
+        z.strictObject({ id, x: z.number(), container: stationContainer.optional() }),
+      ),
     })
     .refine((c) => c.startX < c.endX, { message: 'startX must be below endX', path: ['endX'] }),
   sections: z.array(
@@ -285,6 +404,8 @@ export const machineSchema = z.strictObject({
     }),
   ),
   components: z.array(component),
+  /** Tubes and cables (owner, step 17); a machine may have none. */
+  links: z.array(link).default([]),
 });
 
 /** The machine after parsing (defaults applied, e.g. anchor). */
@@ -293,5 +414,14 @@ export type MachineComponent = Machine['components'][number];
 export type Sensor = MachineComponent['sensors'][number];
 export type Geometry = MachineComponent['geometry'];
 export type Section = Machine['sections'][number];
+export type Link = Machine['links'][number];
+export type Station = Machine['conveyor']['stations'][number];
+export type StationContainer = NonNullable<Station['container']>;
+export type LinkKind = (typeof LINK_KINDS)[number];
+export type ContainerConfig = Machine['container'];
+/** The container with every field filled in (the schema guarantees each one is set once). */
+export type ContainerSpec = {
+  [K in keyof typeof containerFields]: z.infer<(typeof containerFields)[K]>;
+};
 export type Status = (typeof STATUSES)[number];
 export type SensorKind = (typeof SENSOR_KINDS)[number];

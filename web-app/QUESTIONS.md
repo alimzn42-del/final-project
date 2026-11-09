@@ -14,3 +14,8 @@ first, then only the rows fully checked are removed.
 and 13 are still open: they moved to doc 05 "Browser checks still open". Row 12 (the run on the
 Raspberry Pi 5) moved earlier to doc 05 "Before deploying to the Raspberry Pi". No row is open in
 this file now; the next step adds its own.
+
+**Step 17 merge, 2026-11-09.** Rows 1 (the line), 2 (the camera box), 7 (the cabinet) and 8 (the
+header: "54 من 54" in the owner's screenshot) were checked and removed. Rows 3, 4, 5, 6, 9, 10 (in
+part) and 11 are still open: they moved to doc 05 "Browser checks still open". No row is open in
+this file now; the next step adds its own.

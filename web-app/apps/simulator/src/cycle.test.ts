@@ -11,17 +11,17 @@ const machine = realMachine();
 const config = realSimConfig();
 const T0 = Date.parse('2026-11-04T08:00:00.000Z');
 
-/** What an MQTT listener hears from the simulator: one batch and the refill after it. */
+/** What an MQTT listener hears from the simulator: one batch, and a few seconds after it. */
 function listen(seed: number): Heard[] {
   const sim = new Simulation(machine, config, { startMs: T0, random: seededRandom(seed) });
   const heard: Heard[] = [];
-  let finished = false;
+  let finishedAt: number | undefined;
   for (let t = T0; t < T0 + 12 * 60_000; t += TICK_MS) {
+    if (finishedAt !== undefined && t > finishedAt + 2500) return heard;
     for (const m of sim.advanceTo(t)) {
       // Through JSON, as on the wire.
       heard.push({ topic: m.topic, payload: JSON.parse(JSON.stringify(m.payload)) as unknown });
-      if (m.kind === 'batch' && m.event === 'finished') finished = true;
-      if (finished && m.kind === 'batch' && m.event === 'refill') return heard;
+      if (m.kind === 'batch' && m.event === 'finished') finishedAt = t;
     }
   }
   return heard;

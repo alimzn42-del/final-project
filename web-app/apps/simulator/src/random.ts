@@ -21,5 +21,9 @@ export function seededRandom(seed: number): Random {
 /** A number between low and high. */
 export const between = (random: Random, low: number, high: number) => low + (high - low) * random();
 
+/** A whole number from low to high, both included. */
+export const wholeBetween = (random: Random, low: number, high: number) =>
+  Math.min(high, low + Math.floor((high - low + 1) * random()));
+
 /** Noise: a number between −amplitude and +amplitude. */
 export const jitter = (random: Random, amplitude: number) => (random() * 2 - 1) * amplitude;

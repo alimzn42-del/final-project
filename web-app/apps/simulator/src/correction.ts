@@ -10,6 +10,7 @@
  */
 import {
   absorbanceToLab,
+  type CellOptics,
   deltaE2000,
   type Lab,
   labToAbsorbance,
@@ -23,8 +24,13 @@ import { DYES, type Dye, type Recipe, type SimConfig } from './simConfig.js';
 export type PerDye = Record<Dye, number>;
 export const NO_DYE: PerDye = { cyan: 0, magenta: 0, yellow: 0, black: 0 };
 
-/** Clear water, the reference for the rinse check. */
-export const CLEAR_WATER: Lab = [100, 0, 0];
+/**
+ * Clear water as the camera sees it in the flow cell, the reference for the rinse check: a little
+ * darker than the white patch (the light passes the window twice; owner, step 17).
+ */
+export function clearWater(config: SimConfig): Lab {
+  return absorbanceToLab([0, 0, 0], optics(config));
+}
 
 /** The recipe's dyes per kg of mixture (the recipe gives them per kg of base). */
 export function recipeConcentration(recipe: Recipe): PerDye {
@@ -38,7 +44,10 @@ export function recipeConcentration(recipe: Recipe): PerDye {
  */
 export function cellLab(config: SimConfig, concentration: PerDye, strength?: PerDye): Lab {
   const effective = perDye((d) => concentration[d] * (strength?.[d] ?? 1));
-  return absorbanceToLab(mixtureAbsorbance(effective, config.dyes.absorbance, pathCm(config)));
+  return absorbanceToLab(
+    mixtureAbsorbance(effective, config.dyes.absorbance, pathCm(config)),
+    optics(config),
+  );
 }
 
 /** The target colour of a recipe: what the nominal model predicts for it. */
@@ -55,7 +64,10 @@ export const deltaE = deltaE2000;
 export function missingDye(config: SimConfig, recipe: Recipe, measured: Lab, target: Lab): PerDye {
   const path = pathCm(config);
   const columns = DYES.map((d) => scaledRgb(config.dyes.absorbance[d], path));
-  const need = subtract(labToAbsorbance(target), labToAbsorbance(measured));
+  const need = subtract(
+    labToAbsorbance(target, optics(config)),
+    labToAbsorbance(measured, optics(config)),
+  );
 
   // 1. More of the recipe, in its own ratios: the best non-negative multiple.
   const ratios = recipeConcentration(recipe);
@@ -77,7 +89,12 @@ export function missingDye(config: SimConfig, recipe: Recipe, measured: Lab, tar
   return perDye((d) => topUp[d] + (fix[own.indexOf(d)] ?? 0));
 }
 
-const pathCm = (config: SimConfig) => config.camera.pathMm / 10;
+/** Owner, step 17: the light crosses the liquid to the white back and back again. */
+const pathCm = (config: SimConfig) => (2 * config.camera.depthMm) / 10;
+const optics = ({ camera }: SimConfig): CellOptics => ({
+  windowTransmission: camera.windowTransmission,
+  glare: camera.glare,
+});
 
 function perDye(value: (dye: Dye, index: number) => number): PerDye {
   return Object.fromEntries(DYES.map((d, i) => [d, value(d, i)])) as PerDye;

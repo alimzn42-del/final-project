@@ -5,6 +5,7 @@
 // backend drops the first without crashing and logs the second.
 // Exits with code 1 if any check fails.
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 try {
@@ -15,6 +16,13 @@ try {
 const env = process.env;
 const api = `http://localhost:${env.PORT ?? '3000'}/api`;
 const GARBAGE = 987654321;
+/** Every sensor of an installed part in machine.json (a part not installed sends nothing). */
+const machine = JSON.parse(
+  readFileSync(new URL('../config/machine.json', import.meta.url), 'utf8'),
+);
+const SENSORS = machine.components
+  .filter((c) => c.installed !== false)
+  .flatMap((c) => c.sensors).length;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -76,13 +84,13 @@ const checks = [
     },
   ],
   [
-    'latest: all 60 sensors, each heard in the last 10 s',
+    `latest: all ${String(SENSORS)} sensors, each heard in the last 10 s`,
     async () => {
       const { status, body } = await get('/telemetry/latest');
       if (status !== 200) throw new Error(`answered ${String(status)}`);
       const entries = Object.entries(body.sensors);
       const stale = entries.filter(([, r]) => Date.now() - Date.parse(r.receivedAt) > 10_000);
-      if (entries.length !== 60) throw new Error(`${String(entries.length)} sensors`);
+      if (entries.length !== SENSORS) throw new Error(`${String(entries.length)} sensors`);
       if (stale.length) throw new Error(`stale: ${stale.map(([id]) => id).join(', ')}`);
     },
   ],
@@ -139,16 +147,17 @@ const checks = [
     async () => {
       const since = new Date().toISOString();
       const ahead = new Date(Date.now() + 3_600_000).toISOString();
+      // The big tank's level: a 1 Hz sensor (the cabinet temperature it used went in step 17).
       publish(
-        'lab/mixline/cabinet/sensors/ambient_temp',
-        JSON.stringify({ ts: ahead, value: 26, unit: 'C', source: 'hw' }),
+        'lab/mixline/supply/sensors/level_mm',
+        JSON.stringify({ ts: ahead, value: 220, unit: 'mm', source: 'hw' }),
       );
       await sleep(2500); // the simulator's next reading brings the clock back
       const logs = compose('logs', '--no-log-prefix', '--since', since, 'backend');
-      if (!/device clock of station "cabinet" is off by/.test(logs)) {
+      if (!/device clock of station "supply" is off by/.test(logs)) {
         throw new Error('no clock warning in the backend log');
       }
-      if (!/station "cabinet" is back within tolerance/.test(logs)) {
+      if (!/station "supply" is back within tolerance/.test(logs)) {
         throw new Error('no "back within tolerance" line');
       }
     },

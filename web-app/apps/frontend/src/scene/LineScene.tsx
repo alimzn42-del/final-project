@@ -21,11 +21,15 @@ import { useLabel } from '../navigation/useLabel';
 import { boundsOf, MM, type Vec3 } from './frame';
 import { useLive } from '../live/live';
 import type { StateColors } from './looks';
+import { Links } from './Links';
 import { Part } from './Part';
 import { passesThrough } from './picking';
 import styles from './scene.module.css';
+import { Tubs } from './Tubs';
 import { useCssColor } from './useCssColor';
 import { clampTarget, DEFAULT_VIEW, FOV, GLIDE_MS, ORBIT_LIMITS, type View, viewFor } from './view';
+
+const NO_READINGS: Readonly<Record<string, LatestReading>> = {};
 
 /** A click after the pointer moved more than this (px) was a drag: it turned the view. */
 const DRAG_PX = 6;
@@ -42,6 +46,8 @@ export interface SceneContentProps {
   states?: StateSnapshot | undefined;
   /** Latest readings: tank levels and the mix colour follow them. */
   readings?: Readonly<Record<string, LatestReading>>;
+  /** The server's clock minus the browser's (live data), for the containers on the belt. */
+  clockOffset?: number;
   stateColors?: StateColors;
   onNavigate: (path: string) => void;
 }
@@ -55,6 +61,7 @@ export function SceneContent({
   outline,
   states,
   readings,
+  clockOffset = 0,
   stateColors,
   onNavigate,
 }: SceneContentProps) {
@@ -65,6 +72,7 @@ export function SceneContent({
     undefined,
   );
   const lit = litOn?.page === page ? litOn : undefined;
+  const drawn = useMemo(() => new Set([...page.subject, ...page.context].map((c) => c.id)), [page]);
   const setLit = (next: { path: string; touch: boolean } | undefined) => {
     setLitOn(next && { page, ...next });
   };
@@ -140,6 +148,14 @@ export function SceneContent({
       {page.context.map((part) => (
         <Part key={`context-${part.id}`} part={part} machine={machine} ghost />
       ))}
+      <Links links={page.links} />
+      <Tubs
+        machine={machine}
+        readings={readings ?? NO_READINGS}
+        states={states}
+        drawn={drawn}
+        clockOffset={clockOffset}
+      />
       {litTarget && nameAt && (
         <Html center position={nameAt} zIndexRange={[30, 0]}>
           <span className={styles.name}>
@@ -288,6 +304,7 @@ export default function LineScene({
         glow={glow}
         states={live.states}
         readings={live.readings}
+        clockOffset={live.clockOffset}
         stateColors={stateColors}
         onNavigate={onNavigate}
       />

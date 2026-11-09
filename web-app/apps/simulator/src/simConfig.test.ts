@@ -41,6 +41,22 @@ describe('config/simulator.json', () => {
     expect(config.batch.toleranceDeltaE).toBe(2);
   });
 
+  it("has the owner's order settings: 4 to 10 containers of 350 g (step 17)", () => {
+    expect(realSimConfig().order).toMatchObject({
+      containersMin: 4,
+      containersMax: 10,
+      fillG: 350,
+    });
+  });
+
+  it('refuses an order whose smallest batch is above its largest', () => {
+    const raw = rawSimConfig();
+    raw.order = { ...raw.order, containersMin: 8, containersMax: 5 };
+    expect(() => parseSimConfig(raw)).toThrow(
+      /order\.containersMax: containersMin must not be above/,
+    );
+  });
+
   it('names every problem in a broken file', () => {
     const raw = rawSimConfig();
     raw.batch = { ...raw.batch, firstDoseShare: 1.5 };

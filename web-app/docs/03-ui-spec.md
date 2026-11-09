@@ -89,22 +89,25 @@ Section tree (generated from `machine.json`):
 Line
 ├── Supply
 │   ├── Big base tank
+│   ├── Rinse water container
 │   └── Empty container magazine
 ├── Mixing & Color
-│   ├── Mixing      (vessel, scale, mixer, dye shelf, dye tanks + scales, dye pumps, base pump, drain pump)
-│   └── Color       (camera box: camera, sample cell, holder, diffuser, LEDs; sample pump)
+│   ├── Mixing      (vessel, scale, mixer and its frame, dye shelf, dye bottles + scales, dye pumps,
+│   │                base, water and drain pumps)
+│   └── Color       (camera box: camera, flow cell, window, white patch, LED strips; sample pump;
+│                    customer camera, not installed)
 ├── Conveyor
 │   ├── Feeder
 │   ├── Filling
 │   ├── Check + Reject + Cap
-│   └── Batch tray
-└── Control cabinet
+│   └── Batch tray             (not installed)
+└── Control cabinet  (the panel: PLC, ESP32s, power, buttons, tower light; the switch and the laptop)
 ```
 
 When a section has no sub-sections, level 3 is skipped and its components open directly.
 Components with `subsection: null` (for example conveyor rollers, belts and frame) are shown and
 clickable on their section page. The `table` has no section and is scene-only, not clickable.
-Components with a `parent` (for example the camera inside the color box) are drawn relative to the
+Components with a `parent` (for example the camera inside the camera box) are drawn relative to the
 same world coordinates but grouped under the parent on component lists.
 
 Suggested routes:
@@ -125,7 +128,29 @@ Suggested routes:
 ## 3D scene rules
 
 - Built from `machine.json` at runtime. No hardcoded parts.
-- Simple primitives only. Transparent containers show their liquid level and color.
+- **As close to the real line as possible, smooth on a phone** (owner, step 17). Parts are drawn
+  from the parts list (`docs/ALMAS_parts_list_2026-11-09.md`) at their real or estimated sizes;
+  things that repeat share their shapes, and the scene only redraws when something changes.
+- Simple primitives only. Clear tanks show their liquid level and color; opaque ones (the dye
+  bottles, owner step 17) do not, since nothing shows through them.
+- Containers on the belt (owner, step 17, option b): each container is followed along the belt.
+  It appears where a station's sensor (feeder, filling, check, end of belt) sees one; while the
+  belt runs it slides at the belt's speed (`conveyor.speedMmPerS`: estimated from the speed and
+  the times the belt started and stopped, not measured); when the belt stops, a station's sensor
+  puts it exactly on the station; it goes when a sensor stops seeing it with the belt standing
+  still (pushed to the reject bin, taken from the end). It is the real tub (tapered black body,
+  rim, clear flat lid); lifted while its platform is up; its liquid shows from above at the fill
+  height, in the live mix colour, the fill taken from the station's scale while it weighs. It
+  keeps its fill and lid on its way; the lid is on once the check passes. Which sensors a
+  station uses is in `machine.json` (`conveyor.stations[].container`, `conveyor.runningSensor`).
+  Frames are drawn continuously only while the belt runs.
+- Tubes and cables (owner, step 17): the pump tubes, the RS485 chain and the Ethernet cables are
+  drawn as thin tubes along estimated paths (`machine.json` `links`), on the pages where both of
+  their ends are shown. They are not clickable.
+- Closed boxes are closed on the line page (the cabinet white, the camera box black; owner,
+  step 17); the first click opens their page, where they are see-through with their inside parts
+  shown (owner, step 17; in step 12 the camera box opened only one page later, on the Color
+  page).
 - Orbit camera with limits (no going under the table). Each page frames its own subject.
 - Hover highlights an object and shows its name. Click navigates.
 - `pending` parts render as a translucent placeholder with a "pending" tag.
@@ -187,8 +212,8 @@ header while the data source is the simulator.
 
 The badge (owner, step 14):
 - Shown while at least one sensor's latest reading came from the simulator (`source: sim`), with
-  how many out of every sensor in `machine.json`: "SIMULATION 12 of 60 sensors" ("12/60" on phones;
-  screen readers always get the full count).
+  how many out of every sensor in `machine.json`: "SIMULATION 12 of 54 sensors" ("12/54" on phones;
+  screen readers always get the full count). 54 since step 17 (60 before).
 - In the header, between the breadcrumbs and the language switch, on the line pages (where live
   data is shown; customers never reach them). Hidden before the first data and when every latest
   reading is from hardware. It stays when the simulator stops: the values on screen are still the

@@ -127,6 +127,65 @@ describe('machine.json cross-reference rules', () => {
     );
   });
 
+  it('rejects a link to a part that does not exist, or through one (owner, step 17)', () => {
+    expectIssue(
+      (m) => {
+        const tube = m.links?.find((l) => l.id === 'tubeBase');
+        if (tube) tube.via = ['noSuchPump'];
+      },
+      'links[tubeBase].via[0]',
+      /unknown component "noSuchPump"/,
+    );
+    expectIssue(
+      (m) => {
+        const cable = m.links?.find((l) => l.id === 'ethernetPi');
+        if (cable) cable.to = 'nowhere';
+      },
+      'links[ethernetPi].to',
+      /unknown component "nowhere"/,
+    );
+  });
+
+  it('rejects a station view that names a missing or wrong sensor (owner, step 17)', () => {
+    const stations = (m: MachineJson) =>
+      (m.conveyor as { stations: { id: string; container?: Record<string, unknown> }[] }).stations;
+    expectIssue(
+      (m) => {
+        const filling = stations(m).find((s) => s.id === 'filling');
+        if (filling?.container) filling.container.present = 'nothing.here';
+      },
+      'conveyor.stations[filling].container.present',
+      /unknown sensor "nothing\.here"/,
+    );
+    expectIssue(
+      (m) => {
+        const filling = stations(m).find((s) => s.id === 'filling');
+        if (filling?.container) filling.container.mass = 'mixer.rpm';
+      },
+      'conveyor.stations[filling].container.mass',
+      /not a mass in g/,
+    );
+    expectIssue(
+      (m) => {
+        const check = stations(m).find((s) => s.id === 'checkCap');
+        if (check?.container) check.container.lid = { sensor: 'check.decision', code: 7 };
+      },
+      'conveyor.stations[checkCap].container.lid.code',
+      /has no code 7/,
+    );
+  });
+
+  it('rejects two links with one id', () => {
+    expectIssue(
+      (m) => {
+        const first = m.links?.[0];
+        if (first) m.links?.push({ ...first });
+      },
+      'links[tubeDyeC]',
+      /duplicate link id/,
+    );
+  });
+
   it('rejects the reserved subsection id "part"', () => {
     expectIssue(
       (m) => {

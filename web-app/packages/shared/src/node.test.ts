@@ -15,7 +15,7 @@ const localesDir = join(configDir, 'locales');
 describe('node file loaders', () => {
   it('loads and validates the real config files together', () => {
     const { machine, locales } = loadConfigFiles(machinePath, localesDir);
-    expect(machine.components).toHaveLength(103);
+    expect(machine.components).toHaveLength(130);
     expect(locales.en['part.vessel']).toBe('Mixing vessel');
     expect(locales.ar['part.vessel']).toBe('وعاء الخلط');
   });

@@ -65,6 +65,19 @@ describe('machine.json schema', () => {
     );
   });
 
+  it('rejects a liquid in a hollow box (only a solid box shows one, like the flow cell window)', () => {
+    expectIssue(
+      (m) => {
+        component(m, 'colorBox').geometry = {
+          ...(component(m, 'colorBox').geometry as object),
+          liquid: { colorRef: 'mix', level: 1 },
+        };
+      },
+      'components[colorBox].geometry.liquid',
+      /a hollow box cannot hold a liquid/,
+    );
+  });
+
   it('rejects a hollow box without wallThickness', () => {
     expectIssue(
       (m) => {

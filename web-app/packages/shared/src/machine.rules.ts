@@ -78,7 +78,7 @@ export function checkMachineRules(machine: Machine): Issue[] {
       if (hasParentCycle(c, components)) add(`${path}.parent`, 'parent chain loops back');
     }
 
-    const level = c.geometry.shape === 'cylinder' ? c.geometry.liquid?.levelSource : undefined;
+    const level = c.geometry.liquid?.levelSource;
     if (level) {
       const ref = sensors.get(level.sensor);
       if (!ref)
@@ -97,10 +97,62 @@ export function checkMachineRules(machine: Machine): Issue[] {
     }
   });
 
+  // --- links: unique ids, and both ends and every part on the way exist ---
+  const linkIds = new Set<string>();
+  for (const l of machine.links) {
+    const path = `links[${l.id}]`;
+    if (linkIds.has(l.id)) add(path, 'duplicate link id');
+    linkIds.add(l.id);
+    for (const [key, ref] of [
+      ['from', l.from],
+      ['to', l.to],
+      ...(l.via ?? []).map((v, i) => [`via[${String(i)}]`, v] as const),
+    ] as const) {
+      if (!components.has(ref)) add(`${path}.${key}`, `unknown component "${ref}"`);
+    }
+    if (l.from === l.to) add(`${path}.to`, 'a link needs two different ends');
+  }
+
+  const running = sensors.get(machine.conveyor.runningSensor);
+  if (!running) {
+    add('conveyor.runningSensor', `unknown sensor "${machine.conveyor.runningSensor}"`);
+  } else if (running.sensor.kind !== 'digital') {
+    add('conveyor.runningSensor', `sensor "${machine.conveyor.runningSensor}" is not digital`);
+  }
+
   const stationIds = new Set<string>();
   for (const station of machine.conveyor.stations) {
-    if (stationIds.has(station.id)) add(`conveyor.stations[${station.id}]`, 'duplicate station id');
+    const path = `conveyor.stations[${station.id}]`;
+    if (stationIds.has(station.id)) add(path, 'duplicate station id');
     stationIds.add(station.id);
+    const view = station.container;
+    if (!view) continue;
+    // Which kind of sensor each role needs.
+    const roles: [string, string | undefined, 'digital' | 'mass'][] = [
+      ['present', view.present, 'digital'],
+      ['raised', view.raised, 'digital'],
+      ['mass', view.mass, 'mass'],
+    ];
+    for (const [role, sensorId, need] of roles) {
+      if (sensorId === undefined) continue;
+      const ref = sensors.get(sensorId);
+      if (!ref) add(`${path}.container.${role}`, `unknown sensor "${sensorId}"`);
+      else if (need === 'digital' && ref.sensor.kind !== 'digital') {
+        add(`${path}.container.${role}`, `sensor "${sensorId}" is not digital`);
+      } else if (need === 'mass' && ref.sensor.unit !== 'g') {
+        add(`${path}.container.${role}`, `sensor "${sensorId}" is not a mass in g`);
+      }
+    }
+    if (view.lid && view.lid !== 'always') {
+      const ref = sensors.get(view.lid.sensor);
+      if (!ref) add(`${path}.container.lid.sensor`, `unknown sensor "${view.lid.sensor}"`);
+      else if (ref.sensor.valueLabels?.[String(view.lid.code)] === undefined) {
+        add(
+          `${path}.container.lid.code`,
+          `sensor "${view.lid.sensor}" has no code ${String(view.lid.code)}`,
+        );
+      }
+    }
   }
 
   return issues;
