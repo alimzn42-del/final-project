@@ -50,12 +50,12 @@ describe('a sensor’s value', () => {
       text: '1803.0',
       unit: 'g',
     });
-    expect(shownValue(sensor('cabinet.temp'), 31.26)).toEqual({
+    expect(shownValue(sensor('bigTank.volume'), 10.46)).toEqual({
       kind: 'number',
-      text: '31.3',
-      unit: '°C',
+      text: '10.5',
+      unit: 'L',
     });
-    expect(shownValue(sensor('magazine.count'), 12)).toEqual({
+    expect(shownValue(sensor('reject.count'), 12)).toEqual({
       kind: 'number',
       text: '12',
       unit: undefined,

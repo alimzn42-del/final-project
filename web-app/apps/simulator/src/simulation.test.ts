@@ -8,6 +8,7 @@ import {
 } from '@mixline/shared';
 import { describe, expect, it } from 'vitest';
 
+import { OUTSIDE } from './ledger.js';
 import { PLACE } from './plant.js';
 import { seededRandom } from './random.js';
 import { TICK_MS } from './schedule.js';
@@ -102,7 +103,7 @@ describe('one batch, start to finish (doc 01 batch logic)', () => {
     expect(size).toBeGreaterThanOrEqual(config.order.containersMin);
     expect(size).toBeLessThanOrEqual(config.order.containersMax);
     expect(counts).toEqual(Array.from({ length: size + 1 }, (_, i) => i));
-    const done = one.sim.plant.trayCups + one.sim.plant.rejects;
+    const done = one.sim.plant.delivered + one.sim.plant.rejects;
     expect(done).toBe(size);
   });
 
@@ -111,11 +112,12 @@ describe('one batch, start to finish (doc 01 batch logic)', () => {
     return ((e.at(-1)?.t ?? 0) - (e[0]?.t ?? 0)) / 60_000;
   };
 
-  it('takes about 4 minutes with 6 containers (owner, step 15), longer with more', () => {
-    // About 4.5 since the fill grew from 300 to 350 g (owner, step 17): more base to pump.
+  it('takes about 5 minutes with 6 containers, longer with more', () => {
+    // About 4 in step 15 (owner); about 5 since step 17: 350 g instead of 300 g per container,
+    // and the belt waits at its end until a worker takes each container.
     const six = minutes(run(1, {}, undefined, fixedSize(6)));
-    expect(six).toBeGreaterThan(3.5);
-    expect(six).toBeLessThan(5);
+    expect(six).toBeGreaterThan(4.5);
+    expect(six).toBeLessThan(5.8);
     const most = minutes(run(1, {}, undefined, fixedSize(config.order.containersMax)));
     expect(most).toBeGreaterThan(six);
   });
@@ -186,7 +188,8 @@ describe('masses balance (step 15 acceptance)', () => {
         0,
       ),
       cups: sim.plant.cups.reduce((s, c) => s + sim.plant.cupMass(c), 0),
-      tray: ledger.mass(PLACE.tray),
+      // Cups a worker took from the end of the belt (owner, step 17).
+      away: ledger.mass(OUTSIDE),
       rejects: ledger.mass(PLACE.rejectBox),
       cell: ledger.mass(PLACE.cell),
     });
@@ -201,11 +204,11 @@ describe('masses balance (step 15 acceptance)', () => {
         // With only dye and filling pumps moving, the vessel's change is exactly their sum.
         const dyeIn = before.tanks - now.tanks;
         const toCups =
-          now.cups + now.tray + now.rejects - (before.cups + before.tray + before.rejects);
+          now.cups + now.away + now.rejects - (before.cups + before.away + before.rejects);
         expect(now.vessel - before.vessel).toBeCloseTo(dyeIn - toCups, 6);
         if (dyeIn > 0 || toCups > 0) checked++;
       }
-      quiet = !(['base', 'drain', 'sample'] as const).some((p) => sim.plant.isRunning(p));
+      quiet = !(['base', 'water', 'drain', 'sample'] as const).some((p) => sim.plant.isRunning(p));
       before = now;
     }
     expect(checked).toBeGreaterThan(50);
@@ -213,16 +216,27 @@ describe('masses balance (step 15 acceptance)', () => {
 });
 
 describe('between batches: the service (owner, step 15)', () => {
-  const many = run(20, { random: seededRandom(11) });
-  const tray = machine.components.find((c) => c.id === 'batchTray')?.id;
+  // While a cup waits at the end of the belt, the belt stands still (owner, step 17).
+  let waitedAtEnd = 0;
+  const many = run(20, { random: seededRandom(11) }, (sim) => {
+    if (sim.plant.cupAtEnd() === undefined) return;
+    waitedAtEnd++;
+    expect(sim.plant.motorOn).toBe(false);
+  });
 
-  it('removes the full tray after every batch, in one refill message with batchId null', () => {
+  it('sends each refill in one message with batchId null', () => {
     const list = refills(many);
-    expect(list).toHaveLength(19);
-    for (const r of list) {
-      expect(r.batchId).toBeNull();
-      expect(r.items.find((i) => i.component === tray)?.unit).toBe('count');
-    }
+    expect(list.length).toBeGreaterThan(3);
+    for (const r of list) expect(r.batchId).toBeNull();
+  });
+
+  it('stops the belt while a cup waits at its end, until a worker takes it (owner, step 17)', () => {
+    expect(waitedAtEnd).toBeGreaterThan(100);
+    const [low, high] = config.outfeed.takeAwayS;
+    const ticks = (s: number) => (s * 1000) / TICK_MS;
+    const cups = many.sim.plant.delivered;
+    expect(waitedAtEnd).toBeGreaterThanOrEqual(cups * ticks(low) - cups);
+    expect(waitedAtEnd).toBeLessThanOrEqual(cups * ticks(high) + cups);
   });
 
   it('draws the size of each batch between the order limits (owner, step 17)', () => {
@@ -235,8 +249,7 @@ describe('between batches: the service (owner, step 15)', () => {
 
   it('rejects about 1 cup in 20, and the counts add up', () => {
     const p = many.sim.plant;
-    const trayCounts = refills(many).flatMap((r) => r.items.filter((i) => i.component === tray));
-    const good = trayCounts.reduce((s, i) => s + i.amount, 0) + p.trayCups;
+    const good = p.delivered;
     const emptiedRejects = refills(many)
       .flatMap((r) => r.items.filter((i) => i.component === 'rejectBox'))
       .reduce((s, i) => s + i.amount, 0);
@@ -247,26 +260,28 @@ describe('between batches: the service (owner, step 15)', () => {
     expect(rejected).toBeLessThanOrEqual(filled / 8);
   });
 
-  it('refills the big tank, cups and lids before they run out, and says how much', () => {
+  it('refills the big tank, the rinse water, cups and lids before they run out, and says how much', () => {
     const items = refills(many).flatMap((r) => r.items);
     const tank = items.filter((i) => i.component === 'bigTank');
     expect(tank.length).toBeGreaterThan(2);
     for (const i of tank) expect(i).toMatchObject({ action: 'refilled', unit: 'g' });
+    const rinse = items.filter((i) => i.component === 'waterContainer');
+    expect(rinse.length).toBeGreaterThan(1);
+    for (const i of rinse) expect(i).toMatchObject({ action: 'refilled', unit: 'g' });
     expect(items.some((i) => i.component === 'containerMagazine' && i.unit === 'count')).toBe(true);
     expect(items.some((i) => i.component === 'lidMagazine')).toBe(true);
     expect(items.some((i) => i.component === 'drainBucket' && i.action === 'emptied')).toBe(true);
   });
 
-  it('never lets a supply run out, so no float ever trips (alarms belong to the PLC)', () => {
-    const tripped = many.messages.filter(
+  it('never lets the container magazine run empty (alarms belong to the PLC)', () => {
+    const empty = many.messages.filter(
       (m) =>
         m.kind === 'reading' &&
-        ['bigTank.lowFloat', 'drainBucket.full', 'vessel.overflow'].includes(
-          byTopic.get(m.topic)?.id ?? '',
-        ) &&
+        byTopic.get(m.topic)?.id === 'magazine.empty' &&
         m.payload.value !== 0,
     );
-    expect(tripped).toEqual([]);
+    expect(empty).toEqual([]);
+    expect(many.sim.plant.ledger.mass(PLACE.waterContainer)).toBeGreaterThan(0);
   });
 
   it('the big tank rises by exactly the grams the message names', () => {
@@ -357,7 +372,9 @@ describe('connection and clock', () => {
     sim.advanceTo(T0 + 10_000);
     sim.reset();
     const again = sim.advanceTo(T0 + 10_000 + TICK_MS);
-    expect(again.filter((m) => m.kind === 'reading')).toHaveLength(60);
+    expect(again.filter((m) => m.kind === 'reading')).toHaveLength(
+      machine.components.flatMap((c) => c.sensors).length,
+    );
     expect(again.filter((m) => m.kind === 'state')).toHaveLength(1);
   });
 

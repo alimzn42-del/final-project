@@ -4,6 +4,10 @@
  * and every sensor reads what is really there, plus a little noise. The batch program (batch.ts)
  * drives it the way the PLC will.
  *
+ * Owner, step 17: until the tray is built, each cup stops at the end of the belt. While the end
+ * sensor sees it the belt stands still (the PLC's interlock), and a worker takes it away after a
+ * random delay; then the belt finishes its move.
+ *
  * Fault hook (doc 04): `Faults` changes the hidden truth (a worn dye pump delivers less per step,
  * a weak dye colours less, a scale reads off), so later work can test whether the twin notices.
  * Phase 1 runs without faults.
@@ -19,16 +23,16 @@ import { DYES, type Dye, type SimConfig, STACK_LIGHT_CODES } from './simConfig.j
 /** Places in the mass record. */
 export const PLACE = {
   bigTank: 'bigTank',
+  waterContainer: 'waterContainer',
   vessel: 'vessel',
   cell: 'sampleCell',
   drainBucket: 'drainBucket',
   rejectBox: 'rejectBox',
-  tray: 'tray',
   dyeTank: (d: Dye) => `dyeTank:${d}`,
   cup: (id: number) => `cup:${String(id)}`,
 } as const;
 
-export type Pump = 'base' | 'drain' | 'filling' | 'sample' | Dye;
+export type Pump = 'base' | 'water' | 'drain' | 'filling' | 'sample' | Dye;
 
 export interface Faults {
   /** Delivered ÷ calibrated grams per step, per dye pump (a worn pump is below 1). */
@@ -52,6 +56,8 @@ export interface Cup {
   x: number;
   /** Lifted on a station's platform: the belt slides under it. */
   lifted: boolean;
+  /** The lid dropped on it at the check station (owner, step 17). */
+  lid: boolean;
 }
 
 export class Plant {
@@ -72,22 +78,26 @@ export class Plant {
   private beltLeftMm = 0;
   cups: Cup[] = [];
   private nextCupId = 1;
-  fingersReleasing = false;
+  /** The infeed gate (a solenoid) is open: it releases one cup. */
+  gateOpen = false;
   fillingUp = false;
   checkUp = false;
+  /** The lid press reached the end of its stroke: its end switch is pressed. */
+  pressAtEnd = false;
   /** check.decision: 0 none, 1 pass, 2 reject. */
   decision: 0 | 1 | 2 = 0;
   cupsInMagazine: number;
   lids: number;
   rejects = 0;
-  trayCups = 0;
-  private trayPulseS = 0;
+  /** Cups a worker took from the end of the belt (they passed the check). */
+  delivered = 0;
+  /** When the worker takes the cup now waiting at the end of the belt. */
+  private takeAwayAtS: number | undefined;
   camera: { lab: Lab; deltaE: number } = { lab: CLEAR_WATER, deltaE: 0 };
   /** Each dye lot's real strength ÷ the nominal model (drawn at every dye refill). */
   readonly lot: PerDye = { ...NO_DYE };
-  /** A batch is running (stack light green, motors warm the cabinet). */
+  /** A batch is running (the stack light's colour). */
   batchRunning = false;
-  private cabinetC: number;
 
   constructor(
     private readonly line: Line,
@@ -98,6 +108,7 @@ export class Plant {
     const s = config.supplies;
     this.ledger = new Ledger({
       [PLACE.bigTank]: water(s.bigTankFullG),
+      [PLACE.waterContainer]: water(s.waterContainerFullG),
       ...Object.fromEntries(DYES.map((d) => [PLACE.dyeTank(d), dye(d, s.dyeTankFullG)])),
     });
     this.dyeSteps = Object.fromEntries(DYES.map((d) => [d, { left: 0, done: 0 }])) as Record<
@@ -107,14 +118,13 @@ export class Plant {
     for (const d of DYES) this.newLot(d);
     this.cupsInMagazine = s.cupsFull;
     this.lids = s.lidsFull;
-    this.cabinetC = config.cabinet.idleC + 1;
   }
 
   // ---- commands (what the PLC switches) ----
 
   /** Runs a pump that moves `grams` from one place to another, then stops by itself. */
   pump(
-    pump: 'base' | 'drain' | 'filling' | 'sample',
+    pump: 'base' | 'water' | 'drain' | 'filling' | 'sample',
     from: string,
     to: string,
     grams: number,
@@ -122,6 +132,7 @@ export class Plant {
     const p = this.config.pumps;
     const gPerS = {
       base: p.baseGPerS,
+      water: p.waterGPerS,
       drain: p.drainGPerS,
       filling: p.fillingGPerS,
       sample: p.sampleGPerS,
@@ -143,13 +154,19 @@ export class Plant {
     this.beltLeftMm = mm;
   }
 
+  /** The belt still has some of its move to make (it may be waiting at the end stop). */
   get beltMoving(): boolean {
     return this.beltLeftMm > 0;
   }
 
+  /** The motor runs: the belt has a move to make and no cup waits at the end stop. */
+  get motorOn(): boolean {
+    return this.beltMoving && this.cupAtEnd() === undefined;
+  }
+
   /** The feeder drops one cup from the magazine onto the belt. */
   releaseCup(): Cup {
-    const cup = { id: this.nextCupId++, x: this.line.stations.feeder, lifted: false };
+    const cup = { id: this.nextCupId++, x: this.line.stations.feeder, lifted: false, lid: false };
     this.cupsInMagazine--;
     this.cups.push(cup);
     return cup;
@@ -157,6 +174,17 @@ export class Plant {
 
   cupAt(x: number): Cup | undefined {
     return this.cups.find((c) => Math.abs(c.x - x) < 1);
+  }
+
+  /** The cup waiting at the end stop, if any (the end sensor sees it). */
+  cupAtEnd(): Cup | undefined {
+    return this.cups.find((c) => c.x >= this.line.stations.end - 1e-6);
+  }
+
+  /** One lid drops from the lid magazine onto the cup (owner, step 17: while it is lifted). */
+  dropLid(cup: Cup): void {
+    cup.lid = true;
+    this.lids--;
   }
 
   /** The pusher sends a cup down the chute into the reject box. */
@@ -220,25 +248,35 @@ export class Plant {
     const ramp = (this.config.mixer.rpm / this.config.mixer.rampS) * dtS;
     this.mixerRpm += Math.max(-ramp, Math.min(ramp, this.mixerTarget - this.mixerRpm));
 
-    if (this.beltLeftMm > 0) {
-      const mm = Math.min(this.config.conveyor.mmPerS * dtS, this.beltLeftMm);
-      this.beltLeftMm -= mm;
-      for (const cup of this.cups) if (!cup.lifted) cup.x += mm;
-      for (const cup of this.cups.filter((c) => c.x >= this.line.stations.beltEnd)) {
-        this.ledger.moveAll(PLACE.cup(cup.id), PLACE.tray);
-        this.ledger.forget(PLACE.cup(cup.id));
-        this.trayCups++;
-        this.trayPulseS = 1;
-      }
-      this.cups = this.cups.filter((c) => c.x < this.line.stations.beltEnd);
-      if (this.beltLeftMm < 1e-9) this.beltLeftMm = 0;
-    }
-    this.trayPulseS = Math.max(0, this.trayPulseS - dtS);
-
-    const c = this.config.cabinet;
-    const warm = this.batchRunning ? c.runningC : c.idleC;
-    this.cabinetC += ((warm - this.cabinetC) * dtS) / (c.minutes * 60);
+    this.moveCups(dtS);
+    this.takeAway();
     this.timeS += dtS;
+  }
+
+  /** The belt moves the cups on it; one reaching the end stop stops there, and so does the belt. */
+  private moveCups(dtS: number): void {
+    if (!this.motorOn) return;
+    const end = this.line.stations.end;
+    const riding = this.cups.filter((c) => !c.lifted);
+    const toEnd = Math.min(...riding.map((c) => end - c.x));
+    const mm = Math.min(this.config.conveyor.mmPerS * dtS, this.beltLeftMm, toEnd);
+    this.beltLeftMm -= mm;
+    for (const cup of riding) cup.x = Math.min(end, cup.x + mm);
+    if (this.beltLeftMm < 1e-9) this.beltLeftMm = 0;
+  }
+
+  /** A worker takes the cup at the end of the belt, a random few seconds after it arrived. */
+  private takeAway(): void {
+    const cup = this.cupAtEnd();
+    if (!cup) return;
+    const [low, high] = this.config.outfeed.takeAwayS;
+    this.takeAwayAtS ??= this.timeS + low + (high - low) * this.random();
+    if (this.timeS < this.takeAwayAtS) return;
+    this.ledger.takeAway(PLACE.cup(cup.id));
+    this.ledger.forget(PLACE.cup(cup.id));
+    this.cups = this.cups.filter((c) => c !== cup);
+    this.delivered++;
+    this.takeAwayAtS = undefined;
   }
 
   // ---- what the sensors read ----
@@ -254,6 +292,8 @@ export class Plant {
     if (this.flows.has('base')) {
       fast.push('vesselMass', 'basePumpCurrent', 'bigTankLevel', 'bigTankVolume');
     }
+    // The rinse water container has no sensor: only the vessel and the pump's current.
+    if (this.flows.has('water')) fast.push('vesselMass', 'waterPumpCurrent');
     for (const d of DYES) {
       if (this.dyeSteps[d].left <= 0) continue;
       fast.push('vesselMass', dyeRole(d, 'Mass'), dyeRole(d, 'PumpSteps'));
@@ -269,9 +309,10 @@ export class Plant {
   /** A scale's reading: the net liquid on it, its drift (fault hook) and noise. */
   weigh(which: 'vessel' | 'filling' | 'check' | Dye): number {
     const lifted = (x: number) => this.cups.find((c) => c.lifted && Math.abs(c.x - x) < 1);
+    // Tared with the empty cup: the liquid, and the lid once it dropped on (owner, step 17).
     const onPlatform = (up: boolean, x: number) => {
       const cup = up ? lifted(x) : undefined;
-      return cup ? this.cupMass(cup) : 0;
+      return cup ? this.cupMass(cup) + (cup.lid ? this.line.container.lidG : 0) : 0;
     };
     const net =
       which === 'vessel'
@@ -296,22 +337,19 @@ export class Plant {
     const tankG = this.ledger.mass(PLACE.bigTank);
     const levelMm = (tankG * 1000) / line.bigTankAreaMm2;
     const measuredLevel = Math.max(0, levelMm + jitter(random, n.levelMm));
-    const moving = this.beltMoving;
 
     const values: Partial<Record<Role, number>> = {
       bigTankLevel: measuredLevel,
       bigTankVolume: (measuredLevel * line.bigTankAreaMm2) / 1e6,
-      bigTankLowFloat: bit(levelMm < config.supplies.bigTankLowFloatMm),
-      magazineCount: this.cupsInMagazine,
+      magazineEmpty: bit(this.cupsInMagazine <= 0),
       vesselMass: this.weigh('vessel'),
       mixerRpm: this.mixerRpm > 0 ? around(this.mixerRpm) : 0,
-      // The batch never comes near the top of the 4.6 L vessel.
-      vesselOverflow: 0,
       basePumpOn: bit(this.flows.has('base')),
       basePumpCurrent: pumpCurrent(this.flows.has('base')),
+      waterPumpOn: bit(this.flows.has('water')),
+      waterPumpCurrent: pumpCurrent(this.flows.has('water')),
       drainPumpOn: bit(this.flows.has('drain')),
       drainPumpCurrent: pumpCurrent(this.flows.has('drain')),
-      drainBucketFull: bit(this.ledger.mass(PLACE.drainBucket) >= config.supplies.drainBucketFullG),
       fillingPumpOn: bit(this.flows.has('filling')),
       colorL: this.camera.lab[0],
       colorA: this.camera.lab[1],
@@ -320,29 +358,23 @@ export class Plant {
       colorWhiteRef: config.camera.whiteRef + jitter(random, 0.5),
       samplePumpOn: bit(this.sampleDir !== 0),
       samplePumpDir: this.sampleDir,
-      conveyorOn: bit(moving),
-      conveyorSpeedCmd: moving ? config.conveyor.mmPerS : 0,
-      conveyorSpeed: moving
-        ? around(config.conveyor.mmPerS * (1 - config.conveyor.slipPercent / 100))
-        : 0,
-      conveyorSlip: moving ? Math.max(0, around(config.conveyor.slipPercent)) : 0,
+      conveyorOn: bit(this.motorOn),
       feederPresent: bit(this.cupAt(line.stations.feeder) !== undefined),
-      feederFingers: bit(this.fingersReleasing),
+      feederGate: bit(this.gateOpen),
       fillingPresent: bit(this.cupAt(line.stations.filling) !== undefined),
       fillingPlatformUp: bit(this.fillingUp),
       // Net liquid (machine.json `measures: netLiquid`): tared with the empty cup on it.
       fillingMass: this.weigh('filling'),
       checkPresent: bit(this.cupAt(line.stations.check) !== undefined),
       checkPlatformUp: bit(this.checkUp),
-      // Net liquid: gross weight minus the container's tare (machine.json container.tareG).
+      // Net: gross weight minus the empty container (machine.json container bodyG).
       checkMass: this.weigh('check'),
       checkDecision: this.decision,
-      lidCount: this.lids,
+      pressEnd: bit(this.pressAtEnd),
+      // A counter the PLC keeps: it commands every reject (owner, step 17).
       rejectCount: this.rejects,
-      trayArrival: bit(this.trayPulseS > 0),
-      cabinetTemp: this.cabinetC + jitter(random, 0.05),
+      beltEndPresent: bit(this.cupAtEnd() !== undefined),
       estop: 0,
-      mode: 1,
       // Placeholder until the PLC defines the lights: the colours come from the tuning file.
       stackLight:
         STACK_LIGHT_CODES[this.batchRunning ? config.stackLight.running : config.stackLight.idle],

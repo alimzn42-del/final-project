@@ -64,7 +64,7 @@ describe('recipes that need a pump not installed are skipped (owner, step 16)', 
     // A part that is not there sends nothing; the black tank's own scale still does.
     expect([...heard].filter((id) => id.startsWith('dyeKPump.'))).toEqual([]);
     expect(heard.has('dyeK.mass')).toBe(true);
-    expect(heard.size).toBe(60 - 4);
+    expect(heard.size).toBe(machine.components.flatMap((c) => c.sensors).length - 4);
   });
 
   it('refuses to start when every recipe needs a pump not installed, listing each skip', () => {

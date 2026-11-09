@@ -53,16 +53,15 @@ const dyeSensors = <D extends Dye>(dye: D, letter: string) =>
 export const SENSOR_TABLE = {
   bigTankLevel: analog('bigTank.level', 'mm'),
   bigTankVolume: analog('bigTank.volume', 'L'),
-  bigTankLowFloat: digital('bigTank.lowFloat', 'normal', 'triggered'),
-  magazineCount: analog('magazine.count', 'count'),
+  magazineEmpty: digital('magazine.empty', 'no', 'yes'),
   vesselMass: analog('vessel.mass', 'g'),
   mixerRpm: analog('mixer.rpm', 'rpm'),
-  vesselOverflow: digital('vessel.overflow', 'normal', 'triggered'),
   basePumpOn: digital('basePump.on', 'off', 'on'),
   basePumpCurrent: analog('basePump.current', 'A'),
+  waterPumpOn: digital('waterPump.on', 'off', 'on'),
+  waterPumpCurrent: analog('waterPump.current', 'A'),
   drainPumpOn: digital('drainPump.on', 'off', 'on'),
   drainPumpCurrent: analog('drainPump.current', 'A'),
-  drainBucketFull: digital('drainBucket.full', 'normal', 'triggered'),
   fillingPumpOn: digital('fillingPump.on', 'off', 'on'),
   ...dyeSensors('cyan', 'C'),
   ...dyeSensors('magenta', 'M'),
@@ -76,11 +75,8 @@ export const SENSOR_TABLE = {
   samplePumpOn: digital('samplePump.on', 'off', 'on'),
   samplePumpDir: enumOf('samplePump.dir', { 0: 'stopped', 1: 'forward', [-1]: 'reverse' }),
   conveyorOn: digital('conveyor.on', 'off', 'on'),
-  conveyorSpeedCmd: analog('conveyor.speedCmd', 'mm/s'),
-  conveyorSpeed: analog('conveyor.speed', 'mm/s'),
-  conveyorSlip: analog('conveyor.slip', '%'),
   feederPresent: digital('feederArrival.present', 'empty', 'present'),
-  feederFingers: enumOf('feeder.fingers', { 0: 'holding', 1: 'releasing' }),
+  feederGate: digital('feeder.gate', 'closed', 'open'),
   fillingPresent: digital('fillingArrival.present', 'empty', 'present'),
   fillingPlatformUp: digital('filling.platformUp', 'down', 'up'),
   fillingMass: analog('filling.mass', 'g'),
@@ -88,12 +84,10 @@ export const SENSOR_TABLE = {
   checkPlatformUp: digital('check.platformUp', 'down', 'up'),
   checkMass: analog('check.mass', 'g'),
   checkDecision: enumOf('check.decision', { 0: 'none', 1: 'pass', 2: 'reject' }),
-  lidCount: analog('check.lidCount', 'count'),
+  pressEnd: digital('press.end', 'released', 'pressed'),
   rejectCount: analog('reject.count', 'count'),
-  trayArrival: digital('tray.arrival', 'empty', 'present'),
-  cabinetTemp: analog('cabinet.temp', 'C'),
+  beltEndPresent: digital('beltEnd.present', 'empty', 'present'),
   estop: digital('cabinet.estop', 'released', 'pressed'),
-  mode: enumOf('cabinet.mode', { 0: 'manual', 1: 'auto' }),
   stackLight: enumOf(
     'cabinet.stackLight',
     Object.fromEntries(Object.entries(STACK_LIGHT_CODES).map(([word, code]) => [code, word])),
@@ -107,6 +101,7 @@ export type Role = keyof typeof SENSOR_TABLE;
  */
 export const PART_TABLE = {
   bigTank: 'bigTank',
+  waterContainer: 'waterContainer',
   cyanTank: 'dyeCTank',
   magentaTank: 'dyeMTank',
   yellowTank: 'dyeYTank',
@@ -119,12 +114,11 @@ export const PART_TABLE = {
   lids: 'lidMagazine',
   drainBucket: 'drainBucket',
   rejectBox: 'rejectBox',
-  tray: 'batchTray',
 } as const;
 export type Part = keyof typeof PART_TABLE;
 
 /** Conveyor stations by their id in machine.json's conveyor block. */
-const STATIONS = { feeder: 'feeder', filling: 'filling', check: 'checkCap' } as const;
+const STATIONS = { feeder: 'feeder', filling: 'filling', check: 'checkCap', end: 'end' } as const;
 
 /** Everything the process needs from machine.json, checked. */
 export interface Line {
@@ -136,8 +130,18 @@ export interface Line {
   /** Floor area of the big tank, from its diameter: turns litres into a level. */
   bigTankAreaMm2: number;
   bigTankHeightMm: number;
-  /** Conveyor positions (x, mm): stations one pitch apart, then the belt end. */
-  stations: { feeder: number; filling: number; check: number; beltEnd: number; pitch: number };
+  /**
+   * Conveyor positions (x, mm): stations one pitch apart; where a container stops at the end of
+   * the belt (owner, step 17: until the tray is built), and the belt's end.
+   */
+  stations: {
+    feeder: number;
+    filling: number;
+    check: number;
+    end: number;
+    beltEnd: number;
+    pitch: number;
+  };
   /**
    * Dyes whose pump machine.json marks `installed: false` (owner, step 16): recipes that need
    * one are skipped.
@@ -186,6 +190,7 @@ export function bindLine(machine: Machine, config: SimConfig): Line {
     feeder: x(STATIONS.feeder),
     filling: x(STATIONS.filling),
     check: x(STATIONS.check),
+    end: x(STATIONS.end),
     beltEnd: machine.conveyor.endX,
     pitch: 0,
   };
@@ -196,6 +201,9 @@ export function bindLine(machine: Machine, config: SimConfig): Line {
   if (stations.beltEnd <= stations.check) {
     problems.push('conveyor: the belt must end after the check station');
   }
+  if (stations.end <= stations.check) {
+    problems.push('conveyor: the end stop must come after the check station');
+  }
 
   const sizes = {
     tankFull: config.supplies.bigTankFullG,
@@ -203,6 +211,9 @@ export function bindLine(machine: Machine, config: SimConfig): Line {
   };
   const container = containerSpec(machine.container);
   const tub = tubInside(container);
+  if (stations.end + container.topDiameter / 2 > stations.beltEnd + 1e-6) {
+    problems.push('conveyor: a container at the end stop would hang over the end of the belt');
+  }
   const { order } = config;
   // The largest batch the order settings allow, and the smallest (owner, step 17).
   const largestG = order.containersMax * order.fillG + config.batch.heelG;
@@ -217,8 +228,6 @@ export function bindLine(machine: Machine, config: SimConfig): Line {
       [sensors.fillingMass, order.fillG, 'order.fillG'],
       // The lid drops onto the check scale (owner, step 17).
       [sensors.checkMass, order.fillG + container.lidG, 'order.fillG with the lid'],
-      [sensors.magazineCount, config.supplies.cupsFull, 'supplies.cupsFull'],
-      [sensors.lidCount, config.supplies.lidsFull, 'supplies.lidsFull'],
       [sensors.rejectCount, config.supplies.rejectBoxFull, 'supplies.rejectBoxFull'],
       ...DYES.map(
         (d) =>

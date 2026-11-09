@@ -94,6 +94,7 @@ export const simConfigSchema = z.strictObject({
   }),
   pumps: z.strictObject({
     baseGPerS: positive,
+    waterGPerS: positive,
     drainGPerS: positive,
     fillingGPerS: positive,
     sampleGPerS: positive,
@@ -104,8 +105,16 @@ export const simConfigSchema = z.strictObject({
     notes,
   }),
   mixer: z.strictObject({ rpm: positive, rampS: positive, runS: atLeastZero, notes }),
-  conveyor: z.strictObject({ mmPerS: positive, slipPercent: z.number().min(0).lt(100), notes }),
-  stations: z.strictObject({ servoS: positive, settleS: atLeastZero, notes }),
+  /** One speed: the belt only runs or stops (parts list 2026-11-09). */
+  conveyor: z.strictObject({ mmPerS: positive, notes }),
+  stations: z.strictObject({ servoS: positive, settleS: atLeastZero, pressS: positive, notes }),
+  /** Owner, step 17: a worker takes each container from the end of the belt. */
+  outfeed: z.strictObject({
+    takeAwayS: z.tuple([atLeastZero, atLeastZero]).refine(([low, high]) => low <= high, {
+      message: 'the first number is the smallest',
+    }),
+    notes,
+  }),
   check: z.strictObject({
     toleranceG: positive,
     shortFillChance: z.number().min(0).max(1),
@@ -116,7 +125,8 @@ export const simConfigSchema = z.strictObject({
   }),
   supplies: z.strictObject({
     bigTankFullG: positive,
-    bigTankLowFloatMm: atLeastZero,
+    bigTankKeepG: atLeastZero,
+    waterContainerFullG: positive,
     dyeTankFullG: positive,
     dyeTankKeepG: atLeastZero,
     cupsFull: z.int().positive(),
@@ -126,7 +136,6 @@ export const simConfigSchema = z.strictObject({
     serviceS: atLeastZero,
     notes,
   }),
-  cabinet: z.strictObject({ idleC: z.number(), runningC: z.number(), minutes: positive, notes }),
   /** Placeholder until the PLC defines the lights: the value words of cabinet.stackLight. */
   stackLight: z.strictObject({
     running: z.enum(STACK_LIGHTS),

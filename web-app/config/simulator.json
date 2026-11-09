@@ -33,7 +33,7 @@
     "emptyBelowG": 5,
     "residueG": 3,
     "clearDeltaE": 1.0,
-    "notes": "Between colours (doc 01): drain, then fill with water, mix and drain, twice; the camera confirms clear water (ΔE00 to clear water <= clearDeltaE) on the last rinse. The drain pump runs until the vessel reads below emptyBelowG; residueG stays on the walls."
+    "notes": "Between colours (doc 01): drain, then fill with water from the rinse water container (water pump, parts list 2026-11-09), mix and drain, twice; the camera confirms clear water (ΔE00 to clear water <= clearDeltaE) on the last rinse. The drain pump runs until the vessel reads below emptyBelowG; residueG stays on the walls."
   },
   "dyes": {
     "absorbance": {
@@ -54,6 +54,7 @@
   },
   "pumps": {
     "baseGPerS": 60,
+    "waterGPerS": 60,
     "drainGPerS": 60,
     "fillingGPerS": 50,
     "sampleGPerS": 9,
@@ -61,14 +62,22 @@
     "dyeStepsPerS": 1600,
     "dyeGPerStep": 0.0003,
     "dyeLoad": 200,
-    "notes": "Flow rates while running. Dye pumps dose by volume: steps x dyeGPerStep (doc 02), at dyeStepsPerS. currentA: the R385 pumps' current. dyeLoad: the TMC2209 load reading while running."
+    "notes": "Flow rates while running. Dye pumps dose by volume: steps x dyeGPerStep (doc 02), at dyeStepsPerS. currentA: the R385 pumps' current (base, water, drain). dyeLoad: the TMC2209 load reading while running."
   },
   "mixer": { "rpm": 180, "rampS": 1.5, "runS": 5 },
-  "conveyor": { "mmPerS": 100, "slipPercent": 1.5 },
+  "conveyor": {
+    "mmPerS": 100,
+    "notes": "The belt's one speed: the motor only runs or stops, through a relay (parts list 2026-11-09). A JGB37-520 at 60-100 rpm on the 30 mm roller gives about 95-155 mm/s; 100 is an estimate."
+  },
   "stations": {
     "servoS": 0.5,
     "settleS": 0.5,
-    "notes": "servoS: time for a servo move (feeder fingers, platforms, pusher, lid). settleS: time for a weight to settle before it is read."
+    "pressS": 0.5,
+    "notes": "servoS: time for a servo or solenoid move (infeed gate, platforms, pusher, lid drop). settleS: time for a weight to settle before it is read. pressS: the lid press's stroke, each way (car central-lock actuator)."
+  },
+  "outfeed": {
+    "takeAwayS": [3, 8],
+    "notes": "Owner, step 17: until the tray is built, each container stops at the end of the belt, the belt stops while the end sensor sees it, and a worker takes it away after a random delay between these two numbers of seconds (estimates)."
   },
   "check": {
     "toleranceG": 5,
@@ -78,7 +87,8 @@
   },
   "supplies": {
     "bigTankFullG": 14000,
-    "bigTankLowFloatMm": 30,
+    "bigTankKeepG": 1000,
+    "waterContainerFullG": 6000,
     "dyeTankFullG": 600,
     "dyeTankKeepG": 50,
     "cupsFull": 24,
@@ -86,9 +96,8 @@
     "drainBucketFullG": 10000,
     "rejectBoxFull": 10,
     "serviceS": 10,
-    "notes": "Owner, step 15: between batches the line is serviced as if by a worker: the full tray is removed, and whatever cannot cover the next batch is refilled to full or emptied (one batch/refill message lists it all). The simulator never lets a supply run out, so it never trips a float: alarms belong to the PLC."
+    "notes": "Owner, step 15: between batches the line is serviced as if by a worker: whatever cannot cover the next batch is refilled to full or emptied (one batch/refill message lists it all). bigTankKeepG: the base the big tank keeps so its pump never runs dry. The line has no floats (owner, step 17) and the simulator never lets a supply run out: alarms belong to the PLC."
   },
-  "cabinet": { "idleC": 25, "runningC": 28, "minutes": 10 },
   "stackLight": {
     "running": "green",
     "idle": "yellow",
@@ -99,6 +108,6 @@
     "levelMm": 1,
     "currentA": 0.02,
     "share": 0.01,
-    "notes": "Measurement noise: scales, the ultrasonic level, pump currents, and a share of the value for speeds and the dye pump load."
+    "notes": "Measurement noise: scales, the ultrasonic level, pump currents, and a share of the value for the mixer speed and the dye pumps' speed and load."
   }
 }

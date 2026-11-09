@@ -49,11 +49,12 @@ export type SensorJson = Record<string, unknown> & { id: string };
  */
 export const TEST_LIMITS: Record<string, Record<string, number>> = {
   'dyeC.mass': { warnBelow: 150, faultBelow: 60 },
-  'conveyor.slip': { warnAbove: 5, faultAbove: 10 },
+  'mixer.rpm': { warnAbove: 250, faultAbove: 280 },
   'filling.mass': { warnBelow: 341, warnAbove: 359 },
   'check.mass': { warnBelow: 341, warnAbove: 359 },
   'color.deltaE': { warnAbove: 3, faultAbove: 6 },
   'cabinet.estop': { faultWhen: 1 },
+  'conveyor.on': { faultWhen: 1 },
 };
 
 /** The real machine.json plus TEST_LIMITS on a few sensors. */

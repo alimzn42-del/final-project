@@ -5,6 +5,7 @@
 // alone, then starts it again (also when a check fails).
 // Exits with code 1 if any check fails.
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { io } from 'socket.io-client';
@@ -18,7 +19,13 @@ const env = process.env;
 const origin = `http://localhost:${env.PORT ?? '3000'}`;
 const api = `${origin}/api`;
 const PATH = '/api/socket.io';
-const SENSORS = 60;
+/** Every sensor of an installed part in machine.json (a part not installed sends nothing). */
+const machine = JSON.parse(
+  readFileSync(new URL('../config/machine.json', import.meta.url), 'utf8'),
+);
+const SENSORS = machine.components
+  .filter((c) => c.installed !== false)
+  .flatMap((c) => c.sensors).length;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

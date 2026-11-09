@@ -6,7 +6,7 @@
  * - `pnpm sim:check`: 12 s. Every sensor topic, every payload against machine.json, source "sim",
  *   the publishing intervals, the retained machine state, and the format of any batch message.
  * - `pnpm sim:check --cycle`: waits for the next batch to start and listens to it from start to
- *   finish (up to about 13 minutes), then checks the steps and that the masses balance across
+ *   finish (up to about 15 minutes), then checks the steps and that the masses balance across
  *   the scales, using only the published values (cycle.ts). No login needed: MQTT only.
  */
 import {
@@ -28,10 +28,10 @@ import { loadSimConfig } from './simConfig.js';
 
 const LISTEN_MS = 12_000;
 /**
- * A batch takes about 3.75 (4 containers) to 6 minutes (10 containers, owner step 17), plus the
+ * A batch takes about 4 (4 containers) to 7 minutes (10 containers, owner step 17), plus the
  * pause and the service: this waits for the next one to start, then hears it all.
  */
-const CYCLE_LISTEN_MS = 14 * 60_000;
+const CYCLE_LISTEN_MS = 16 * 60_000;
 /** Allowed lateness for a message, on top of its period (timers and network). */
 const SLACK_MS = 1_000;
 
@@ -114,7 +114,7 @@ client.on('message', (topic, body) => {
     heard.splice(0, heard.length - 2000);
 });
 
-/** Cycle mode: report the batch's progress and stop after the refill that follows it. */
+/** Cycle mode: report the batch's progress and stop just after it finishes. */
 function follow(event: string, payload: { batchId: string | null; step?: string }): void {
   if (event === 'started' && cycleStarted === undefined) {
     cycleStarted = payload.batchId ?? '';
@@ -122,11 +122,11 @@ function follow(event: string, payload: { batchId: string | null; step?: string 
   } else if (cycleStarted !== undefined && payload.batchId === cycleStarted && event === 'step') {
     if (payload.step && payload.step !== lastStep) process.stdout.write(`  ${payload.step}`);
     lastStep = payload.step;
-  } else if (event === 'finished' && payload.batchId === cycleStarted) {
+  } else if (event === 'finished' && payload.batchId === cycleStarted && !cycleFinished) {
     cycleFinished = true;
-    console.log(`\nbatch ${cycleStarted} finished; waiting for the refill message...`);
-  } else if (event === 'refill' && cycleFinished) {
-    setTimeout(report, 500);
+    console.log(`\nbatch ${cycleStarted} finished`);
+    // A moment for the last readings after the batch (the settled scales).
+    setTimeout(report, 2500);
   }
 }
 

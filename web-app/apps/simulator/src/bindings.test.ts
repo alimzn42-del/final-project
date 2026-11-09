@@ -23,21 +23,24 @@ describe('the sensor table against machine.json', () => {
     expect(line.container).toMatchObject({ baseDiameter: 79, topDiameter: 113, height: 77 });
     expect(brimVolume(line.tub)).toBeGreaterThan(450);
     expect(brimVolume(line.tub)).toBeLessThan(550);
+    // The end stop: one container radius before the belt's end (owner, step 17).
     expect(line.stations).toEqual({
       feeder: 250,
       filling: 550,
       check: 850,
+      end: 1293.5,
       beltEnd: 1350,
       pitch: 300,
     });
+    expect(line.parts.waterContainer.id).toBe('waterContainer');
     // Ø250: 1 L of water stands 20.4 mm high.
     expect(1e6 / line.bigTankAreaMm2).toBeCloseTo(20.37, 2);
   });
 
-  it('covers all 60 sensors of this line, so none falls back to simulator v1', () => {
+  it('covers all 54 sensors of this line, so none falls back to simulator v1', () => {
     const ids = new Set(Object.values(SENSOR_TABLE).map((s) => s.id));
     const all = realMachine().components.flatMap((c) => c.sensors.map((s) => s.id));
-    expect(all).toHaveLength(60);
+    expect(all).toHaveLength(54);
     expect(all.filter((id) => !ids.has(id))).toEqual([]);
     expect(ids.size).toBe(Object.keys(SENSOR_TABLE).length);
     expect(new Set(Object.values(PART_TABLE)).size).toBe(Object.keys(PART_TABLE).length);
@@ -76,9 +79,9 @@ describe('the sensor table against machine.json', () => {
 
   it("refuses supplies that would leave a sensor's sim range", () => {
     const raw = rawSimConfig();
-    raw.supplies = { ...raw.supplies, cupsFull: 40, bigTankFullG: 20000 };
+    raw.supplies = { ...raw.supplies, rejectBoxFull: 40, bigTankFullG: 20000 };
     expect(bind(rawMachine(), parseSimConfig(raw))).toThrow(
-      /cupsFull: 40 is above magazine\.count's sim range[\s\S]*more than the big tank holds/,
+      /rejectBoxFull: 40 is above reject\.count's sim range[\s\S]*more than the big tank holds/,
     );
   });
 

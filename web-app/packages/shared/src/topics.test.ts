@@ -101,9 +101,9 @@ describe('parseTopic', () => {
 });
 
 describe('sensorsByTopic', () => {
-  it('maps all 60 sensor topics to their sensors', () => {
+  it('maps every sensor topic to its sensor', () => {
     const map = sensorsByTopic(machine);
-    expect(map.size).toBe(60);
+    expect(map.size).toBe(machine.components.flatMap((c) => c.sensors).length);
     expect(map.get('lab/mixline/mixer/sensors/mass')?.id).toBe('vessel.mass');
     expect(map.get('lab/mixline/check/sensors/decision')?.id).toBe('check.decision');
   });

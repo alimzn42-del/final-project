@@ -81,6 +81,10 @@
         "x": 850
       },
       {
+        "id": "end",
+        "x": 1293.5
+      },
+      {
         "id": "tray",
         "x": 1430
       }
@@ -94,6 +98,10 @@
         {
           "id": "bigTank",
           "labelKey": "part.bigTank"
+        },
+        {
+          "id": "waterContainer",
+          "labelKey": "part.waterContainer"
         },
         {
           "id": "containerMagazine",
@@ -268,7 +276,7 @@
           "labelKey": "sensor.volume_l"
         }
       ],
-      "notes": "Clear cylinder with screw lid. Fallback size D220 x H270. Outlet on side wall near bottom, facing the mixing vessel.",
+      "notes": "Clear cylinder with screw lid. Fallback size D220 x H270. Outlet on side wall near bottom, facing the mixing vessel. No float (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -304,17 +312,17 @@
       "anchor": "bottom"
     },
     {
-      "id": "bigTankLowFloat",
-      "type": "floatSwitch",
-      "labelKey": "part.lowFloat",
+      "id": "waterContainer",
+      "type": "tank",
+      "labelKey": "part.waterContainer",
       "section": "supply",
-      "subsection": "bigTank",
-      "status": "confirmed",
+      "subsection": "waterContainer",
+      "status": "estimated",
       "installed": true,
       "position": [
-        260,
-        40,
-        620
+        180,
+        -750,
+        650
       ],
       "rotationDeg": [
         0,
@@ -323,30 +331,12 @@
       ],
       "geometry": {
         "shape": "cylinder",
-        "diameter": 20,
-        "height": 30
+        "diameter": 200,
+        "height": 250
       },
-      "material": "printed",
-      "sensors": [
-        {
-          "id": "bigTank.lowFloat",
-          "station": "supply",
-          "variable": "low_float",
-          "unit": "bool",
-          "kind": "digital",
-          "sim": {
-            "min": 0,
-            "max": 1,
-            "nominal": 0
-          },
-          "labelKey": "sensor.low_float",
-          "valueLabels": {
-            "0": "value.normal",
-            "1": "value.triggered"
-          }
-        }
-      ],
-      "parent": "bigTank",
+      "material": "plastic",
+      "sensors": [],
+      "notes": "External rinse water container on the floor (parts list 2026-11-09). No scale and no level sensor, so the scene shows no level. Size estimated.",
       "anchor": "bottom"
     },
     {
@@ -373,23 +363,57 @@
         "height": 300
       },
       "material": "clearPlastic",
+      "sensors": [],
+      "notes": "Vertical tube of nested empty containers above the feeder station. Size depends on container.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "magazineSensor",
+      "type": "proximitySensor",
+      "labelKey": "part.magazineSensor",
+      "section": "supply",
+      "subsection": "containerMagazine",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        250,
+        190,
+        180
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          20,
+          20,
+          15
+        ]
+      },
+      "material": "electronics",
       "sensors": [
         {
-          "id": "magazine.count",
+          "id": "magazine.empty",
           "station": "supply",
-          "variable": "magazine_count",
-          "unit": "count",
-          "kind": "analog",
-          "decimals": 0,
+          "variable": "magazine_empty",
+          "unit": "bool",
+          "kind": "digital",
           "sim": {
             "min": 0,
-            "max": 30,
-            "nominal": 20
+            "max": 1,
+            "nominal": 0
           },
-          "labelKey": "sensor.magazine_count"
+          "labelKey": "sensor.magazine_empty",
+          "valueLabels": {
+            "0": "value.no",
+            "1": "value.yes"
+          }
         }
       ],
-      "notes": "Vertical tube of nested empty containers above the feeder station. Size depends on container.",
+      "notes": "E3F-DS30C4 proximity sensor near the bottom of the magazine: 1 when no container is left (parts list 2026-11-09). Position estimated.",
       "anchor": "bottom"
     },
     {
@@ -755,53 +779,6 @@
       "anchor": "bottom"
     },
     {
-      "id": "vesselOverflowFloat",
-      "type": "floatSwitch",
-      "labelKey": "part.overflowFloat",
-      "section": "mixingColor",
-      "subsection": "mixing",
-      "status": "confirmed",
-      "installed": true,
-      "position": [
-        590,
-        390,
-        600
-      ],
-      "rotationDeg": [
-        0,
-        0,
-        0
-      ],
-      "geometry": {
-        "shape": "cylinder",
-        "diameter": 20,
-        "height": 30
-      },
-      "material": "printed",
-      "sensors": [
-        {
-          "id": "vessel.overflow",
-          "station": "mixer",
-          "variable": "overflow_float",
-          "unit": "bool",
-          "kind": "digital",
-          "sim": {
-            "min": 0,
-            "max": 1,
-            "nominal": 0
-          },
-          "labelKey": "sensor.overflow_float",
-          "valueLabels": {
-            "0": "value.normal",
-            "1": "value.triggered"
-          }
-        }
-      ],
-      "notes": "Hangs from the lid.",
-      "parent": "vessel",
-      "anchor": "bottom"
-    },
-    {
       "id": "basePump",
       "type": "diaphragmPump",
       "labelKey": "part.basePump",
@@ -862,6 +839,69 @@
         }
       ],
       "notes": "R385 12 V diaphragm, big tank to vessel.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "waterPump",
+      "type": "diaphragmPump",
+      "labelKey": "part.waterPump",
+      "section": "mixingColor",
+      "subsection": "mixing",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        355,
+        0,
+        420
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          90,
+          40,
+          40
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "waterPump.on",
+          "station": "mixer",
+          "variable": "water_pump_on",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.water_pump_on",
+          "valueLabels": {
+            "0": "value.off",
+            "1": "value.on"
+          }
+        },
+        {
+          "id": "waterPump.current",
+          "station": "mixer",
+          "variable": "water_pump_current",
+          "unit": "A",
+          "kind": "analog",
+          "decimals": 2,
+          "sim": {
+            "min": 0,
+            "max": 1.2,
+            "nominal": 0.6
+          },
+          "labelKey": "sensor.water_pump_current"
+        }
+      ],
+      "notes": "R385 12 V diaphragm, rinse water container to vessel (parts list 2026-11-09). Size as the base pump, estimated.",
       "anchor": "bottom"
     },
     {
@@ -951,26 +991,8 @@
         "height": 300
       },
       "material": "plastic",
-      "sensors": [
-        {
-          "id": "drainBucket.full",
-          "station": "mixer",
-          "variable": "drain_full_float",
-          "unit": "bool",
-          "kind": "digital",
-          "sim": {
-            "min": 0,
-            "max": 1,
-            "nominal": 0
-          },
-          "labelKey": "sensor.drain_full_float",
-          "valueLabels": {
-            "0": "value.normal",
-            "1": "value.triggered"
-          }
-        }
-      ],
-      "notes": "On the floor under the table, back-right.",
+      "sensors": [],
+      "notes": "On the floor under the table, back-right. No float (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -3102,65 +3124,23 @@
             "0": "value.off",
             "1": "value.on"
           }
-        },
-        {
-          "id": "conveyor.speedCmd",
-          "station": "conveyor",
-          "variable": "speed_cmd",
-          "unit": "mm/s",
-          "kind": "analog",
-          "decimals": 0,
-          "sim": {
-            "min": 0,
-            "max": 120,
-            "nominal": 60
-          },
-          "labelKey": "sensor.speed_cmd"
-        },
-        {
-          "id": "conveyor.speed",
-          "station": "conveyor",
-          "variable": "speed_meas",
-          "unit": "mm/s",
-          "kind": "analog",
-          "decimals": 0,
-          "sim": {
-            "min": 0,
-            "max": 120,
-            "nominal": 59
-          },
-          "labelKey": "sensor.speed_meas"
-        },
-        {
-          "id": "conveyor.slip",
-          "station": "conveyor",
-          "variable": "slip",
-          "unit": "%",
-          "kind": "analog",
-          "decimals": 1,
-          "sim": {
-            "min": 0,
-            "max": 20,
-            "nominal": 1.5
-          },
-          "labelKey": "sensor.slip"
         }
       ],
-      "notes": "One motor drives both belts. PID speed loop on the AS5600 reading.",
+      "notes": "JGB37-520 12 V gear motor, 60-100 rpm, one motor for both belts. Run/stop only: the PLC switches it through a relay; no speed control and no rotation sensor (parts list 2026-11-09).",
       "anchor": "bottom"
     },
     {
-      "id": "conveyorEncoder",
-      "type": "encoder",
-      "labelKey": "part.encoder",
+      "id": "endArrival",
+      "type": "proximitySensor",
+      "labelKey": "part.endSensor",
       "section": "conveyor",
       "subsection": null,
-      "status": "confirmed",
+      "status": "estimated",
       "installed": true,
       "position": [
-        1350,
-        85,
-        325
+        1293.5,
+        90,
+        170
       ],
       "rotationDeg": [
         0,
@@ -3172,12 +3152,30 @@
         "size": [
           20,
           20,
-          10
+          15
         ]
       },
       "material": "electronics",
-      "sensors": [],
-      "notes": "AS5600 on the idler roller.",
+      "sensors": [
+        {
+          "id": "beltEnd.present",
+          "station": "conveyor",
+          "variable": "end_arrival",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.arrival",
+          "valueLabels": {
+            "0": "value.empty",
+            "1": "value.present"
+          }
+        }
+      ],
+      "notes": "E3F-DS30C4 at the end of the belt (parts list 2026-11-09). Until the tray is built, containers stop here; while it sees one, the belt stops until it is taken away (owner, step 17).",
       "anchor": "bottom"
     },
     {
@@ -3229,17 +3227,17 @@
       "anchor": "bottom"
     },
     {
-      "id": "feederFingers",
-      "type": "fingerRelease",
-      "labelKey": "part.fingerRelease",
+      "id": "infeedGate",
+      "type": "solenoid",
+      "labelKey": "part.infeedGate",
       "section": "conveyor",
       "subsection": "feeder",
-      "status": "pending",
+      "status": "estimated",
       "installed": true,
       "position": [
         250,
-        170,
-        315
+        182,
+        322
       ],
       "rotationDeg": [
         0,
@@ -3250,31 +3248,31 @@
         "shape": "box",
         "size": [
           40,
-          60,
+          25,
           30
         ]
       },
-      "material": "printed",
+      "material": "metal",
       "sensors": [
         {
-          "id": "feeder.fingers",
+          "id": "feeder.gate",
           "station": "feeder",
-          "variable": "finger_state",
-          "unit": "",
-          "kind": "enum",
+          "variable": "gate",
+          "unit": "bool",
+          "kind": "digital",
           "sim": {
             "min": 0,
             "max": 1,
             "nominal": 0
           },
-          "labelKey": "sensor.finger_state",
+          "labelKey": "sensor.gate",
           "valueLabels": {
-            "0": "value.holding",
-            "1": "value.releasing"
+            "0": "value.closed",
+            "1": "value.open"
           }
         }
       ],
-      "notes": "Two fingers on one rocking servo arm grab the rim lip. Never both open.",
+      "notes": "Push-pull solenoid 12 V at the bottom of the magazine; opens to release one container (parts list 2026-11-09, replaces the two-finger release). The PLC switches it through a relay. Size estimated.",
       "anchor": "bottom"
     },
     {
@@ -3722,22 +3720,7 @@
         "height": 220
       },
       "material": "clearPlastic",
-      "sensors": [
-        {
-          "id": "check.lidCount",
-          "station": "check",
-          "variable": "lid_count",
-          "unit": "count",
-          "kind": "analog",
-          "decimals": 0,
-          "sim": {
-            "min": 0,
-            "max": 30,
-            "nominal": 20
-          },
-          "labelKey": "sensor.lid_count"
-        }
-      ],
+      "sensors": [],
       "notes": "Same two-finger mechanism as the feeder. Lid drops through a guide funnel.",
       "anchor": "bottom"
     },
@@ -3770,6 +3753,55 @@
       "material": "printed",
       "sensors": [],
       "notes": "Press plate pushes the lid down.",
+      "anchor": "bottom"
+    },
+    {
+      "id": "pressEndSwitch",
+      "type": "limitSwitch",
+      "labelKey": "part.pressEndSwitch",
+      "section": "conveyor",
+      "subsection": "checkCap",
+      "status": "estimated",
+      "installed": true,
+      "position": [
+        873,
+        300,
+        250
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "shape": "box",
+        "size": [
+          10,
+          20,
+          10
+        ]
+      },
+      "material": "electronics",
+      "sensors": [
+        {
+          "id": "press.end",
+          "station": "check",
+          "variable": "press_end",
+          "unit": "bool",
+          "kind": "digital",
+          "sim": {
+            "min": 0,
+            "max": 1,
+            "nominal": 0
+          },
+          "labelKey": "sensor.press_end",
+          "valueLabels": {
+            "0": "value.released",
+            "1": "value.pressed"
+          }
+        }
+      ],
+      "notes": "KW12 micro switch: confirms the lid press reached the end (parts list 2026-11-09). Position estimated.",
       "anchor": "bottom"
     },
     {
@@ -3825,7 +3857,7 @@
       "section": "conveyor",
       "subsection": "tray",
       "status": "pending",
-      "installed": true,
+      "installed": false,
       "position": [
         1430,
         0,
@@ -3845,25 +3877,7 @@
         ]
       },
       "material": "wood",
-      "sensors": [
-        {
-          "id": "tray.arrival",
-          "station": "tray",
-          "variable": "arrival",
-          "unit": "bool",
-          "kind": "digital",
-          "sim": {
-            "min": 0,
-            "max": 1,
-            "nominal": 0
-          },
-          "labelKey": "sensor.arrival",
-          "valueLabels": {
-            "0": "value.empty",
-            "1": "value.present"
-          }
-        }
-      ],
+      "sensors": [],
       "notes": "PENDING. 6-slot tray with linear travel does not fit the table (needs ~1100 mm along z). Mechanism to be decided with the supervisor. Static placeholder at the belt end.",
       "anchor": "bottom"
     },
@@ -3896,22 +3910,7 @@
         "hollow": true
       },
       "material": "wood",
-      "sensors": [
-        {
-          "id": "cabinet.temp",
-          "station": "cabinet",
-          "variable": "ambient_temp",
-          "unit": "C",
-          "kind": "analog",
-          "decimals": 1,
-          "sim": {
-            "min": 18,
-            "max": 40,
-            "nominal": 26
-          },
-          "labelKey": "sensor.ambient_temp"
-        }
-      ],
+      "sensors": [],
       "color": "#D9D9D6",
       "notes": "Raised 100 mm on legs. Cables enter from below through glands.",
       "anchor": "bottom"
@@ -4054,53 +4053,6 @@
       "anchor": "center"
     },
     {
-      "id": "modeSelector",
-      "type": "selector",
-      "labelKey": "part.modeSelector",
-      "section": "cabinet",
-      "subsection": null,
-      "status": "confirmed",
-      "installed": true,
-      "position": [
-        1250,
-        380,
-        550
-      ],
-      "rotationDeg": [
-        90,
-        0,
-        0
-      ],
-      "geometry": {
-        "shape": "cylinder",
-        "diameter": 22,
-        "height": 20
-      },
-      "material": "plastic",
-      "sensors": [
-        {
-          "id": "cabinet.mode",
-          "station": "cabinet",
-          "variable": "mode",
-          "unit": "",
-          "kind": "enum",
-          "sim": {
-            "min": 0,
-            "max": 1,
-            "nominal": 1
-          },
-          "labelKey": "sensor.mode",
-          "valueLabels": {
-            "0": "value.manual",
-            "1": "value.auto"
-          }
-        }
-      ],
-      "notes": "0 manual, 1 auto.",
-      "parent": "cabinet",
-      "anchor": "center"
-    },
-    {
       "id": "stackLight",
       "type": "stackLight",
       "labelKey": "part.stackLight",
@@ -4146,37 +4098,6 @@
         }
       ],
       "notes": "0 off, 1 green, 2 yellow, 3 red. Buzzer inside.",
-      "parent": "cabinet",
-      "anchor": "bottom"
-    },
-    {
-      "id": "screen",
-      "type": "screen",
-      "labelKey": "part.screen",
-      "section": "cabinet",
-      "subsection": null,
-      "status": "confirmed",
-      "installed": true,
-      "position": [
-        1150,
-        420,
-        555
-      ],
-      "rotationDeg": [
-        0,
-        0,
-        0
-      ],
-      "geometry": {
-        "shape": "box",
-        "size": [
-          160,
-          100,
-          10
-        ]
-      },
-      "material": "electronics",
-      "sensors": [],
       "parent": "cabinet",
       "anchor": "bottom"
     },
