@@ -86,7 +86,10 @@ export const simConfigSchema = z.strictObject({
     notes,
   }),
   camera: z.strictObject({
-    pathMm: positive,
+    /** Liquid depth from the window to the white back (the light crosses it twice). */
+    depthMm: positive,
+    windowTransmission: share,
+    glare: z.number().min(0).lt(1),
     cellG: positive,
     noise: atLeastZero,
     whiteRef: z.number().min(0).max(255),

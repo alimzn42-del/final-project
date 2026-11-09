@@ -8,6 +8,7 @@ import {
 } from '@mixline/shared';
 import { describe, expect, it } from 'vitest';
 
+import { clearWater } from './correction.js';
 import { OUTSIDE } from './ledger.js';
 import { PLACE } from './plant.js';
 import { seededRandom } from './random.js';
@@ -163,8 +164,9 @@ describe('one batch, start to finish (doc 01 batch logic)', () => {
       .filter((r) => r.t <= filling)
       .at(-1);
     expect(atFill?.v).toBeLessThanOrEqual(config.batch.toleranceDeltaE);
+    // Clear water in the flow cell reads a little below the white patch (owner, step 17).
     const finalL = readings('color.L').at(-1)?.v ?? 0;
-    expect(finalL).toBeGreaterThan(99);
+    expect(finalL).toBeGreaterThan(clearWater(config)[0] - 1);
     expect(rinse).toBeGreaterThan(filling);
   });
 });

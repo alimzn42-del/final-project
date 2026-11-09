@@ -17,14 +17,7 @@
 import type { BatchStep, Lab, RefillItem } from '@mixline/shared';
 
 import { type Line, PART_TABLE } from './bindings.js';
-import {
-  CLEAR_WATER,
-  deltaE,
-  missingDye,
-  NO_DYE,
-  type PerDye,
-  recipeTarget,
-} from './correction.js';
+import { clearWater, deltaE, missingDye, NO_DYE, type PerDye, recipeTarget } from './correction.js';
 import { dye as pureDye, water } from './ledger.js';
 import { type Cup, PLACE, type Plant, type Pump } from './plant.js';
 import { type Program, together, waitS, waitUntil } from './program.js';
@@ -201,7 +194,7 @@ export class BatchProgram {
       yield* this.addWater(r.waterG);
       yield* this.mix(r.mixS);
       const last = time >= r.times;
-      const clear = last && (yield* this.sample(CLEAR_WATER)).deltaE <= r.clearDeltaE;
+      const clear = last && (yield* this.sample(clearWater(this.config))).deltaE <= r.clearDeltaE;
       yield* this.drain();
       // Two more rinses at most if the water is not clear yet.
       if (clear || time >= r.times + 2) return;
@@ -378,7 +371,8 @@ export class BatchProgram {
         });
       }
     }
-    if (plant.cupsInMagazine < containers) {
+    // Never empty: the magazine-empty sensor would see it (the alarm belongs to the PLC).
+    if (plant.cupsInMagazine <= containers) {
       item('cups', 'refilled', s.cupsFull - plant.cupsInMagazine, 'count');
       apply.push(() => {
         plant.cupsInMagazine = s.cupsFull;

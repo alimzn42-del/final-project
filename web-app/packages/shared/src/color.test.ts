@@ -168,3 +168,29 @@ describe('Beer–Lambert: the colour of a dye mixture', () => {
     });
   });
 });
+
+describe('the flow cell: seen through the window, against the white patch (owner, step 17)', () => {
+  const cell = { windowTransmission: 0.96, glare: 0 };
+
+  it('reads clear water a little darker than the patch: the light passes the glass twice', () => {
+    const [l, a, b] = absorbanceToLab([0, 0, 0], cell);
+    // 0.96 each way lets 92.16 % through: L* = 116 * 0.9216^(1/3) - 16.
+    expect(l).toBeCloseTo(116 * Math.cbrt(0.9216) - 16, 4);
+    expect(Math.hypot(a, b)).toBeLessThan(1e-3);
+  });
+
+  it('reads the absorbance back through the window and the glare', () => {
+    const optics = { windowTransmission: 0.96, glare: 0.03 };
+    const a = mixtureAbsorbance({ ...none, magenta: 1, yellow: 1.5 }, DYES, 2);
+    labToAbsorbance(absorbanceToLab(a, optics), optics).forEach((v, i) => {
+      expect(v).toBeCloseTo(a[i] ?? NaN, 5);
+    });
+  });
+
+  it('glare off the glass lightens a dark colour (the 45-degree lights keep it at 0)', () => {
+    const dark = mixtureAbsorbance({ ...none, black: 4 }, DYES, 2);
+    const [withoutGlare] = absorbanceToLab(dark, cell);
+    const [withGlare] = absorbanceToLab(dark, { ...cell, glare: 0.04 });
+    expect(withGlare).toBeGreaterThan(withoutGlare + 5);
+  });
+});

@@ -6,12 +6,18 @@
  * - CIEDE2000 (ΔE00): how far apart two colours look, the way the paint industry measures it.
  * - Beer–Lambert: the light a mixture of dyes lets through, per colour channel.
  *
- * The camera looks through the sample cell at a white LED panel. Each dye absorbs part of the
- * light that passes: the share that gets through is T = 10^(−A), with absorbance A = Σ ε·c·ℓ
- * over the dyes (ε: how strongly the dye absorbs that colour of light, c: how concentrated it is,
- * ℓ: how far the light travels through the liquid). Absorbances of several dyes add up. Done for
- * red, green and blue separately, the three shares are the colour the camera sees, white-balanced
- * on clear water (water = white = L* 100).
+ * Each dye absorbs part of the light that passes: the share that gets through is T = 10^(−A),
+ * with absorbance A = Σ ε·c·ℓ over the dyes (ε: how strongly the dye absorbs that colour of
+ * light, c: how concentrated it is, ℓ: how far the light travels through the liquid).
+ * Absorbances of several dyes add up. Done for red, green and blue separately, the three shares
+ * are the colour the camera sees.
+ *
+ * The flow cell (owner, step 17): the camera looks straight through a glass window at the liquid
+ * in front of a white back, lit by LED strips at 45 degrees. So the light crosses the liquid
+ * twice (ℓ is twice the depth), passes the glass twice, and the glare off the glass misses the
+ * camera. Every reading is relative to a white patch of the same white plastic beside the window
+ * (`CellOptics`), so clear water reads a little darker than white. Without optics, the colour is
+ * white-balanced on clear water (water = white = L* 100).
  */
 
 /** CIE L*a*b*: L* 0 (black) to 100 (white), a* green (−) to red (+), b* blue (−) to yellow (+). */
@@ -155,15 +161,38 @@ export function mixtureAbsorbance<D extends string>(
   return [r, g, b];
 }
 
-/** The colour seen through a liquid with this absorbance, white-balanced on clear water. */
-export function absorbanceToLab([r, g, b]: Rgb): Lab {
-  const t = (a: number) => Math.max(MIN_TRANSMISSION, 10 ** -a);
+/**
+ * What stands between the liquid and the camera (owner, step 17), relative to the white patch.
+ * The patch is the same white plastic as the cell's back, so the back's own whiteness cancels.
+ */
+export interface CellOptics {
+  /** Share of the light the window lets through each way; the light passes it twice. */
+  windowTransmission: number;
+  /** Share of the patch's brightness the glass reflects straight into the camera. */
+  glare: number;
+}
+
+/** No window and no glare: white-balanced on clear water. */
+export const NO_OPTICS: CellOptics = { windowTransmission: 1, glare: 0 };
+
+/** The share of the patch's light the camera sees, for liquid that lets `t` through. */
+function seen(t: number, optics: CellOptics): number {
+  return optics.glare + (1 - optics.glare) * optics.windowTransmission ** 2 * t;
+}
+
+/** The colour seen through a liquid with this absorbance (white-balanced without optics). */
+export function absorbanceToLab([r, g, b]: Rgb, optics: CellOptics = NO_OPTICS): Lab {
+  const t = (a: number) => Math.max(MIN_TRANSMISSION, seen(10 ** -a, optics));
   return linearRgbToLab([t(r), t(g), t(b)]);
 }
 
 /** The inverse: the absorbance per channel that gives this colour. */
-export function labToAbsorbance(lab: Lab): Rgb {
-  const a = (t: number) => -Math.log10(Math.min(1, Math.max(MIN_TRANSMISSION, t)));
+export function labToAbsorbance(lab: Lab, optics: CellOptics = NO_OPTICS): Rgb {
+  const throughWindow = (1 - optics.glare) * optics.windowTransmission ** 2;
+  const a = (s: number) => {
+    const t = (s - optics.glare) / throughWindow;
+    return -Math.log10(Math.min(1, Math.max(MIN_TRANSMISSION, t)));
+  };
   const [r, g, b] = labToLinearRgb(lab);
   return [a(r), a(g), a(b)];
 }

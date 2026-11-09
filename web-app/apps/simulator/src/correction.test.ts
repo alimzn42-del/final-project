@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   cellLab,
+  clearWater,
   deltaE,
   missingDye,
   NO_DYE,
@@ -24,6 +25,24 @@ const share = (c: PerDye, k: number): PerDye =>
   Object.fromEntries(DYES.map((d) => [d, c[d] * k])) as PerDye;
 const plus = (a: PerDye, b: PerDye): PerDye =>
   Object.fromEntries(DYES.map((d) => [d, a[d] + b[d]])) as PerDye;
+
+describe('the flow cell (owner, step 17)', () => {
+  it('sends the light through the liquid twice: 10 mm deep is a 20 mm path', () => {
+    const c = { ...NO_DYE, cyan: 1 };
+    const deeper = { ...config, camera: { ...config.camera, depthMm: 20 } };
+    // Beer–Lambert: only path × concentration counts, so twice 10 mm of this dye colours like
+    // twice 20 mm of half as much.
+    expect(deltaE(cellLab(config, c), cellLab(deeper, share(c, 0.5)))).toBeLessThan(1e-9);
+    expect(config.camera.depthMm).toBe(10);
+  });
+
+  it('sees clear water against the white patch, a little below white', () => {
+    const [l] = clearWater(config);
+    expect(l).toBeGreaterThan(95);
+    expect(l).toBeLessThan(100);
+    expect(cellLab(config, NO_DYE)).toEqual(clearWater(config));
+  });
+});
 
 describe('the recipes make the colours they are named after', () => {
   const lab = (id: string) => recipeTarget(config, recipe(id));

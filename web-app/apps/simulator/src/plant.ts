@@ -15,7 +15,7 @@
 import { deltaE2000, type Lab } from '@mixline/shared';
 
 import { dyeRole, type Line, type Role } from './bindings.js';
-import { cellLab, CLEAR_WATER, NO_DYE, type PerDye } from './correction.js';
+import { cellLab, clearWater, NO_DYE, type PerDye } from './correction.js';
 import { concentration, dye, Ledger, water } from './ledger.js';
 import { jitter, type Random } from './random.js';
 import { DYES, type Dye, type SimConfig, STACK_LIGHT_CODES } from './simConfig.js';
@@ -93,7 +93,7 @@ export class Plant {
   delivered = 0;
   /** When the worker takes the cup now waiting at the end of the belt. */
   private takeAwayAtS: number | undefined;
-  camera: { lab: Lab; deltaE: number } = { lab: CLEAR_WATER, deltaE: 0 };
+  camera: { lab: Lab; deltaE: number };
   /** Each dye lot's real strength ÷ the nominal model (drawn at every dye refill). */
   readonly lot: PerDye = { ...NO_DYE };
   /** A batch is running (the stack light's colour). */
@@ -118,6 +118,7 @@ export class Plant {
     for (const d of DYES) this.newLot(d);
     this.cupsInMagazine = s.cupsFull;
     this.lids = s.lidsFull;
+    this.camera = { lab: clearWater(config), deltaE: 0 };
   }
 
   // ---- commands (what the PLC switches) ----

@@ -46,11 +46,13 @@
     "notes": "How strongly each dye absorbs red, green and blue light: absorbance per (g of dye per kg of mixture) per cm of light path (Beer-Lambert, shared/color.ts). To fit later from camera readings of our dyes. Each dye lot (every dye refill) is up to lotSpread weaker or stronger than this, so the first sample is never exactly right."
   },
   "camera": {
-    "pathMm": 15,
-    "cellG": 36,
+    "depthMm": 10,
+    "windowTransmission": 0.96,
+    "glare": 0,
+    "cellG": 16,
     "noise": 0.1,
     "whiteRef": 235,
-    "notes": "Doc 02 sample cell: inside 40 x 60 x 15 mm, so the light crosses 15 mm of liquid and the cell holds about 36 g. noise: L*, a* and b* measurement noise. whiteRef: the LED panel's brightness (0-255)."
+    "notes": "Owner, step 17, all estimated: the flow cell is 40 x 40 x 10 mm inside (16 g), with 10 mm of liquid between the glass window and the white back, so the light crosses 20 mm of liquid. The camera looks straight at the window and the LED strips sit at 45 degrees, so the glare off the glass misses the camera (glare 0). Readings are relative to the white patch (the same white plastic, outside the glass): the light passes the window twice, windowTransmission each way (about 4% lost per pass), so clear water reads L* about 97. noise: L*, a* and b* measurement noise. whiteRef: the camera's reading of the white patch (0-255)."
   },
   "pumps": {
     "baseGPerS": 60,
