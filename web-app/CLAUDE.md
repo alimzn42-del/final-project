@@ -18,6 +18,7 @@ code, so do not change them unless asked. Paths below are relative to `web-app/`
 | `docs/04-architecture.md` | Touching backend, MQTT, database, Docker, shared types |
 | `docs/05-roadmap.md` | Planning work, or unsure if something is in scope |
 | `docs/06-brand.md` | Any visual design: colors, type, logo, layout |
+| `docs/ALMAS_parts_list_2026-11-09.md` | Touching hardware parts in `machine.json` or the docs. The owner's parts list is the hardware reference (owner, step 17): it is newer than the docs, so where it says something it wins, and where it is silent the docs stay. Its "6 containers" and "300 g" are ignored (the order decides the batch; the fill is an estimated simulator setting) |
 
 ## Stack (decided)
 
