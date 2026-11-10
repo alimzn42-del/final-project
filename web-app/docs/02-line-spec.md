@@ -343,8 +343,9 @@ to 8 s, estimated). Then the belt moves on.
   behind the table).
 
 ### Reject bin
-In front of the check station, viewer side. 140 x 100 x 110: confirmed. It is 100 mm deep,
-narrower than the 113 mm container top (open item, doc 05).
+In front of the check station, viewer side. 140 x 100 x 110: confirmed (140 along the line, 100
+high, 110 front to back). Its 110 is less than the 113 mm container top, so a container does not
+drop in flat (open item, doc 05).
 
 ---
 

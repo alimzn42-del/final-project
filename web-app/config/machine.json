@@ -4216,7 +4216,7 @@
           "labelKey": "sensor.reject_count"
         }
       ],
-      "notes": "Reject bin, on the front (audience) side. Owner, step 17: 100 mm deep, narrower than the 113 mm container top (open item, doc 05).",
+      "notes": "Reject bin, on the front (audience) side. 140 along the line, 100 high, 110 front to back: its 110 is less than the 113 mm container top, so a container does not drop in flat (open item, doc 05).",
       "anchor": "bottom"
     },
     {

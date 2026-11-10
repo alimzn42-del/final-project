@@ -201,7 +201,7 @@ runs any command a check needs; the owner only looks in the browser.
 | Mixer design (teammate): the plain 5 V motor or the one with a speed sensor | mixer geometry, the `mixer.rpm` sensor, shelf height |
 | Batch tray (owner, step 17: 6 slots on a rail with a stepper, as in the parts list, not installed): 6 slots are fewer than the largest batch (10), and the 800 mm table is too short for its travel | tray layout, its station and sensors |
 | Container magazine tube (owner, step 17: 110 mm is an assumption): a 110 mm PVC pipe is about 103 mm inside, less than the 113 mm tub top | magazine size, the infeed gate |
-| Reject bin (140 x 100 x 110, confirmed): 100 mm deep, narrower than the 113 mm tub top | reject bin size or the pusher's travel |
+| Reject bin (140 x 100 x 110, confirmed: 140 along the line, 100 high, 110 front to back): 110 is less than the 113 mm tub top, so a tub does not drop in flat | reject bin size or the pusher's travel |
 | Drain suction into the vessel (parts list: a hole in the wall or a rigid dip tube) | drain tube route |
 | Sample pump driver (parts list: an H-bridge or a 2-channel relay) | station 2 wiring |
 | Room for the ESP32s in the control panel (owner, step 17: in the panel, on a DIN rail): three fit beside the 24 V supply only at about 48 mm per enclosure; the fourth (tray, deferred) is not drawn | panel layout, enclosure size |
